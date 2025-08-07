@@ -1,0 +1,34 @@
+{
+  "name": "@repo/shared",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./types/user": {
+      "types": "./src/types/user.ts",
+      "default": "./src/types/user.ts"
+    },
+    "./types/api": {
+      "types": "./src/types/api.ts",
+      "default": "./src/types/api.ts"
+    },
+    "./utils/constants": {
+      "types": "./src/utils/constants.ts",
+      "default": "./src/utils/constants.ts"
+    },
+    "./utils/validation": {
+      "types": "./src/utils/validation.ts",
+      "default": "./src/utils/validation.ts"
+    }
+  },
+  "dependencies": {
+    "zod": "^4.0.14"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
