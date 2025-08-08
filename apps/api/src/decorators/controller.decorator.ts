@@ -7,6 +7,15 @@ export interface RouteOptions {
   preHandler?: any[];
 }
 
+interface RouteMetadata {
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  path: string;
+  schema?: any;
+  preHandler?: any[];
+  handler: string;
+  originalMethod: (...args: any[]) => any;
+}
+
 // 메타데이터 키
 const ROUTES_KEY = Symbol("routes");
 const CONTROLLER_KEY = Symbol("controller");
@@ -78,8 +87,9 @@ export function Auth() {
     descriptor: PropertyDescriptor
   ) {
     const routes = Reflect.getMetadata(ROUTES_KEY, target.constructor) || [];
+
     const routeIndex = routes.findIndex(
-      (route) => route.handler === propertyKey
+      (route: RouteMetadata) => route.handler === propertyKey
     );
 
     if (routeIndex !== -1) {
@@ -99,8 +109,9 @@ export function Schema(schema: any) {
     descriptor: PropertyDescriptor
   ) {
     const routes = Reflect.getMetadata(ROUTES_KEY, target.constructor) || [];
+
     const routeIndex = routes.findIndex(
-      (route) => route.handler === propertyKey
+      (route: RouteMetadata) => route.handler === propertyKey
     );
 
     if (routeIndex !== -1) {

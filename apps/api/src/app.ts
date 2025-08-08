@@ -6,6 +6,7 @@ import postgres from "@fastify/postgres";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import prismaPlugin from "./plugins/prisma";
 
 import { env } from "@/config/env";
 import { registerRoutes } from "@/routes";
@@ -166,6 +167,9 @@ export const build = async (): Promise<FastifyInstance> => {
       expiresIn: env.JWT_EXPIRES_IN,
     },
   });
+
+  // Prisma 플러그인 등록
+  await app.register(prismaPlugin);
 
   // Database plugin
   await app.register(postgres, {
