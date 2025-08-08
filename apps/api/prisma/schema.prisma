@@ -1,0 +1,141 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum BillingCycle {
+    MONTHLY
+    ANNUAL
+}
+
+enum SubscriptionStatus {
+    ACTIVE
+    PAST_DUE
+    CANCELED
+}
+
+/// 크롤링 작업 상태
+enum CrawlStatus {
+    PENDING   /// 생성만 된 상태 (버튼 클릭 후 대기)
+    RUNNING   /// 실제로 크롤러가 실행 중
+    SUCCESS   /// 정상 완료
+    FAILED    /// 오류 발생
+}
+
+model User {
+    id              Int             @id @default(autoincrement())
+    email           String          @unique
+    name            String?
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+
+    // Relations
+    products        Product[]       /// 사용자가 등록한 상품들
+    subscriptions   Subscription[]  /// 사용자의 구독 내역
+    crawlJobs       CrawlJob[]      /// 수동 크롤링 이력
+
+    @@map("users")
+}
+
+model Plan {
+    id            Int             @id @default(autoincrement())
+    name          String          @unique
+    price         Decimal         @db.Decimal(10, 2)
+    features      Json            // ["크롤링 주기","알림 옵션", …]
+    createdAt     DateTime        @default(now())
+    updatedAt     DateTime        @updatedAt
+    billingCycle  BillingCycle    @default(MONTHLY)
+
+    // Relations
+    subscriptions Subscription[]  /// 이 요금제를 사용하는 구독들
+    
+    @@map("plans")
+}
+
+model Subscription {
+    id          Int                 @id @default(autoincrement())
+    status      SubscriptionStatus  @default(ACTIVE)
+    startDate   DateTime            @default(now())
+    endDate     DateTime?
+    autoRenew   Boolean             @default(true)
+    createdAt   DateTime            @default(now())
+    updatedAt   DateTime            @updatedAt
+
+    // Relations
+    user        User                @relation(fields: [userId],   references: [id])   /// 구독한 사용자
+    userId      Int
+    plan        Plan                @relation(fields: [planId],   references: [id])   /// 구독한 요금제
+    planId      Int
+
+    @@map("subscriptions")
+}
+
+model Product {
+    id                    Int                 @id @default(autoincrement())
+    userId                Int
+    smartStoreProductId   String              // 네이버 스마트스토어 상품 ID
+    name                  String
+    url                   String
+    currentPrice          Decimal             @db.Decimal(10, 2)
+    targetPrice           Decimal             @db.Decimal(10, 2)
+    isActive              Boolean             @default(true)
+    createdAt             DateTime            @default(now())
+    updatedAt             DateTime            @updatedAt
+
+    // Relations
+    user                  User                @relation(fields: [userId],   references: [id])   /// 상품 등록한 사용자
+    competitorOffers      CompetitorOffer[]   /// 경쟁사 가격 정보
+    priceChangeLogs       PriceChangeLog[]    /// 가격 변경 이력
+
+    @@map("products")
+}
+
+/// 고객이 “지금 크롤링” 버튼을 눌러 생성되는 작업 기록
+model CrawlJob {
+    id         Int         @id @default(autoincrement())
+    userId     Int
+    requestedAt DateTime   @default(now())  // 버튼 클릭 시각
+    startedAt   DateTime?                  // 실제 실행 시작 시각
+    finishedAt  DateTime?                  // 완료(성공·실패) 시각
+    errorMsg    String?                    // 실패 시 오류 메시지
+
+    // Relations
+    user       User        @relation(fields: [userId], references: [id])   /// 작업 요청한 사용자
+    status     CrawlStatus @default(PENDING)
+    offers     CompetitorOffer[]          /// 이 작업에서 수집된 가격 정보
+    
+    @@map("crawl_jobs")
+}
+
+model CompetitorOffer {
+    id               Int        @id @default(autoincrement())
+    productId        Int
+    crawlJobId       Int?
+    competitorName   String     // ex) "스마트스토어", "쿠팡"
+    competitorUrl    String
+    price            Decimal    @db.Decimal(10, 2)
+    fetchedAt        DateTime   @default(now())
+
+    // Relations
+    product          Product    @relation(fields: [productId],    references: [id])   /// 해당 상품
+    crawlJob         CrawlJob?  @relation(fields: [crawlJobId],   references: [id])   /// 수집된 크롤링 작업
+
+    @@map("competitor_offers")
+}
+
+model PriceChangeLog {
+    id          Int       @id @default(autoincrement())
+    productId   Int
+    oldPrice    Decimal   @db.Decimal(10, 2)
+    newPrice    Decimal   @db.Decimal(10, 2)
+    changedAt   DateTime  @default(now())
+
+    // Relations
+    product     Product   @relation(fields: [productId],    references: [id])   /// 가격 변경된 상품
+
+    @@map("price_change_logs")
+}
