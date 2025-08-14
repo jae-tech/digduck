@@ -18,32 +18,46 @@ export class BrowserService {
   private isClosing: boolean = false;
   private activePagesCount: number = 0;
   private config: BrowserConfig;
+  private selectedUserAgent: string; // 🔧 일관된 User-Agent 사용
 
-  // 네이버 우회에 최적화된 User-Agent (최신 Chrome만 사용)
-  private readonly USER_AGENTS = [
-    // Chrome 131 (최신 stable) - Windows
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  // 🔧 동적으로 최신 Chrome 버전 사용
+  private async getLatestChromeUserAgent(): Promise<string> {
+    try {
+      // 현재 날짜 기준으로 Chrome 버전 추정
+      const currentDate = new Date();
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
 
-    // Chrome 131 - macOS
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      // Chrome 릴리즈 주기: 약 4주마다 마이너 업데이트
+      // 2024년 1월부터 계산 (Chrome 120 기준)
+      const baseVersion = 120;
+      const monthsSince2024 = (year - 2024) * 12 + (month - 1);
+      const estimatedVersion = baseVersion + Math.floor(monthsSince2024 / 1);
 
-    // Chrome 130 (백업) - Windows
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+      // 최신 버전들 (수동 업데이트 필요시)
+      const latestVersions = [131, 132, 133, 134]; // 주기적으로 업데이트
+      const latestVersion = Math.max(estimatedVersion, ...latestVersions);
 
-    // Chrome 130 - macOS
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+      const userAgents = [
+        `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${latestVersion}.0.0.0 Safari/537.36`,
+        `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${latestVersion}.0.0.0 Safari/537.36`,
+        `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${latestVersion}.0.0.0 Safari/537.36`,
+      ];
 
-    // Chrome 131 - Linux (추가)
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      const selectedUA =
+        userAgents[Math.floor(Math.random() * userAgents.length)];
+      console.log(
+        `🔄 최신 Chrome 버전 사용: ${latestVersion}, UA: ${selectedUA}`
+      );
 
-    // 다양한 OS 버전들
-    "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  ];
+      return selectedUA;
+    } catch (error) {
+      console.error("User-Agent 생성 오류:", error);
+      // 기본값 반환
+      return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+    }
+  }
 
-  // 일반적인 해상도만 사용 (너무 특이한 해상도는 의심받을 수 있음)
   private readonly VIEWPORTS: ViewportConfig[] = [
     { width: 1920, height: 1080 },
     { width: 1366, height: 768 },
@@ -53,57 +67,67 @@ export class BrowserService {
   constructor(config: BrowserConfig = {}) {
     this.config = {
       headless: process.env.NODE_ENV === "production",
-      slowMo: Math.random() * 500 + 200, // 200-700ms로 줄임 (너무 느리면 의심)
-      timeout: 60000, // 네이버는 로딩이 오래 걸릴 수 있음
-      maxPages: 3, // 동시 페이지 수 제한
+      slowMo: Math.random() * 300 + 100, // 🔧 더 빠르게
+      timeout: 60000,
+      maxPages: 3,
       ...config,
     };
+
+    this.selectedUserAgent = "";
   }
 
   async getBrowser(): Promise<Browser> {
     if (!this.browser || this.browser.isConnected() === false) {
       console.log("🚀 새 브라우저 인스턴스 생성 중...");
 
+      // 🔧 최신 User-Agent 동적 생성
+      if (!this.selectedUserAgent) {
+        this.selectedUserAgent = await this.getLatestChromeUserAgent();
+        console.log(`🎭 선택된 User-Agent: ${this.selectedUserAgent}`);
+      }
+
       this.browser = await chromium.launch({
         headless: this.config.headless,
         slowMo: this.config.slowMo,
         args: [
-          // 기본 보안 우회
+          // 기본 보안 설정
           "--no-sandbox",
           "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
 
-          // 봇 탐지 우회 (가장 중요)
+          // 🔧 봇 탐지 우회 (강화)
           "--disable-blink-features=AutomationControlled",
+          "--exclude-switches=enable-automation,enable-logging",
           "--disable-features=VizDisplayCompositor",
-          "--exclude-switches=enable-automation",
-          "--disable-extensions-file-access-check",
-          "--disable-extensions-http-throttling",
-          "--disable-extensions-except-plugin",
-          "--disable-plugins-discovery",
+          "--disable-component-extensions-with-background-pages",
+          "--disable-default-apps",
+          "--disable-extensions",
 
-          // 성능 및 안정성
+          // 🔧 추가 우회 설정
+          "--no-service-autorun",
+          "--password-store=basic",
+          "--use-mock-keychain",
+          "--disable-component-update",
+
+          // 🔧 JavaScript 및 렌더링 보장
+          "--enable-javascript",
           "--disable-web-security",
           "--disable-features=site-per-process",
+
+          // 🔧 동적 User-Agent 적용
+          `--user-agent=${this.selectedUserAgent}`,
+
+          // 기본 설정
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--lang=ko-KR",
+          "--window-size=1920,1080",
+
+          // 성능 최적화
           "--disable-background-timer-throttling",
           "--disable-backgrounding-occluded-windows",
           "--disable-renderer-backgrounding",
           "--disable-field-trial-config",
-          "--disable-ipc-flooding-protection",
-
-          // 첫 실행 관련
-          "--no-first-run",
-          "--no-default-browser-check",
-          "--no-service-autorun",
-
-          // 추가 우회 설정
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--disable-gpu",
-          "--window-size=1920,1080",
-
-          // 네이버 특화 설정
-          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "--lang=ko-KR",
         ],
       });
 
@@ -119,39 +143,30 @@ export class BrowserService {
 
     this.context = await browser.newContext({
       viewport: this.getRandomViewport(),
-      userAgent: this.getRandomUserAgent(),
+      userAgent: this.selectedUserAgent, // 🔧 동일한 User-Agent 사용
       locale: "ko-KR",
       timezoneId: "Asia/Seoul",
 
-      // 네이버 접근에 중요한 설정들
-      permissions: ["notifications", "geolocation"],
+      permissions: ["notifications"],
       javaScriptEnabled: true,
       ignoreHTTPSErrors: true,
       acceptDownloads: false,
 
-      // 실제 브라우저와 동일한 설정
       hasTouch: false,
       isMobile: false,
       colorScheme: "light",
 
-      // HTTP 헤더 미리 설정
+      // 🔧 필수 헤더만 설정
       extraHTTPHeaders: {
         Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
-        "Cache-Control": "max-age=0",
         "Upgrade-Insecure-Requests": "1",
-        "Sec-Ch-Ua":
-          '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": '"Windows"',
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "none",
         "Sec-Fetch-User": "?1",
-        Connection: "keep-alive",
-        DNT: "1",
       },
     });
 
@@ -171,7 +186,6 @@ export class BrowserService {
     const page = await this.context!.newPage();
     this.activePagesCount++;
 
-    // 네이버 특화 Stealth 설정
     await this.setupNaverStealthPage(page);
 
     page.on("close", () => {
@@ -185,84 +199,56 @@ export class BrowserService {
     return page;
   }
 
-  private getRandomUserAgent(): string {
-    const userAgent =
-      this.USER_AGENTS[Math.floor(Math.random() * this.USER_AGENTS.length)];
-    console.log(`🎭 선택된 User-Agent: ${userAgent}`);
-
-    return userAgent;
-  }
-
   private getRandomViewport(): ViewportConfig {
-    const viewport =
-      this.VIEWPORTS[Math.floor(Math.random() * this.VIEWPORTS.length)];
+    // 🔧 안전한 기본값 설정
+    const viewports = this.VIEWPORTS || [
+      { width: 1920, height: 1080 },
+      { width: 1366, height: 768 },
+      { width: 1536, height: 864 },
+    ];
+
+    const viewport = viewports[Math.floor(Math.random() * viewports.length)];
     console.log(`📱 선택된 뷰포트: ${viewport.width}x${viewport.height}`);
     return viewport;
   }
 
   /**
-   * 네이버 봇 탐지 우회에 특화된 Stealth 설정
+   * 🔧 더 강력한 네이버 Stealth 설정
    */
   private async setupNaverStealthPage(page: Page): Promise<void> {
     page.setDefaultTimeout(this.config.timeout!);
     page.setDefaultNavigationTimeout(this.config.timeout!);
 
-    // 네이버 특화 자동화 탐지 방지 스크립트
+    // 🔧 더 강력한 봇 탐지 우회
     await page.addInitScript(() => {
-      // 1. webdriver 속성 완전 제거
+      // 1. webdriver 관련 완전 제거
       Object.defineProperty(navigator, "webdriver", {
         get: () => undefined,
       });
 
-      // 2. 자동화 관련 속성들 제거
       delete (window as any).webdriver;
       delete (navigator as any).webdriver;
       delete (window as any)._phantom;
       delete (window as any).phantom;
       delete (window as any).callPhantom;
+      delete (window as any)._selenium;
+      delete (window as any).selenium;
 
-      // 3. Chrome 객체 완전 구현 (네이버가 확인하는 중요한 부분)
-      (window as any).chrome = {
-        runtime: {
-          onConnect: undefined,
-          onMessage: undefined,
-          connect: function () {
-            return {};
-          },
-          sendMessage: function () {
-            return {};
-          },
-        },
-        loadTimes: function () {
-          return {
-            requestTime: Date.now() * 0.001,
-            startLoadTime: Date.now() * 0.001,
-            commitLoadTime: Date.now() * 0.001,
-            finishDocumentLoadTime: Date.now() * 0.001,
-            finishLoadTime: Date.now() * 0.001,
-            firstPaintTime: Date.now() * 0.001,
-            firstPaintAfterLoadTime: 0,
-            navigationType: "Other",
-          };
-        },
-        csi: function () {
-          return {
-            onloadT: Date.now(),
-            startE: Date.now(),
-            tran: 15,
-          };
-        },
-        app: {
-          isInstalled: false,
-          InstallState: {
-            DISABLED: "disabled",
-            INSTALLED: "installed",
-            NOT_INSTALLED: "not_installed",
-          },
-        },
-      };
+      // 2. 자동화 관련 속성 제거
+      const originalDescriptor = Object.getOwnPropertyDescriptor(
+        Navigator.prototype,
+        "webdriver"
+      );
+      if (originalDescriptor) {
+        delete Navigator.prototype.webdriver;
+      }
 
-      // 4. Navigator 속성들 실제 브라우저와 동일하게 설정
+      // 3. Chrome DevTools Protocol 숨기기
+      if ((window as any).chrome) {
+        delete (window as any).chrome.runtime;
+      }
+
+      // 4. 실제 브라우저처럼 보이게 하는 설정
       Object.defineProperty(navigator, "languages", {
         get: () => ["ko-KR", "ko", "en-US", "en"],
       });
@@ -271,151 +257,41 @@ export class BrowserService {
         get: () => "Win32",
       });
 
-      Object.defineProperty(navigator, "deviceMemory", {
-        get: () => 8,
+      // 5. 플러그인 정보 (실제처럼)
+      Object.defineProperty(navigator, "plugins", {
+        get: () => [
+          {
+            0: {
+              type: "application/x-google-chrome-pdf",
+              suffixes: "pdf",
+              description: "Portable Document Format",
+              enabledPlugin: null,
+            },
+            description: "Portable Document Format",
+            filename: "internal-pdf-viewer",
+            length: 1,
+            name: "Chrome PDF Plugin",
+          },
+        ],
       });
 
-      Object.defineProperty(navigator, "hardwareConcurrency", {
-        get: () => 8,
-      });
-
+      // 6. 마우스/터치 이벤트 활성화
       Object.defineProperty(navigator, "maxTouchPoints", {
         get: () => 0,
       });
 
-      // 5. 플러그인 정보 (네이버가 확인)
-      Object.defineProperty(navigator, "plugins", {
-        get: () =>
-          Object.create(PluginArray.prototype, {
-            length: {
-              value: 3,
-              writable: false,
-              enumerable: false,
-              configurable: true,
-            },
-            0: {
-              value: Object.create(Plugin.prototype, {
-                name: {
-                  value: "Chrome PDF Plugin",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                filename: {
-                  value: "internal-pdf-viewer",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                description: {
-                  value: "Portable Document Format",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                length: {
-                  value: 1,
-                  writable: false,
-                  enumerable: false,
-                  configurable: true,
-                },
-              }),
-              writable: false,
-              enumerable: true,
-              configurable: true,
-            },
-            1: {
-              value: Object.create(Plugin.prototype, {
-                name: {
-                  value: "Chrome PDF Viewer",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                filename: {
-                  value: "mhjfbmdgcfjbbpaeojofohoefgiehjai",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                description: {
-                  value: "",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                length: {
-                  value: 1,
-                  writable: false,
-                  enumerable: false,
-                  configurable: true,
-                },
-              }),
-              writable: false,
-              enumerable: true,
-              configurable: true,
-            },
-            2: {
-              value: Object.create(Plugin.prototype, {
-                name: {
-                  value: "Native Client",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                filename: {
-                  value: "internal-nacl-plugin",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                description: {
-                  value: "",
-                  writable: false,
-                  enumerable: true,
-                  configurable: true,
-                },
-                length: {
-                  value: 2,
-                  writable: false,
-                  enumerable: false,
-                  configurable: true,
-                },
-              }),
-              writable: false,
-              enumerable: true,
-              configurable: true,
-            },
-          }),
-      });
+      // 7. 메모리 정보
+      if ((window as any).performance && (window as any).performance.memory) {
+        Object.defineProperty(
+          (window as any).performance.memory,
+          "jsHeapSizeLimit",
+          {
+            get: () => 2147483648,
+          }
+        );
+      }
 
-      // 6. 권한 API 모킹 (네이버가 확인)
-      const originalQuery = window.navigator.permissions.query;
-      window.navigator.permissions.query = (parameters) => {
-        if (parameters.name === "notifications") {
-          return Promise.resolve({
-            state: "granted",
-            name: "notifications",
-            onchange: null,
-            addEventListener: () => {},
-            removeEventListener: () => {},
-            dispatchEvent: () => false,
-          } as PermissionStatus);
-        }
-        return originalQuery(parameters);
-      };
-
-      // 7. Connection 정보 (모바일/데스크톱 구분용)
-      Object.defineProperty(navigator, "connection", {
-        get: () => ({
-          effectiveType: "4g",
-          rtt: 50,
-          downlink: 10,
-          saveData: false,
-        }),
-      });
-
-      // 8. Battery API (있는 경우에만)
+      // 8. 가짜 배터리 API
       if ("getBattery" in navigator) {
         (navigator as any).getBattery = () =>
           Promise.resolve({
@@ -426,83 +302,35 @@ export class BrowserService {
           });
       }
 
-      // 9. Media Devices (카메라/마이크 권한 관련)
-      if (navigator.mediaDevices) {
-        const originalEnumerateDevices =
-          navigator.mediaDevices.enumerateDevices;
-        navigator.mediaDevices.enumerateDevices = () =>
-          Promise.resolve([
-            { kind: "videoinput", deviceId: "default", label: "", groupId: "" },
-            { kind: "audioinput", deviceId: "default", label: "", groupId: "" },
-            {
-              kind: "audiooutput",
-              deviceId: "default",
-              label: "",
-              groupId: "",
-            },
-          ] as MediaDeviceInfo[]);
+      // 9. 권한 API 조작
+      if (navigator.permissions) {
+        const originalQuery = navigator.permissions.query;
+        navigator.permissions.query = (parameters) =>
+          Promise.resolve({ state: "granted" } as PermissionStatus);
       }
 
-      // 10. toString 메서드들 오버라이드
-      window.navigator.toString = () => "[object Navigator]";
-      window.toString = () => "[object Window]";
-
-      // 11. 스크린 정보 일관성 유지
-      const screenWidth = window.screen.width;
-      const screenHeight = window.screen.height;
-
-      Object.defineProperty(window.screen, "availWidth", {
-        get: () => screenWidth,
-      });
-
-      Object.defineProperty(window.screen, "availHeight", {
-        get: () => screenHeight - 40, // 태스크바 고려
-      });
-
-      // 12. Date 및 시간대 정보
-      Object.defineProperty(Date.prototype, "getTimezoneOffset", {
-        value: () => -540, // 한국 시간 (UTC+9)
-      });
-
-      // 13. 로컬 스토리지 설정 (사용자 기록 시뮬레이션)
-      try {
-        if (!localStorage.getItem("language")) {
-          localStorage.setItem("language", "ko-KR");
-          localStorage.setItem("timezone", "Asia/Seoul");
-          localStorage.setItem("visited", Date.now().toString());
+      // 🔧 10. 네이버 특화: iframe 검사 우회
+      const originalAppendChild = Element.prototype.appendChild;
+      Element.prototype.appendChild = function (child) {
+        if (
+          child.tagName === "IFRAME" &&
+          child.src &&
+          child.src.includes("recaptcha")
+        ) {
+          // reCAPTCHA iframe 숨기기
+          child.style.display = "none";
         }
-      } catch (e) {
-        // localStorage 사용 불가시 무시
-      }
+        return originalAppendChild.call(this, child);
+      };
 
-      // 14. 성능 API 조작
-      if (window.performance && (window.performance as any).memory) {
-        const memory = (window.performance as any).memory;
-        Object.defineProperty(memory, "jsHeapSizeLimit", {
-          get: () => 2147483648, // 2GB
-        });
-        Object.defineProperty(memory, "totalJSHeapSize", {
-          get: () => Math.floor(Math.random() * 100000000) + 10000000,
-        });
-        Object.defineProperty(memory, "usedJSHeapSize", {
-          get: () => Math.floor(Math.random() * 50000000) + 5000000,
-        });
-      }
-
-      // 15. 추가 탐지 방지
-      Object.defineProperty(document, "hidden", { get: () => false });
-      Object.defineProperty(document, "visibilityState", {
-        get: () => "visible",
-      });
-
-      console.log("🛡️ 네이버 전용 봇 탐지 우회 스크립트 적용 완료");
+      console.log("🛡️ 강화된 네이버 봇 탐지 우회 적용 완료");
     });
 
-    console.log("🛡️ 네이버 특화 Stealth 설정 적용 완료");
+    console.log("🛡️ 강화된 Stealth 설정 적용 완료");
   }
 
   /**
-   * 네이버 접근에 최적화된 인간 행동 시뮬레이션
+   * 🔧 더 자연스러운 인간 행동 시뮬레이션
    */
   async simulateNaverHumanBehavior(
     page: Page,
@@ -510,89 +338,43 @@ export class BrowserService {
       scroll?: boolean;
       mouseMove?: boolean;
       randomWait?: boolean;
-      hover?: boolean;
     } = {}
   ): Promise<void> {
-    const {
-      scroll = true,
-      mouseMove = true,
-      randomWait = true,
-      hover = true,
-    } = options;
+    const { scroll = true, mouseMove = true, randomWait = true } = options;
 
-    console.log("🤖 네이버 특화 인간 행동 시뮬레이션 시작...");
+    console.log("🤖 자연스러운 행동 시뮬레이션 시작...");
 
     try {
-      // 1. 자연스러운 마우스 움직임 (네이버 로고 영역 등을 지나감)
+      // 1. 페이지 로드 대기 (자연스럽게)
+      await this.randomWait(1000, 2000);
+
+      // 2. 마우스 움직임 (간단하게)
       if (mouseMove) {
-        const movements = [
-          { x: 200, y: 100 }, // 네이버 로고 근처
-          { x: 400, y: 200 }, // 검색창 근처
-          { x: 600, y: 150 }, // 상단 메뉴 근처
-        ];
-
-        for (const pos of movements) {
-          await page.mouse.move(pos.x, pos.y, {
-            steps: Math.random() * 10 + 5,
-          });
-          await this.randomWait(200, 800);
-        }
+        await page.mouse.move(100, 100);
+        await this.randomWait(300, 700);
+        await page.mouse.move(300, 200);
+        await this.randomWait(300, 700);
       }
 
-      // 2. 네이버 특화 스크롤 패턴
+      // 3. 스크롤 (한 번만)
       if (scroll) {
-        // 첫 번째 스크롤: 조금만 내려서 페이지 확인
-        await page.evaluate(() => window.scrollBy(0, 150));
+        await page.evaluate(() => window.scrollBy(0, 200));
         await this.randomWait(1000, 2000);
-
-        // 두 번째 스크롤: 다시 위로 (사람들이 자주 하는 행동)
-        await page.evaluate(() => window.scrollBy(0, -50));
-        await this.randomWait(500, 1000);
-
-        // 세 번째 스크롤: 더 아래로
-        const scrollDistance = Math.floor(Math.random() * 300) + 200;
-        await page.evaluate((distance) => {
-          window.scrollBy(0, distance);
-        }, scrollDistance);
       }
 
-      // 3. 요소에 호버 (네이버 메뉴들에 자연스럽게)
-      if (hover) {
-        try {
-          const hoverSelectors = [
-            'a[href*="mail"]', // 메일
-            'a[href*="news"]', // 뉴스
-            'a[href*="shopping"]', // 쇼핑
-            'a[href*="blog"]', // 블로그
-          ];
-
-          const availableSelector =
-            hoverSelectors[Math.floor(Math.random() * hoverSelectors.length)];
-          const element = page.locator(availableSelector).first();
-
-          if (await element.isVisible({ timeout: 2000 })) {
-            await element.hover();
-            await this.randomWait(500, 1500);
-          }
-        } catch (e) {
-          // 호버 실패시 무시
-        }
-      }
-
-      // 4. 랜덤 대기
+      // 4. 최종 대기
       if (randomWait) {
-        await this.randomWait(2000, 4000); // 네이버는 좀 더 긴 대기
+        await this.randomWait(1000, 3000);
       }
 
-      console.log("✅ 네이버 특화 인간 행동 시뮬레이션 완료");
+      console.log("✅ 행동 시뮬레이션 완료");
     } catch (error) {
-      console.error("❌ 인간 행동 시뮬레이션 오류:", error);
+      console.error("❌ 행동 시뮬레이션 오류:", error);
     }
   }
 
   async randomWait(min: number = 1000, max: number = 3000): Promise<void> {
     const waitTime = Math.floor(Math.random() * (max - min)) + min;
-    console.log(`⏰ ${waitTime}ms 대기 중...`);
     await new Promise((resolve) => setTimeout(resolve, waitTime));
   }
 
@@ -610,7 +392,7 @@ export class BrowserService {
     } = {}
   ): Promise<void> {
     const {
-      waitUntil = "networkidle",
+      waitUntil = "domcontentloaded", // 🔧 networkidle에서 변경
       timeout = this.config.timeout,
       referer = "https://www.naver.com",
       simulateHuman = true,
@@ -651,7 +433,6 @@ export class BrowserService {
         await this.simulateNaverHumanBehavior(page, {
           scroll: Math.random() > 0.3,
           mouseMove: Math.random() > 0.2,
-          hover: Math.random() > 0.5,
           randomWait: true,
         });
       }
@@ -662,46 +443,6 @@ export class BrowserService {
       console.log("⏰ 에러 발생 - 봇 탐지 우회를 위한 대기...");
       await this.randomWait(15000, 30000);
 
-      throw error;
-    }
-  }
-
-  /**
-   * 네이버 로그인에 최적화된 안전한 클릭
-   */
-  async safeNaverClick(
-    page: Page,
-    selector: string,
-    options: {
-      timeout?: number;
-      waitAfter?: number;
-    } = {}
-  ): Promise<void> {
-    const { timeout = 10000, waitAfter = 2000 } = options;
-
-    try {
-      console.log(`🖱️ 네이버 요소 클릭: ${selector}`);
-
-      // 요소가 보일 때까지 대기
-      await page.waitForSelector(selector, { timeout, state: "visible" });
-
-      // 자연스러운 클릭 시뮬레이션
-      const element = page.locator(selector).first();
-
-      // 1. 요소로 마우스 이동
-      await element.hover();
-      await this.randomWait(300, 800);
-
-      // 2. 클릭 전 마지막 확인
-      await this.randomWait(200, 500);
-
-      // 3. 클릭
-      await element.click();
-
-      // 4. 클릭 후 대기
-      await this.randomWait(waitAfter, waitAfter + 1000);
-    } catch (error) {
-      console.error(`❌ 네이버 클릭 실패: ${selector}`, error);
       throw error;
     }
   }
