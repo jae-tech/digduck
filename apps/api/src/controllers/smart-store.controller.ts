@@ -33,17 +33,15 @@ export class SmartStoreController {
     tags: ["products"],
     security: [{ bearerAuth: [] }],
     required: ["url"],
-    params: {
+    body: {
       type: "object",
       properties: {
         url: { type: "string", format: "uri" },
       },
     },
   })
-  async crawlReviews(request: FastifyRequest<{ Params: { url: string } }>) {
-    // const { url } = request.params;
-
-    const url = "https://smartstore.naver.com/marketnuttre/products/9649413233";
+  async crawlReviews(request: FastifyRequest<{ Body: { url: string } }>) {
+    const { url } = request.body;
 
     const data = await crawlService.crawlReviews(url);
     return data;
