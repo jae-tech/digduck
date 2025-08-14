@@ -17,7 +17,6 @@ export interface Product {
   url: string;
   reviews: Review[];
   totalReviews: number;
-  averageRating: number;
 }
 
 export class NaverCrawler {
@@ -33,6 +32,7 @@ export class NaverCrawler {
 
   async crawlReviews(
     productUrl: string,
+    sort: "ranking" | "latest" | "row-rating" | "high-rating" = "ranking",
     maxPages: number = 5
   ): Promise<Product> {
     console.log(`🚀 크롤링 시작: ${productUrl}`);
@@ -65,7 +65,7 @@ export class NaverCrawler {
         await this.navigateToReviews(page);
 
         // 7. 리뷰 수집
-        const reviews = await this.collectReviews(page, maxPages);
+        const reviews = await this.collectReviews(page, sort, maxPages);
 
         // 8. 상품 정보 추출
         const productInfo = await this.extractProductInfo(page);
@@ -139,6 +139,8 @@ export class NaverCrawler {
             `크롤링 최종 실패 (${maxRetries}회 시도): ${error.message}`
           );
         }
+      } finally {
+        await page.close();
       }
     }
 
@@ -160,7 +162,6 @@ export class NaverCrawler {
     await this.browserService.simulateNaverHumanBehavior(page, {
       scroll: true,
       mouseMove: true,
-      hover: true,
       randomWait: true,
     });
   }
@@ -894,7 +895,6 @@ export class NaverCrawler {
       await this.browserService.simulateNaverHumanBehavior(page, {
         scroll: true,
         mouseMove: true,
-        hover: true,
         randomWait: true,
       });
 
@@ -1064,6 +1064,7 @@ export class NaverCrawler {
    */
   private async collectReviews(
     page: Page,
+    sort: "ranking" | "latest" | "row-rating" | "high-rating",
     maxPages: number
   ): Promise<Review[]> {
     console.log(`📚 리뷰 수집 시작 (최대 ${maxPages}페이지)...`);
@@ -1072,6 +1073,22 @@ export class NaverCrawler {
     let currentPage = 1;
     let consecutiveFailures = 0;
     const maxConsecutiveFailures = 3;
+
+    if (sort !== "ranking") {
+      const sortMap = {
+        ranking: "랭킹순",
+        latest: "최신순",
+        "row-rating": "평점 낮은순",
+        "high-rating": "평점 높은순",
+      };
+
+      await page
+        .locator(
+          `[data-shp-area="revlist.sort"][data-shp-contents-id="${sortMap[sort]}"]`
+        )
+        .click();
+      await this.browserService.randomWait(2000, 4000);
+    }
 
     while (currentPage <= maxPages) {
       console.log(`📄 ${currentPage}페이지 수집 중...`);
@@ -1666,37 +1683,16 @@ export class NaverCrawler {
 
     try {
       const productInfo = await page.evaluate(() => {
-        const nameSelectors = ["img[alt='대표이미지'] + strong"];
+        // 상품명 추출을 위한 셀렉터
+        const nameElement = document
+          .querySelector("#_productFloatingTab img[alt='대표이미지']")
+          ?.parentElement?.nextElementSibling?.parentElement?.querySelector(
+            "strong"
+          );
 
-        let name = "";
-        for (const selector of nameSelectors) {
-          const element = document.querySelector(selector);
-          if (element?.textContent?.trim()) {
-            name = element.textContent.trim();
-            break;
-          }
-        }
+        const name = nameElement?.textContent?.trim() || "";
 
-        const ratingSelectors = ['span:has-text("총 5점 중")'];
-        let averageRating = 0;
-        for (const selector of ratingSelectors) {
-          const element = document.querySelector(selector);
-          if (element) {
-            const ratingText =
-              element.textContent ||
-              element.getAttribute("data-rating") ||
-              element.getAttribute("data-score") ||
-              "";
-
-            const match = ratingText.match(/([\d.]+)점$/);
-            if (match) {
-              averageRating = parseFloat(match[1]);
-              break;
-            }
-          }
-        }
-
-        return { name, averageRating };
+        return { name };
       });
 
       const url = page.url();
@@ -1723,7 +1719,6 @@ export class NaverCrawler {
         id,
         url,
         name: "상품명 추출 실패",
-        averageRating: 0,
       };
     }
   }
