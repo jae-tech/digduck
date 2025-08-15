@@ -38,23 +38,17 @@ export class BrowserService {
       const latestVersions = [131, 132, 133, 134]; // 주기적으로 업데이트
       const latestVersion = Math.max(estimatedVersion, ...latestVersions);
 
-      const userAgents = [
-        `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${latestVersion}.0.0.0 Safari/537.36`,
-        `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${latestVersion}.0.0.0 Safari/537.36`,
-        `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${latestVersion}.0.0.0 Safari/537.36`,
-      ];
+      const userAgents = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${latestVersion}.0.0.0 Safari/537.36`;
 
-      const selectedUA =
-        userAgents[Math.floor(Math.random() * userAgents.length)];
       console.log(
-        `🔄 최신 Chrome 버전 사용: ${latestVersion}, UA: ${selectedUA}`
+        `🔄 최신 Chrome 버전 사용: ${latestVersion}, UA: ${userAgents}`
       );
 
-      return selectedUA;
+      return userAgents;
     } catch (error) {
       console.error("User-Agent 생성 오류:", error);
       // 기본값 반환
-      return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+      return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
     }
   }
 
