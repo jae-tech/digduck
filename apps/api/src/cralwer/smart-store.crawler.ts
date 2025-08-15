@@ -34,7 +34,7 @@ export class NaverCrawler {
   async crawlReviews(
     productUrl: string,
     sort: "ranking" | "latest" | "row-rating" | "high-rating" = "ranking",
-    maxPages: number = 999
+    maxPages: number = 100
   ): Promise<Product> {
     console.log(`🚀 크롤링 시작: ${productUrl}`);
 
@@ -1205,7 +1205,7 @@ export class NaverCrawler {
       };
 
       const sortButton = page.locator(
-        `[data-shp-area="revlist.sort"][data-shp-contents-id="${sortMap[sort]}"]`
+        `a[data-shp-area="revlist.sort"][data-shp-contents-id="${sortMap[sort]}"]`
       );
 
       if (await sortButton.isVisible({ timeout: 5000 })) {
@@ -1257,7 +1257,7 @@ export class NaverCrawler {
 
       // 1. 직접 페이지 번호 클릭 시도
       const pageNumberButton = page.locator(
-        `a[data-shp-area='revlist.pgn'][data-shp-contents-id='${nextPageNumber}'])`
+        `a[data-shp-area='revlist.pgn'][data-shp-contents-id='${nextPageNumber}']`
       );
 
       if (await pageNumberButton.isVisible({ timeout: 3000 })) {
