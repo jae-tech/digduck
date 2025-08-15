@@ -1,5 +1,6 @@
 import { Page } from "playwright";
 import { BrowserService } from "./browser";
+import { env } from "@/config/env";
 
 export interface Review {
   id: string;
@@ -33,7 +34,7 @@ export class NaverCrawler {
   async crawlReviews(
     productUrl: string,
     sort: "ranking" | "latest" | "row-rating" | "high-rating" = "ranking",
-    maxPages: number = 5
+    maxPages: number = 999
   ): Promise<Product> {
     console.log(`🚀 크롤링 시작: ${productUrl}`);
 
@@ -52,22 +53,19 @@ export class NaverCrawler {
         // 2. 로그인 진행
         await this.performNaverLogin(page);
 
-        // 3. 로그인 후 네이버 메인으로 복귀
-        await this.returnToNaverMain(page);
-
-        // 4. 최종 상품 페이지로 이동
+        // 3. 최종 상품 페이지로 이동
         await this.accessProductPage(page, productUrl);
 
-        // 5. 봇 체크 처리
+        // 4. 봇 체크 처리
         await this.handleBotCheck(page);
 
-        // 6. 리뷰 탭으로 이동
+        // 5. 리뷰 탭으로 이동
         await this.navigateToReviews(page);
 
-        // 7. 리뷰 수집
-        const reviews = await this.collectReviews(page, sort, maxPages);
+        // 6. 리뷰 수집
+        const reviews = await this.collectAllReviews(page, sort, maxPages);
 
-        // 8. 상품 정보 추출
+        // 7. 상품 정보 추출
         const productInfo = await this.extractProductInfo(page);
 
         const result = {
@@ -370,12 +368,12 @@ export class NaverCrawler {
     await this.browserService.randomWait(2000, 4000);
 
     console.log("📝 아이디 입력 중...");
-    await this.humanTypeInField(page, 'input[name="id"]', "cinnamon_matcha");
+    await this.humanTypeInField(page, 'input[name="id"]', env.NAVER_LOGIN_ID);
 
     await this.navigateToPasswordField(page);
 
     console.log("🔒 비밀번호 입력 중...");
-    await this.humanTypePassword(page, "rhrnak1!");
+    await this.humanTypePassword(page, env.NAVER_LOGIN_PASSWORD);
 
     await this.browserService.randomWait(1000, 2000);
 
@@ -547,61 +545,6 @@ export class NaverCrawler {
     await this.browserService.randomWait(4000, 7000);
   }
 
-  /**
-   * 4단계: 쇼핑 영역으로 이동
-   */
-  private async navigateToShopping(page: Page): Promise<void> {
-    console.log("🛒 쇼핑 영역으로 이동...");
-
-    try {
-      const shoppingSelectors = [
-        'a[href*="shopping.naver.com"]',
-        'a:has-text("쇼핑")',
-        ".nav_shopping a",
-        '[data-clk*="shopping"]',
-      ];
-
-      let shoppingClicked = false;
-
-      for (const selector of shoppingSelectors) {
-        try {
-          const element = page.locator(selector).first();
-          if (await element.isVisible({ timeout: 3000 })) {
-            console.log(`쇼핑 탭 발견: ${selector}`);
-            await element.hover();
-            await this.browserService.randomWait(500, 1000);
-            await element.click();
-            shoppingClicked = true;
-            break;
-          }
-        } catch {
-          continue;
-        }
-      }
-
-      if (shoppingClicked) {
-        await page.waitForLoadState("networkidle");
-        await this.browserService.randomWait(3000, 5000);
-      } else {
-        console.log("쇼핑 탭 없음 - 직접 네이버 쇼핑으로 이동");
-        await this.browserService.safeNaverGoto(
-          page,
-          "https://shopping.naver.com",
-          {
-            referer: "https://www.naver.com",
-            simulateHuman: true,
-          }
-        );
-      }
-    } catch (error) {
-      console.log("⚠️ 쇼핑 영역 이동 실패 - 직접 이동:", error.message);
-      await this.browserService.safeNaverGoto(
-        page,
-        "https://shopping.naver.com"
-      );
-    }
-  }
-
   private normalizeUrl(url: string): string {
     try {
       const urlObj = new URL(url);
@@ -641,6 +584,12 @@ export class NaverCrawler {
     return null;
   }
 
+  /**
+   * 상품 페이지 비교
+   * @param targetUrl
+   * @param currentUrl
+   * @returns
+   */
   private isSameProductPage(targetUrl: string, currentUrl: string): boolean {
     console.log(`🔍 URL 비교 - Target: ${targetUrl.substring(0, 100)}...`);
     console.log(`🔍 URL 비교 - Current: ${currentUrl.substring(0, 100)}...`);
@@ -694,6 +643,9 @@ export class NaverCrawler {
     return false;
   }
 
+  /**
+   * 상품 페이지 내용 검증
+   */
   private async validateProductPageContent(page: Page): Promise<void> {
     try {
       console.log("🔍 페이지 내용 검증 중...");
@@ -1060,38 +1012,37 @@ export class NaverCrawler {
   }
 
   /**
-   * 리뷰 수집
+   * 개선된 리뷰 수집 - 마지막 페이지까지 자동 크롤링
    */
-  private async collectReviews(
+  private async collectAllReviews(
     page: Page,
     sort: "ranking" | "latest" | "row-rating" | "high-rating",
     maxPages: number
   ): Promise<Review[]> {
-    console.log(`📚 리뷰 수집 시작 (최대 ${maxPages}페이지)...`);
+    console.log(`📚 전체 리뷰 수집 시작 (최대 ${maxPages}페이지)...`);
+
+    // 1. 총 리뷰 수와 예상 페이지 수 확인
+    const totalInfo = await this.getTotalReviewInfo(page);
+    const actualMaxPages = Math.min(maxPages, totalInfo.estimatedPages);
+
+    console.log(`📊 총 리뷰 수: ${totalInfo.totalReviews}개`);
+    console.log(`📄 예상 페이지 수: ${totalInfo.estimatedPages}페이지`);
+    console.log(`🎯 크롤링 대상: ${actualMaxPages}페이지`);
 
     const reviews: Review[] = [];
     let currentPage = 1;
     let consecutiveFailures = 0;
     const maxConsecutiveFailures = 3;
+    let lastReviewCount = 0;
 
+    // 2. 정렬 설정
     if (sort !== "ranking") {
-      const sortMap = {
-        ranking: "랭킹순",
-        latest: "최신순",
-        "row-rating": "평점 낮은순",
-        "high-rating": "평점 높은순",
-      };
-
-      await page
-        .locator(
-          `[data-shp-area="revlist.sort"][data-shp-contents-id="${sortMap[sort]}"]`
-        )
-        .click();
-      await this.browserService.randomWait(2000, 4000);
+      await this.setSortOrder(page, sort);
     }
 
-    while (currentPage <= maxPages) {
-      console.log(`📄 ${currentPage}페이지 수집 중...`);
+    // 3. 페이지별 리뷰 수집
+    while (currentPage <= actualMaxPages) {
+      console.log(`\n📄 ${currentPage}/${actualMaxPages} 페이지 수집 중...`);
 
       try {
         // 페이지 로딩 대기
@@ -1104,6 +1055,7 @@ export class NaverCrawler {
         // 리뷰 요소가 로딩될 때까지 대기
         await this.waitForReviewsToLoad(page);
 
+        // 현재 페이지에서 리뷰 추출
         const pageReviews = await this.extractReviewsFromPage(page);
 
         if (pageReviews.length === 0) {
@@ -1112,22 +1064,42 @@ export class NaverCrawler {
             `❌ ${currentPage}페이지에서 리뷰를 찾을 수 없음 (연속 실패: ${consecutiveFailures})`
           );
 
-          // 연속으로 실패하면 종료
+          // 연속으로 실패하면 마지막 페이지 도달로 판단
           if (consecutiveFailures >= maxConsecutiveFailures) {
-            console.log(`❌ 연속 ${maxConsecutiveFailures}번 실패로 수집 종료`);
+            console.log(
+              `📄 연속 ${maxConsecutiveFailures}번 실패 - 마지막 페이지 도달로 판단`
+            );
             break;
           }
         } else {
           consecutiveFailures = 0; // 성공 시 실패 카운터 리셋
-          reviews.push(...pageReviews);
+
+          // 중복 제거하여 추가
+          const newReviews = this.filterNewReviews(pageReviews, reviews);
+          reviews.push(...newReviews);
+
           console.log(
-            `📝 ${currentPage}페이지에서 ${pageReviews.length}개 리뷰 수집 (총 ${reviews.length}개)`
+            `📝 ${currentPage}페이지: ${pageReviews.length}개 수집, ${newReviews.length}개 신규 (총 ${reviews.length}개)`
           );
+
+          // 진행률 표시
+          const progress = (reviews.length / totalInfo.totalReviews) * 100;
+          console.log(`📊 진행률: ${Math.min(progress, 100).toFixed(1)}%`);
+
+          // 같은 리뷰 수가 연속으로 나오면 마지막 페이지 가능성
+          if (reviews.length === lastReviewCount) {
+            console.log("⚠️ 리뷰 수가 증가하지 않음 - 마지막 페이지 가능성");
+          }
+          lastReviewCount = reviews.length;
         }
 
-        // 다음 페이지로 이동
-        if (currentPage < maxPages) {
-          const hasNextPage = await this.goToNextPage(page);
+        // 다음 페이지 이동 시도
+        if (currentPage < actualMaxPages) {
+          const hasNextPage = await this.goToNextPageImproved(
+            page,
+            currentPage
+          );
+
           if (!hasNextPage) {
             console.log("📄 마지막 페이지 도달 - 수집 완료");
             break;
@@ -1135,19 +1107,20 @@ export class NaverCrawler {
 
           currentPage++;
 
-          // 페이지 이동 후 추가 대기
+          // 페이지 이동 후 안정화 대기
           await this.browserService.randomWait(3000, 6000);
 
-          // 페이지 번호가 실제로 변경되었는지 확인
+          // 실제 페이지 번호 검증
           const actualPageNumber = await this.getCurrentPageNumber(page);
-          if (actualPageNumber !== currentPage) {
+          if (actualPageNumber !== currentPage && actualPageNumber > 0) {
             console.log(
-              `⚠️ 예상 페이지(${currentPage})와 실제 페이지(${actualPageNumber})가 다름`
+              `🔄 페이지 번호 조정: ${currentPage} → ${actualPageNumber}`
             );
             currentPage = actualPageNumber;
           }
         } else {
-          currentPage++; // maxPages에 도달했을 때 루프 종료
+          console.log("📄 설정된 최대 페이지에 도달");
+          break;
         }
       } catch (error) {
         consecutiveFailures++;
@@ -1161,26 +1134,263 @@ export class NaverCrawler {
           break;
         }
 
-        // 에러 발생 시 페이지 새로고침 시도
-        try {
-          console.log("🔄 페이지 새로고침 시도...");
-          await page.reload({ waitUntil: "networkidle" });
-          await this.browserService.randomWait(3000, 5000);
-        } catch (reloadError) {
-          console.error("❌ 페이지 새로고침 실패:", reloadError.message);
-          break;
+        // 에러 복구 시도
+        await this.recoverFromPageError(page, currentPage);
+      }
+    }
+
+    console.log(
+      `\n✅ 총 ${reviews.length}개 리뷰 수집 완료 (${currentPage - 1}페이지 처리)`
+    );
+    return this.deduplicateReviews(reviews);
+  }
+
+  /**
+   * 총 리뷰 수와 예상 페이지 수 확인
+   */
+  private async getTotalReviewInfo(
+    page: Page
+  ): Promise<{ totalReviews: number; estimatedPages: number }> {
+    try {
+      const info = await page.evaluate(() => {
+        // 총 리뷰 수 찾기
+        const reviewCountSelectors = [
+          '[data-shp-area="sub.reviewmore"] strong',
+        ];
+
+        let totalReviews = 0;
+
+        for (const selector of reviewCountSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            const text = element.textContent.replaceAll(",", "") || "";
+            const match = text.match(/(\d+)/);
+            if (match) {
+              totalReviews = parseInt(match[1]);
+              console.log(
+                `총 리뷰 수 발견: ${totalReviews} (선택자: ${selector})`
+              );
+              break;
+            }
+          }
+        }
+
+        // 리뷰 수 기반 예상 페이지 계산 (페이지당 보통 20개)
+        const estimatedPages = Math.ceil(totalReviews / 20);
+
+        return { totalReviews, estimatedPages };
+      });
+
+      return info;
+    } catch (error) {
+      console.log("총 리뷰 정보 확인 실패:", error.message);
+      return { totalReviews: 0, estimatedPages: 999 }; // 기본값
+    }
+  }
+
+  /**
+   * 정렬 순서 설정
+   */
+  private async setSortOrder(
+    page: Page,
+    sort: "latest" | "row-rating" | "high-rating"
+  ): Promise<void> {
+    try {
+      console.log(`🔄 정렬 변경: ${sort}`);
+
+      const sortMap = {
+        latest: "최신순",
+        "row-rating": "평점 낮은순",
+        "high-rating": "평점 높은순",
+      };
+
+      const sortButton = page.locator(
+        `[data-shp-area="revlist.sort"][data-shp-contents-id="${sortMap[sort]}"]`
+      );
+
+      if (await sortButton.isVisible({ timeout: 5000 })) {
+        await sortButton.click();
+        await page.waitForLoadState("networkidle", { timeout: 10000 });
+        await this.browserService.randomWait(2000, 4000);
+        console.log(`✅ 정렬 변경 완료: ${sortMap[sort]}`);
+      } else {
+        console.log("⚠️ 정렬 버튼을 찾을 수 없음");
+      }
+    } catch (error) {
+      console.log("정렬 설정 실패:", error.message);
+    }
+  }
+
+  /**
+   * 신규 리뷰만 필터링 (중복 제거)
+   */
+  private filterNewReviews(
+    pageReviews: Review[],
+    existingReviews: Review[]
+  ): Review[] {
+    if (existingReviews.length === 0) return pageReviews;
+
+    const existingIds = new Set(existingReviews.map((r) => r.id));
+    const existingSignatures = new Set(
+      existingReviews.map(
+        (r) => `${r.author}_${r.content.substring(0, 50)}_${r.date}`
+      )
+    );
+
+    return pageReviews.filter((review) => {
+      const signature = `${review.author}_${review.content.substring(0, 50)}_${review.date}`;
+      return !existingIds.has(review.id) && !existingSignatures.has(signature);
+    });
+  }
+
+  /**
+   * 개선된 다음 페이지 이동
+   */
+  private async goToNextPageImproved(
+    page: Page,
+    currentPage: number
+  ): Promise<boolean> {
+    try {
+      console.log("📄 다음 페이지 이동 시도...");
+
+      const nextPageNumber = currentPage + 1;
+
+      // 1. 직접 페이지 번호 클릭 시도
+      const pageNumberButton = page.locator(
+        `a[data-shp-area='revlist.pgn'][data-shp-contents-id='${nextPageNumber}'])`
+      );
+
+      if (await pageNumberButton.isVisible({ timeout: 3000 })) {
+        const isDisabled = await this.isButtonDisabled(pageNumberButton);
+        if (!isDisabled) {
+          console.log(`🔢 ${nextPageNumber}페이지 버튼 클릭`);
+          await this.clickElementSafely(page, pageNumberButton);
+          return await this.verifyPageChange(page, currentPage);
         }
       }
 
-      // 진행률 표시
-      const progress = Math.min((currentPage / maxPages) * 100, 100);
-      console.log(
-        `📊 진행률: ${progress.toFixed(1)}% (${currentPage}/${maxPages})`
+      // 2. "다음" 버튼 시도
+      const nextButton = page.locator(
+        'a[data-shp-area="revlist.pgn"]:has-text("다음")'
       );
-    }
+      if (await nextButton.isVisible({ timeout: 3000 })) {
+        const isDisabled = await this.isButtonDisabled(nextButton);
+        if (!isDisabled) {
+          console.log("▶️ 다음 버튼 클릭");
+          await this.clickElementSafely(page, nextButton);
+          return await this.verifyPageChange(page, currentPage);
+        } else {
+          console.log("📄 다음 버튼이 비활성화됨 - 마지막 페이지");
+          return false;
+        }
+      }
 
-    console.log(`✅ 총 ${reviews.length}개 리뷰 수집 완료`);
-    return this.deduplicateReviews(reviews);
+      // 3. 페이지네이션에서 현재보다 큰 번호 찾기
+      const allPageButtons = page.locator(
+        'a[data-shp-area="revlist.pgn"][data-shp-contents-id]'
+      );
+      const count = await allPageButtons.count();
+
+      for (let i = 0; i < count; i++) {
+        const button = allPageButtons.nth(i);
+        const text = await button.textContent();
+
+        if (text && /^\d+$/.test(text.trim())) {
+          const pageNum = parseInt(text.trim());
+
+          if (pageNum === nextPageNumber) {
+            const isDisabled = await this.isButtonDisabled(button);
+            if (!isDisabled) {
+              console.log(`🎯 페이지 ${pageNum} 버튼 발견 및 클릭`);
+              await this.clickElementSafely(page, button);
+              return await this.verifyPageChange(page, currentPage);
+            }
+          }
+        }
+      }
+
+      console.log("📄 다음 페이지 버튼을 찾을 수 없음 - 마지막 페이지 가능성");
+      return false;
+    } catch (error) {
+      console.error("다음 페이지 이동 실패:", error.message);
+      return false;
+    }
+  }
+
+  /**
+   * 안전한 요소 클릭
+   */
+  private async clickElementSafely(page: Page, element: any): Promise<void> {
+    try {
+      await element.scrollIntoViewIfNeeded();
+      await this.browserService.randomWait(500, 1000);
+
+      await element.hover();
+      await this.browserService.randomWait(300, 600);
+
+      await element.click();
+      await page.waitForLoadState("networkidle", { timeout: 15000 });
+    } catch (error) {
+      console.log("요소 클릭 실패:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 페이지 변경 검증
+   */
+  private async verifyPageChange(
+    page: Page,
+    previousPage: number
+  ): Promise<boolean> {
+    try {
+      // 페이지 로딩 대기
+      await this.browserService.randomWait(2000, 4000);
+
+      // 새로운 페이지 번호 확인
+      const newPageNumber = await this.getCurrentPageNumber(page);
+
+      if (newPageNumber > previousPage) {
+        console.log(`✅ 페이지 이동 성공: ${previousPage} → ${newPageNumber}`);
+        return true;
+      } else {
+        console.log(
+          `❌ 페이지 번호 변경 없음: ${previousPage} → ${newPageNumber}`
+        );
+        return false;
+      }
+    } catch (error) {
+      console.log("페이지 변경 검증 실패:", error.message);
+      return false;
+    }
+  }
+
+  /**
+   * 페이지 에러 복구
+   */
+  private async recoverFromPageError(
+    page: Page,
+    currentPage: number
+  ): Promise<void> {
+    try {
+      console.log(`🔧 ${currentPage}페이지 에러 복구 시도...`);
+
+      // 페이지 새로고침
+      await page.reload({ waitUntil: "networkidle", timeout: 15000 });
+      await this.browserService.randomWait(3000, 5000);
+
+      // 리뷰 탭으로 다시 이동
+      await this.navigateToReviews(page);
+
+      // 해당 페이지로 직접 이동 시도
+      if (currentPage > 1) {
+        await this.goToSpecificPage(page, currentPage);
+      }
+
+      console.log("✅ 페이지 에러 복구 완료");
+    } catch (error) {
+      console.error("페이지 에러 복구 실패:", error.message);
+    }
   }
 
   // 리뷰 요소 로딩 대기
@@ -1553,124 +1763,34 @@ export class NaverCrawler {
       return false;
     }
   }
-
-  // 마지막 페이지 여부 확인
-  private async isLastPage(page: Page): Promise<boolean> {
-    try {
-      // "다음" 버튼이 비활성화되어 있는지 확인
-      const nextButton = page
-        .locator('a[role="button"]:has-text("다음")')
-        .first();
-
-      if ((await nextButton.count()) > 0) {
-        return await this.isButtonDisabled(nextButton);
-      }
-
-      // 현재 페이지가 마지막 페이지 번호와 같은지 확인
-      const allPageButtons = page.locator('a[role="menuitem"]');
-      const count = await allPageButtons.count();
-
-      if (count > 0) {
-        const lastButton = allPageButtons.last();
-        const lastPageText = await lastButton.textContent();
-        const lastPageNumber = parseInt(lastPageText?.trim() || "1");
-
-        const currentPageNumber = await this.getCurrentPageNumber(page);
-        return currentPageNumber >= lastPageNumber;
-      }
-
-      return false;
-    } catch (error) {
-      return false;
-    }
-  }
-
   /**
-   * 다음 페이지로 이동
+   * 특정 페이지로 직접 이동
    */
-  private async goToNextPage(page: Page): Promise<boolean> {
+  private async goToSpecificPage(
+    page: Page,
+    targetPage: number
+  ): Promise<boolean> {
     try {
-      console.log("📄 다음 페이지 탐색 중...");
+      console.log(`🎯 ${targetPage}페이지로 직접 이동...`);
 
-      // 현재 페이지 번호 확인
-      const currentPageNumber = await this.getCurrentPageNumber(page);
-      console.log(`📍 현재 페이지: ${currentPageNumber}`);
+      const pageButton = page.locator(
+        `a[data-shp-area='revlist.pgn'][data-shp-contents-id]:has-text('${targetPage}')`
+      );
 
-      const nextPageNumber = currentPageNumber + 1;
+      if (await pageButton.isVisible({ timeout: 5000 })) {
+        await this.clickElementSafely(page, pageButton);
 
-      // 네이버 쇼핑 특화 셀렉터들
-      const nextSelectors = [
-        // 특정 페이지 번호로 직접 이동
-        `a[data-shp-area='revlist.pgn'][data-shp-contents-id]:has-text('${nextPageNumber}')`,
-      ];
-
-      for (const selector of nextSelectors) {
-        try {
-          const nextButton = page.locator(selector).first();
-          const count = await nextButton.count();
-
-          if (count > 0) {
-            const isVisible = await nextButton.isVisible({ timeout: 2000 });
-
-            if (isVisible) {
-              // 비활성화 여부 체크 (네이버 쇼핑은 클래스로 비활성화 표시)
-              const isDisabled = await this.isButtonDisabled(nextButton);
-
-              if (!isDisabled) {
-                console.log(`➡️ 다음 페이지 버튼 발견: ${selector}`);
-
-                // 페이지 번호 버튼인 경우 해당 번호도 로깅
-                const buttonText = await nextButton.textContent();
-                if (buttonText && /^\d+$/.test(buttonText.trim())) {
-                  console.log(`🔢 ${buttonText}페이지로 이동`);
-                }
-
-                await nextButton.scrollIntoViewIfNeeded();
-                await this.browserService.randomWait(500, 1000);
-
-                await nextButton.hover();
-                await this.browserService.randomWait(300, 600);
-
-                await nextButton.click();
-
-                // 페이지 로딩 대기
-                await page.waitForLoadState("networkidle", { timeout: 10000 });
-
-                // 페이지 변경 확인
-                const newPageNumber = await this.getCurrentPageNumber(page);
-                if (newPageNumber > currentPageNumber) {
-                  console.log(
-                    `✅ 페이지 이동 성공: ${currentPageNumber} → ${newPageNumber}`
-                  );
-                  return true;
-                } else {
-                  console.log(
-                    `⚠️ 페이지 번호가 변경되지 않음: ${currentPageNumber}`
-                  );
-                  continue;
-                }
-              } else {
-                console.log(`⚠️ 버튼이 비활성화됨: ${selector}`);
-              }
-            }
-          }
-        } catch (error) {
-          console.log(`${selector} 시도 실패:`, error.message);
-          continue;
+        const actualPage = await this.getCurrentPageNumber(page);
+        if (actualPage === targetPage) {
+          console.log(`✅ ${targetPage}페이지 이동 성공`);
+          return true;
         }
       }
 
-      // 페이지 끝 확인
-      const isLastPage = await this.isLastPage(page);
-      if (isLastPage) {
-        console.log("📄 마지막 페이지에 도달했습니다.");
-      } else {
-        console.log("📄 다음 페이지 버튼을 찾을 수 없습니다.");
-      }
-
+      console.log(`❌ ${targetPage}페이지로 이동 실패`);
       return false;
     } catch (error) {
-      console.error("다음 페이지 이동 실패:", error);
+      console.error(`특정 페이지(${targetPage}) 이동 실패:`, error.message);
       return false;
     }
   }
