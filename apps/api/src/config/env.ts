@@ -19,6 +19,8 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("*"),
   RATE_LIMIT_MAX: z.coerce.number().positive().default(100),
   BCRYPT_SALT_ROUNDS: z.coerce.number().positive().default(12),
+  NAVER_LOGIN_ID: z.string().min(2).max(100).default(""),
+  NAVER_LOGIN_PASSWORD: z.string().min(6).max(100).default(""),
 });
 
 const parseResult = envSchema.safeParse(process.env);
