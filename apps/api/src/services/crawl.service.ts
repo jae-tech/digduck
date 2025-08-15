@@ -13,8 +13,12 @@ export class CrawlService {
     // return { ...data, crawledAt: new Date() };
   }
 
-  async crawlReviews(url: string) {
-    const reviews = await this.naverCrawler.crawlReviews(url);
+  async crawlReviews(
+    url: string,
+    sort: "ranking" | "latest" | "row-rating" | "high-rating",
+    maxPage: number
+  ) {
+    const reviews = await this.naverCrawler.crawlReviews(url, sort, maxPage);
     return { reviews, crawledAt: new Date() };
   }
 }
