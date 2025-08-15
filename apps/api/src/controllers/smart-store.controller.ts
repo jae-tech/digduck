@@ -37,13 +37,25 @@ export class SmartStoreController {
       type: "object",
       properties: {
         url: { type: "string", format: "uri" },
+        sort: {
+          type: "string",
+          enum: ["ranking", "latest", "high-rating", "low-rating"],
+        },
       },
     },
   })
-  async crawlReviews(request: FastifyRequest<{ Body: { url: string } }>) {
-    const { url } = request.body;
+  async crawlReviews(
+    request: FastifyRequest<{
+      Body: {
+        url: string;
+        sort: "ranking" | "latest" | "row-rating" | "high-rating";
+        maxPage: number;
+      };
+    }>
+  ) {
+    const { url, sort, maxPage } = request.body;
 
-    const data = await crawlService.crawlReviews(url);
+    const data = await crawlService.crawlReviews(url, sort, maxPage);
     return data;
   }
 
