@@ -19,6 +19,6 @@ export class CrawlService {
     maxPage: number
   ) {
     const reviews = await this.naverCrawler.crawlReviews(url, sort, maxPage);
-    return { reviews, crawledAt: new Date() };
+    return { ...reviews, crawledAt: new Date() };
   }
 }
