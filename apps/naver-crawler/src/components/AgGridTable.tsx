@@ -1,9 +1,16 @@
 import React, { useImperativeHandle, useRef } from "react";
-import { AgGridReact } from "ag-grid-react";
-import type { AgGridReactProps } from "ag-grid-react";
+import { AgGridReact, type AgGridReactProps } from "ag-grid-react";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+
+import {
+  AllCommunityModule,
+  ModuleRegistry,
+  themeQuartz,
+} from "ag-grid-community";
+
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 export type AgGridTableRef = {
   api: any;
@@ -14,11 +21,15 @@ export type AgGridTableProps = AgGridReactProps & {
   height?: number | string;
 };
 
+const theme = themeQuartz.withParams({
+  browserColorScheme: "light",
+  headerFontSize: 14,
+});
+
 const AgGridTable = React.forwardRef<AgGridTableRef, AgGridTableProps>(
   ({ height = 500, ...props }, ref) => {
     const gridRef = useRef<AgGridReact>(null);
 
-    // 부모에서 api, columnApi에 접근할 수 있도록 forwardRef
     useImperativeHandle(ref, () => ({
       api: gridRef.current?.api,
       columnApi: gridRef.current?.columnApi,
@@ -26,10 +37,9 @@ const AgGridTable = React.forwardRef<AgGridTableRef, AgGridTableProps>(
 
     return (
       <div
-        className="ag-theme-alpine"
         style={{ height: typeof height === "number" ? `${height}px` : height }}
       >
-        <AgGridReact ref={gridRef} {...props} />
+        <AgGridReact ref={gridRef} theme={theme} {...props} />
       </div>
     );
   }
