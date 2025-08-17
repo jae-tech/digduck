@@ -33,7 +33,7 @@ export class NaverCrawler {
 
   async crawlReviews(
     productUrl: string,
-    sort: "ranking" | "latest" | "row-rating" | "high-rating" = "ranking",
+    sort: "ranking" | "latest" | "high-rating" | "low-rating" = "ranking",
     maxPages: number = 100
   ): Promise<Product> {
     console.log(`🚀 크롤링 시작: ${productUrl}`);
@@ -652,8 +652,9 @@ export class NaverCrawler {
 
       // 상품 페이지 특유의 요소들 확인
       const productIndicators = [
-        '[class*="product"]',
-        '[class*="item"]',
+        '[id*="INTRODUCE"]',
+        '[class*="se-main-container"]',
+        'button[data-shp-area="detailitm.more"]',
         '[class*="goods"]',
         'button[class*="cart"]',
         'button[class*="buy"]',
@@ -1016,7 +1017,7 @@ export class NaverCrawler {
    */
   private async collectAllReviews(
     page: Page,
-    sort: "ranking" | "latest" | "row-rating" | "high-rating",
+    sort: "ranking" | "latest" | "low-rating" | "high-rating",
     maxPages: number
   ): Promise<Review[]> {
     console.log(`📚 전체 리뷰 수집 시작 (최대 ${maxPages}페이지)...`);
@@ -1193,19 +1194,20 @@ export class NaverCrawler {
    */
   private async setSortOrder(
     page: Page,
-    sort: "latest" | "row-rating" | "high-rating"
+    sort: "ranking" | "latest" | "high-rating" | "low-rating"
   ): Promise<void> {
     try {
       console.log(`🔄 정렬 변경: ${sort}`);
 
       const sortMap = {
+        ranking: "랭킹순",
         latest: "최신순",
-        "row-rating": "평점 낮은순",
         "high-rating": "평점 높은순",
+        "low-rating": "평점 낮은순",
       };
 
       const sortButton = page.locator(
-        `a[data-shp-area="revlist.sort"][data-shp-contents-id="${sortMap[sort]}"]`
+        `a[data-shp-area="revlist.sort"][data-shp-area-id="sort"][data-shp-contents-id="${sortMap[sort]}"]`
       );
 
       if (await sortButton.isVisible({ timeout: 5000 })) {
@@ -1592,7 +1594,7 @@ export class NaverCrawler {
                   !src.includes("profile-phinf") && // 프로필 이미지 제외
                   (src.includes("checkout.phinf") ||
                     src.includes("review") ||
-                    (img as HTMLImageElement).alt?.includes("review"))
+                    (img as HTMLImageElement).alt?.includes("review_image"))
                 ) {
                   images.push(src);
                 }
@@ -1619,7 +1621,9 @@ export class NaverCrawler {
 
               // 📌 8. 도움 카운트 (숫자가 포함된 버튼에서)
               let helpfulCount = 0;
-              const buttons = element.querySelectorAll("button");
+              const buttons = element.querySelectorAll(
+                "button[data-shp-area='revlist.helpful']"
+              );
               for (const button of buttons) {
                 const countEl = button.querySelector(
                   '.count, [class*="count"]'
