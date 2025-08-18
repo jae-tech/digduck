@@ -1,4 +1,7 @@
 import React from "react";
+import { Label } from "./ui/label";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { cn } from "@/lib/utils";
 
 interface RadioOption {
   value: string;
@@ -11,7 +14,7 @@ interface LabelRadioProps {
   name: string;
   options: RadioOption[];
   value?: string;
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onValueChange?: (value: string) => void;
   required?: boolean;
   error?: string;
   orientation?: "vertical" | "horizontal";
@@ -23,47 +26,46 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
   name,
   options = [],
   value,
-  onChange,
+  onValueChange,
   required = false,
   error,
   orientation = "vertical",
-  className = "",
+  className,
 }) => {
   return (
-    <div className={`space-y-3 ${className}`}>
-      <label className="text-sm font-medium leading-none text-slate-700">
+    <div className={cn("grid w-full items-center gap-1.5", className)}>
+      <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      <div
-        className={`${orientation === "horizontal" ? "flex flex-wrap gap-6" : "space-y-2"}`}
+        {required && <span className="text-destructive ml-1">*</span>}
+      </Label>
+      <RadioGroup
+        value={value}
+        onValueChange={onValueChange}
+        name={name}
+        className={cn(
+          orientation === "horizontal" ? "flex flex-wrap gap-6" : "grid gap-2"
+        )}
       >
-        {options.map((option, index) => (
-          <div key={index} className="flex items-center space-x-2">
-            <input
-              type="radio"
-              id={`${name}-${index}`}
-              name={name}
+        {options.map((option) => (
+          <div key={option.value} className="flex items-center space-x-2">
+            <RadioGroupItem
               value={option.value}
-              checked={value === option.value}
-              onChange={onChange}
+              id={`${name}-${option.value}`}
               disabled={option.disabled}
-              className="h-4 w-4 rounded-full border-2 border-slate-300 bg-white text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
             />
-            <label
-              htmlFor={`${name}-${index}`}
-              className={`text-sm font-medium leading-none cursor-pointer text-slate-700 hover:text-slate-900 transition-colors duration-200 ${
-                option.disabled
-                  ? "cursor-not-allowed opacity-50"
-                  : "peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              }`}
+            <Label
+              htmlFor={`${name}-${option.value}`}
+              className={cn(
+                "text-sm font-medium leading-none cursor-pointer",
+                option.disabled && "cursor-not-allowed opacity-50"
+              )}
             >
               {option.label}
-            </label>
+            </Label>
           </div>
         ))}
-      </div>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      </RadioGroup>
+      {error && <p className="text-sm font-medium text-destructive">{error}</p>}
     </div>
   );
 };
