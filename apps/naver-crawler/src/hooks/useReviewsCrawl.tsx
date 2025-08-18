@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiHelpers, type ApiError } from "@/lib/apiClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiHelpers } from "@/lib/apiClient";
 
 // API 요청 파라미터 타입
 export interface CrawlParams {
@@ -16,7 +16,6 @@ export interface Review {
   content: string;
   date: string;
   images?: string[];
-  verified: boolean;
 }
 
 // API 응답 타입
@@ -26,6 +25,7 @@ export interface CrawlApiResponse {
   url: string;
   reviews: Review[];
   totalReviews: number;
+  crawledReviews: number;
 }
 
 const fetchReviews = async (params: CrawlParams): Promise<CrawlApiResponse> => {
@@ -63,15 +63,11 @@ export const useReviewsCrawlQuery = (
     gcTime: options?.gcTime ?? 10 * 60 * 1000, // 10분
     refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
     refetchInterval: options?.refetchInterval ?? false,
-    // retry: (failureCount, error) => {
-    //   const apiError = error as ApiError;
-    //   // 4xx 에러는 재시도하지 않음
-    //   if (apiError.status && apiError.status >= 400 && apiError.status < 500) {
-    //     return false;
-    //   }
-    //   // 그 외는 2번까지 재시도
-    //   return failureCount < 2;
-    // },
-    // retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+};
+
+export const useReviewsCrawlMutation = () => {
+  return useMutation({
+    mutationFn: (params: CrawlParams) => fetchReviews(params),
   });
 };
