@@ -86,7 +86,7 @@ export const envConfig = {
     API_URL: "http://localhost:8010",
     LOG_LEVEL: "debug" as const,
     ENABLE_DEVTOOLS: true,
-    TIMEOUT: 60000,
+    TIMEOUT: 1000000,
     RETRY_COUNT: 3,
   },
   staging: {
