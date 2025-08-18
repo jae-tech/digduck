@@ -1,9 +1,6 @@
 import React, { useImperativeHandle, useRef } from "react";
 import { AgGridReact, type AgGridReactProps } from "ag-grid-react";
 
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-alpine.css";
-
 import {
   AllCommunityModule,
   ModuleRegistry,
@@ -21,9 +18,10 @@ export type AgGridTableProps = AgGridReactProps & {
   height?: number | string;
 };
 
+// to use myTheme in an application, pass it to the theme grid option
 const theme = themeQuartz.withParams({
   browserColorScheme: "light",
-  headerFontSize: 14,
+  headerFontSize: 12,
 });
 
 const AgGridTable = React.forwardRef<AgGridTableRef, AgGridTableProps>(
@@ -35,11 +33,23 @@ const AgGridTable = React.forwardRef<AgGridTableRef, AgGridTableProps>(
       columnApi: gridRef.current?.columnApi,
     }));
 
+    const defaultColDef = {
+      sortable: true,
+      filter: true,
+      resizable: true,
+      flex: 1,
+    };
+
     return (
       <div
         style={{ height: typeof height === "number" ? `${height}px` : height }}
       >
-        <AgGridReact ref={gridRef} theme={theme} {...props} />
+        <AgGridReact
+          ref={gridRef}
+          theme={theme}
+          defaultColDef={defaultColDef}
+          {...props}
+        />
       </div>
     );
   }
