@@ -9,7 +9,6 @@ export interface Review {
   content: string;
   date: string;
   images?: string[];
-  verified: boolean;
 }
 
 export interface Product {
@@ -18,6 +17,7 @@ export interface Product {
   url: string;
   reviews: Review[];
   totalReviews: number;
+  crawledReviews: number;
 }
 
 export class NaverCrawler {
@@ -62,8 +62,20 @@ export class NaverCrawler {
         // 5. 리뷰 탭으로 이동
         await this.navigateToReviews(page);
 
+        // 총 리뷰 수 및 예상 페이지 수 가져오기
+        const totalInfo = await this.getTotalReviewInfo(page);
+        const actualMaxPages = Math.min(maxPages, totalInfo.estimatedPages);
+
+        console.log(`📊 총 리뷰 수: ${totalInfo.totalReviews}개`);
+        console.log(`📄 예상 페이지 수: ${totalInfo.estimatedPages}페이지`);
+        console.log(`🎯 크롤링 대상: ${actualMaxPages}페이지`);
+
         // 6. 리뷰 수집
-        const reviews = await this.collectAllReviews(page, sort, maxPages);
+        const reviews = await this.collectAllReviews(
+          page,
+          sort,
+          actualMaxPages
+        );
 
         // 7. 상품 정보 추출
         const productInfo = await this.extractProductInfo(page);
@@ -71,7 +83,8 @@ export class NaverCrawler {
         const result = {
           ...productInfo,
           reviews,
-          totalReviews: reviews.length,
+          crawledReviews: reviews.length,
+          totalReviews: totalInfo.totalReviews,
         };
 
         console.log("✅ 크롤링 성공!");
@@ -430,10 +443,8 @@ export class NaverCrawler {
     console.log("⭐ 비밀번호 필드로 이동...");
 
     await page.keyboard.press("Tab");
-    await this.browserService.randomWait(300, 600);
-
     await page.keyboard.press("Tab");
-    await this.browserService.randomWait(400, 800);
+    await this.browserService.randomWait(300, 600);
 
     const focusedElement = await page.evaluate(() => {
       const element = document.activeElement;
@@ -944,7 +955,7 @@ export class NaverCrawler {
     console.log("📝 리뷰 탭으로 이동...");
 
     try {
-      const reviewSelectors = ['[data-name="REVIEW"]'];
+      const reviewSelectors = ['a[href="#REVIEW"]'];
       let reviewClicked = false;
 
       for (const selector of reviewSelectors) {
@@ -972,7 +983,8 @@ export class NaverCrawler {
       }
 
       if (reviewClicked) {
-        await page.waitForLoadState("networkidle");
+        console.log("✅ 리뷰 탭 클릭 성공");
+        await page.waitForLoadState("networkidle", { timeout: 45000 });
         await this.browserService.randomWait(2000, 4000);
         console.log("✅ 리뷰 탭 이동 성공");
       } else {
@@ -1022,18 +1034,10 @@ export class NaverCrawler {
   ): Promise<Review[]> {
     console.log(`📚 전체 리뷰 수집 시작 (최대 ${maxPages}페이지)...`);
 
-    // 1. 총 리뷰 수와 예상 페이지 수 확인
-    const totalInfo = await this.getTotalReviewInfo(page);
-    const actualMaxPages = Math.min(maxPages, totalInfo.estimatedPages);
-
-    console.log(`📊 총 리뷰 수: ${totalInfo.totalReviews}개`);
-    console.log(`📄 예상 페이지 수: ${totalInfo.estimatedPages}페이지`);
-    console.log(`🎯 크롤링 대상: ${actualMaxPages}페이지`);
-
     const reviews: Review[] = [];
+    const maxConsecutiveFailures = 3;
     let currentPage = 1;
     let consecutiveFailures = 0;
-    const maxConsecutiveFailures = 3;
     let lastReviewCount = 0;
 
     // 2. 정렬 설정
@@ -1042,8 +1046,8 @@ export class NaverCrawler {
     }
 
     // 3. 페이지별 리뷰 수집
-    while (currentPage <= actualMaxPages) {
-      console.log(`\n📄 ${currentPage}/${actualMaxPages} 페이지 수집 중...`);
+    while (currentPage <= maxPages) {
+      console.log(`\n📄 ${currentPage}/${maxPages} 페이지 수집 중...`);
 
       try {
         // 페이지 로딩 대기
@@ -1084,7 +1088,7 @@ export class NaverCrawler {
           );
 
           // 진행률 표시
-          const progress = (reviews.length / totalInfo.totalReviews) * 100;
+          const progress = (reviews.length / (maxPages * 20)) * 100;
           console.log(`📊 진행률: ${Math.min(progress, 100).toFixed(1)}%`);
 
           // 같은 리뷰 수가 연속으로 나오면 마지막 페이지 가능성
@@ -1095,7 +1099,7 @@ export class NaverCrawler {
         }
 
         // 다음 페이지 이동 시도
-        if (currentPage < actualMaxPages) {
+        if (currentPage < maxPages) {
           const hasNextPage = await this.goToNextPageImproved(
             page,
             currentPage
@@ -1141,7 +1145,7 @@ export class NaverCrawler {
     }
 
     console.log(
-      `\n✅ 총 ${reviews.length}개 리뷰 수집 완료 (${currentPage - 1}페이지 처리)`
+      `\n✅ 총 ${reviews.length}개 리뷰 수집 완료 (${currentPage}페이지 처리)`
     );
     return this.deduplicateReviews(reviews);
   }
@@ -1643,7 +1647,6 @@ export class NaverCrawler {
                 rating,
                 content,
                 date,
-                verified: true, // 네이버는 구매 확인된 리뷰만
                 images: images.length > 0 ? images : undefined,
                 productInfo: productInfo || undefined,
                 helpfulCount: helpfulCount || undefined,
