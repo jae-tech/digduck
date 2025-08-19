@@ -1,4 +1,4 @@
-import { Page } from "playwright";
+import { Locator, Page } from "playwright";
 import { BrowserService } from "./browser";
 import { env } from "@/config/env";
 
@@ -16,8 +16,14 @@ export interface Product {
   name: string;
   url: string;
   reviews: Review[];
+}
+
+export interface CrawlResult {
+  product: Product;
   totalReviews: number;
   crawledReviews: number;
+  crawledPages: number;
+  duration: number;
 }
 
 export class NaverCrawler {
@@ -35,8 +41,9 @@ export class NaverCrawler {
     productUrl: string,
     sort: "ranking" | "latest" | "high-rating" | "low-rating" = "ranking",
     maxPages: number = 100
-  ): Promise<Product> {
+  ): Promise<CrawlResult> {
     console.log(`🚀 크롤링 시작: ${productUrl}`);
+    const startTime = Date.now();
 
     let page = await this.browserService.createStealthPage();
     let retryCount = 0;
@@ -80,11 +87,15 @@ export class NaverCrawler {
         // 7. 상품 정보 추출
         const productInfo = await this.extractProductInfo(page);
 
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+
         const result = {
-          ...productInfo,
-          reviews,
-          crawledReviews: reviews.length,
+          product: { ...productInfo, reviews },
           totalReviews: totalInfo.totalReviews,
+          crawledReviews: reviews.length,
+          crawledPages: actualMaxPages,
+          duration,
         };
 
         console.log("✅ 크롤링 성공!");
@@ -1584,7 +1595,9 @@ export class NaverCrawler {
 
               // 📌 6. 이미지 추출 (img 태그에서)
               const images: string[] = [];
-              const imgEls = element.querySelectorAll("img");
+              const imgEls = element.querySelectorAll(
+                "img[alt='review_image']"
+              );
 
               for (const img of imgEls) {
                 const src =
@@ -1626,7 +1639,7 @@ export class NaverCrawler {
               // 📌 8. 도움 카운트 (숫자가 포함된 버튼에서)
               let helpfulCount = 0;
               const buttons = element.querySelectorAll(
-                "button[data-shp-area='revlist.helpful']"
+                "button[data-shp-area='revlist.like']"
               );
               for (const button of buttons) {
                 const countEl = button.querySelector(
