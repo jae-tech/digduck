@@ -15,11 +15,11 @@ export interface Product {
   id: string;
   name: string;
   url: string;
-  reviews: Review[];
 }
 
 export interface CrawlResult {
   product: Product;
+  reviews: Review[];
   totalReviews: number;
   crawledReviews: number;
   crawledPages: number;
@@ -77,21 +77,21 @@ export class NaverCrawler {
         console.log(`📄 예상 페이지 수: ${totalInfo.estimatedPages}페이지`);
         console.log(`🎯 크롤링 대상: ${actualMaxPages}페이지`);
 
-        // 6. 리뷰 수집
-        const reviews = await this.collectAllReviews(
-          page,
-          sort,
-          actualMaxPages
-        );
+        // 6. 정렬 설정
+        await this.setSortOrder(page, sort);
 
-        // 7. 상품 정보 추출
+        // 7. 리뷰 수집
+        const reviews = await this.collectAllReviews(page, actualMaxPages);
+
+        // 8. 상품 정보 추출
         const productInfo = await this.extractProductInfo(page);
 
         const endTime = Date.now();
         const duration = endTime - startTime;
 
         const result = {
-          product: { ...productInfo, reviews },
+          product: { ...productInfo },
+          reviews,
           totalReviews: totalInfo.totalReviews,
           crawledReviews: reviews.length,
           crawledPages: actualMaxPages,
@@ -966,7 +966,10 @@ export class NaverCrawler {
     console.log("📝 리뷰 탭으로 이동...");
 
     try {
-      const reviewSelectors = ['a[href="#REVIEW"]'];
+      const reviewSelectors = [
+        'a[data-name="REVIEW"][data-shp-area="tab.select"]',
+        'a[href="#REVIEW"]',
+      ];
       let reviewClicked = false;
 
       for (const selector of reviewSelectors) {
@@ -995,8 +998,8 @@ export class NaverCrawler {
 
       if (reviewClicked) {
         console.log("✅ 리뷰 탭 클릭 성공");
-        await page.waitForLoadState("networkidle", { timeout: 45000 });
-        await this.browserService.randomWait(2000, 4000);
+        // await page.waitForLoadState("networkidle", { timeout: 45000 });
+        // await this.browserService.randomWait(2000, 4000);
         console.log("✅ 리뷰 탭 이동 성공");
       } else {
         console.log(
@@ -1040,7 +1043,6 @@ export class NaverCrawler {
    */
   private async collectAllReviews(
     page: Page,
-    sort: "ranking" | "latest" | "low-rating" | "high-rating",
     maxPages: number
   ): Promise<Review[]> {
     console.log(`📚 전체 리뷰 수집 시작 (최대 ${maxPages}페이지)...`);
@@ -1050,11 +1052,6 @@ export class NaverCrawler {
     let currentPage = 1;
     let consecutiveFailures = 0;
     let lastReviewCount = 0;
-
-    // 2. 정렬 설정
-    if (sort !== "ranking") {
-      await this.setSortOrder(page, sort);
-    }
 
     // 3. 페이지별 리뷰 수집
     while (currentPage <= maxPages) {
@@ -1227,8 +1224,8 @@ export class NaverCrawler {
 
       if (await sortButton.isVisible({ timeout: 5000 })) {
         await sortButton.click();
-        await page.waitForLoadState("networkidle", { timeout: 10000 });
-        await this.browserService.randomWait(2000, 4000);
+        // await page.waitForLoadState("networkidle", { timeout: 10000 });
+        // await this.browserService.randomWait(2000, 4000);
         console.log(`✅ 정렬 변경 완료: ${sortMap[sort]}`);
       } else {
         console.log("⚠️ 정렬 버튼을 찾을 수 없음");
