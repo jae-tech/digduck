@@ -9,12 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as CrawlerRouteImport } from './routes/crawler'
+import { Route as LicenseRouteImport } from './routes/license'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedCrawlerRouteImport } from './routes/_authenticated/crawler'
 
-const CrawlerRoute = CrawlerRouteImport.update({
-  id: '/crawler',
-  path: '/crawler',
+const LicenseRoute = LicenseRouteImport.update({
+  id: '/license',
+  path: '/license',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,40 +23,49 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedCrawlerRoute = AuthenticatedCrawlerRouteImport.update({
+  id: '/_authenticated/crawler',
+  path: '/crawler',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/crawler': typeof CrawlerRoute
+  '/license': typeof LicenseRoute
+  '/crawler': typeof AuthenticatedCrawlerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/crawler': typeof CrawlerRoute
+  '/license': typeof LicenseRoute
+  '/crawler': typeof AuthenticatedCrawlerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/crawler': typeof CrawlerRoute
+  '/license': typeof LicenseRoute
+  '/_authenticated/crawler': typeof AuthenticatedCrawlerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/crawler'
+  fullPaths: '/' | '/license' | '/crawler'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/crawler'
-  id: '__root__' | '/' | '/crawler'
+  to: '/' | '/license' | '/crawler'
+  id: '__root__' | '/' | '/license' | '/_authenticated/crawler'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CrawlerRoute: typeof CrawlerRoute
+  LicenseRoute: typeof LicenseRoute
+  AuthenticatedCrawlerRoute: typeof AuthenticatedCrawlerRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/crawler': {
-      id: '/crawler'
-      path: '/crawler'
-      fullPath: '/crawler'
-      preLoaderRoute: typeof CrawlerRouteImport
+    '/license': {
+      id: '/license'
+      path: '/license'
+      fullPath: '/license'
+      preLoaderRoute: typeof LicenseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/crawler': {
+      id: '/_authenticated/crawler'
+      path: '/crawler'
+      fullPath: '/crawler'
+      preLoaderRoute: typeof AuthenticatedCrawlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CrawlerRoute: CrawlerRoute,
+  LicenseRoute: LicenseRoute,
+  AuthenticatedCrawlerRoute: AuthenticatedCrawlerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
