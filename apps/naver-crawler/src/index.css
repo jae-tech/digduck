@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* CSS Custom Properties for shadcn/ui */
 @layer base {
   :root {
     --background: 0 0% 100%;
