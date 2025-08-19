@@ -57,7 +57,6 @@ const LabelInput: React.FC<LabelInputProps> = ({
             "focus:border-primary/50 focus:bg-background/80",
             error && "border-destructive focus:border-destructive",
             success && "border-green-500 focus:border-green-500",
-            variant === "glass" && "glass-card border-white/20",
             className
           )}
           {...props}
