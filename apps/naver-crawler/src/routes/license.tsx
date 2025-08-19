@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { LicenseKeyScreen } from "../feature/license";
-import { useLicenseStore } from "../feature/license/store/licenseStore";
-import { type LicenseVerificationResult } from "../feature/license/types/license.types";
+import { LicenseKeyScreen } from "../features/license";
+import { useLicenseStore } from "../features/license/store/licenseStore";
+import { type LicenseVerificationResult } from "../features/license/types/license.types";
 
 export const Route = createFileRoute("/license")({
   component: LicenseRoute,

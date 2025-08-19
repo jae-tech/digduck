@@ -1,7 +1,7 @@
 import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { useEffect } from "react";
-import { useLicenseStore } from "../feature/license/store/licenseStore";
+import { useLicenseStore } from "../features/license/store/licenseStore";
 import MainLayout from "@/components/layout/MainLayout";
 
 interface RootContext {

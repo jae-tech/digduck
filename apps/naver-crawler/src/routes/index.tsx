@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useLicenseStore } from "../feature/license/store/licenseStore";
+import { useLicenseStore } from "../features/license/store/licenseStore";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
