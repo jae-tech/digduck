@@ -20,12 +20,12 @@ export interface Review {
 
 // API 응답 타입
 export interface CrawlApiResponse {
-  id: string;
-  name: string;
-  url: string;
+  product: { id: string; name: string; url: string };
   reviews: Review[];
   totalReviews: number;
   crawledReviews: number;
+  crawledPages: number;
+  duration: number;
 }
 
 const fetchReviews = async (params: CrawlParams): Promise<CrawlApiResponse> => {
