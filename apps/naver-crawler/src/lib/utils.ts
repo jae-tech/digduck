@@ -5,8 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatMilliSecondsToMinutes(num: number) {
-  const minutes = Math.floor(num / 60000);
-  const seconds = Math.floor((num % 60000) / 1000);
+export function formatMilliSecondsToMinutes(milliseconds: number) {
+  const minutes = Math.floor(milliseconds / 60000);
+  const seconds = Math.floor((milliseconds % 60000) / 1000);
   return `${minutes}분 ${seconds}초`;
 }
