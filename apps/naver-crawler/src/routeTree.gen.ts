@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LicenseRouteImport } from './routes/license'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedCrawlerRouteImport } from './routes/_authenticated/crawler'
+import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 
 const LicenseRoute = LicenseRouteImport.update({
   id: '/license',
@@ -28,35 +29,50 @@ const AuthenticatedCrawlerRoute = AuthenticatedCrawlerRouteImport.update({
   path: '/crawler',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminDashboardRoute =
+  AuthenticatedAdminDashboardRouteImport.update({
+    id: '/_authenticated/admin/dashboard',
+    path: '/admin/dashboard',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/license': typeof LicenseRoute
   '/crawler': typeof AuthenticatedCrawlerRoute
+  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/license': typeof LicenseRoute
   '/crawler': typeof AuthenticatedCrawlerRoute
+  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/license': typeof LicenseRoute
   '/_authenticated/crawler': typeof AuthenticatedCrawlerRoute
+  '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/license' | '/crawler'
+  fullPaths: '/' | '/license' | '/crawler' | '/admin/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/license' | '/crawler'
-  id: '__root__' | '/' | '/license' | '/_authenticated/crawler'
+  to: '/' | '/license' | '/crawler' | '/admin/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/license'
+    | '/_authenticated/crawler'
+    | '/_authenticated/admin/dashboard'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LicenseRoute: typeof LicenseRoute
   AuthenticatedCrawlerRoute: typeof AuthenticatedCrawlerRoute
+  AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +98,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrawlerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/dashboard': {
+      id: '/_authenticated/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +112,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LicenseRoute: LicenseRoute,
   AuthenticatedCrawlerRoute: AuthenticatedCrawlerRoute,
+  AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
