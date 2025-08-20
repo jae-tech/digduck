@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { LicenseKeyScreen } from "../features/license";
-import { useLicenseStore } from "../features/license/store/licenseStore";
+import { useLicenseStore } from "../features/license/store/license.store";
 import { type LicenseVerificationResult } from "../features/license/types/license.types";
+import CenteredLayout from "@/components/layout/CenteredLayout";
 
 export const Route = createFileRoute("/license")({
   component: LicenseRoute,
@@ -12,7 +13,7 @@ function LicenseRoute() {
   const navigate = useNavigate();
   const { isLicenseValid, setLicenseData } = useLicenseStore();
 
-  // 이미 라이센스가 유효하다면 크롤러 페이지로 리다이렉트
+  // 이미 라이센스가 유효하다면 대시보드로 리다이렉트
   useEffect(() => {
     if (isLicenseValid) {
       navigate({ to: "/crawler" });
@@ -25,9 +26,13 @@ function LicenseRoute() {
   ) => {
     setLicenseData(licenseKey, result);
 
-    // 성공 시 크롤러 페이지로 이동
+    // 사용자 타입에 따라 다른 페이지로 이동
     setTimeout(() => {
-      navigate({ to: "/crawler" });
+      if (result.userType === "admin") {
+        navigate({ to: "/admin/dashboard" });
+      } else {
+        navigate({ to: "/crawler" });
+      }
     }, 1500);
   };
 
@@ -37,9 +42,11 @@ function LicenseRoute() {
   };
 
   return (
-    <LicenseKeyScreen
-      onLicenseVerified={handleLicenseVerified}
-      onError={handleLicenseError}
-    />
+    <CenteredLayout>
+      <LicenseKeyScreen
+        onLicenseVerified={handleLicenseVerified}
+        onError={handleLicenseError}
+      />
+    </CenteredLayout>
   );
 }
