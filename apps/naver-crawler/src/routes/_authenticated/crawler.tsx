@@ -24,7 +24,7 @@ import { useReviewsCrawlMutation } from "@/hooks/useReviewsCrawl";
 import LabelRadio from "@/components/LabelRadio";
 import LabelInput from "@/components/LabelInput";
 import { formatMilliSecondsToMinutes } from "@/lib/utils";
-import FluidLayout from "@/components/layout/FluidLayout";
+import FluidLayout from "@/components/layouts/FluidLayout";
 
 const VALID_URL = ["smartstore.naver.com", "brand.naver.com"];
 
