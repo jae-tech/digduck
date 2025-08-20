@@ -19,11 +19,12 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import AgGridTable from "../components/AgGridTable";
-import { useReviewsCrawlMutation } from "../hooks/useReviewsCrawl";
-import LabelRadio from "../components/LabelRadio";
-import LabelInput from "../components/LabelInput";
+import AgGridTable from "@/components/AgGridTable";
+import { useReviewsCrawlMutation } from "@/hooks/useReviewsCrawl";
+import LabelRadio from "@/components/LabelRadio";
+import LabelInput from "@/components/LabelInput";
 import { formatMilliSecondsToMinutes } from "@/lib/utils";
+import FluidLayout from "@/components/layout/FluidLayout";
 
 const VALID_URL = ["smartstore.naver.com", "brand.naver.com"];
 
@@ -102,7 +103,7 @@ function CrawlerComponent() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <FluidLayout>
       <div className="space-y-6">
         {/* 크롤링 설정 */}
         <Card className="bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-800">
@@ -145,7 +146,15 @@ function CrawlerComponent() {
                   label="정렬 기준"
                   name="sort"
                   value={sort}
-                  onValueChange={setSort}
+                  onValueChange={(value) =>
+                    setSort(
+                      value as
+                        | "ranking"
+                        | "latest"
+                        | "high-rating"
+                        | "low-rating"
+                    )
+                  }
                   options={[
                     {
                       value: "ranking",
@@ -285,7 +294,8 @@ function CrawlerComponent() {
                     </p>
                     <p>
                       <span className="font-medium">페이지:</span> 최대{" "}
-                      {maxPage}페이지
+                      {maxPage}
+                      페이지
                     </p>
                   </div>
                 </div>
@@ -427,6 +437,6 @@ function CrawlerComponent() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </FluidLayout>
   );
 }
