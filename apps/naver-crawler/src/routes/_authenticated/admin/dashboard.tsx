@@ -1,4 +1,4 @@
-import AdminLayout from "@/components/layout/AdminLayout";
+import AdminLayout from "@/components/layouts/AdminLayout";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
