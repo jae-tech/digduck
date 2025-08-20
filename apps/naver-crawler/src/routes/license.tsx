@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { LicenseKeyScreen } from "../features/license";
 import { useLicenseStore } from "../features/license/store/license.store";
 import { type LicenseVerificationResult } from "../features/license/types/license.types";
@@ -11,14 +10,7 @@ export const Route = createFileRoute("/license")({
 
 function LicenseRoute() {
   const navigate = useNavigate();
-  const { isLicenseValid, setLicenseData } = useLicenseStore();
-
-  // 이미 라이센스가 유효하다면 대시보드로 리다이렉트
-  useEffect(() => {
-    if (isLicenseValid) {
-      navigate({ to: "/crawler" });
-    }
-  }, [isLicenseValid, navigate]);
+  const { setLicenseData } = useLicenseStore();
 
   const handleLicenseVerified = (
     licenseKey: string,
