@@ -998,8 +998,8 @@ export class NaverCrawler {
 
       if (reviewClicked) {
         console.log("✅ 리뷰 탭 클릭 성공");
-        // await page.waitForLoadState("networkidle", { timeout: 45000 });
-        // await this.browserService.randomWait(2000, 4000);
+        await page.waitForLoadState("networkidle", { timeout: 45000 });
+        await this.browserService.randomWait(2000, 4000);
         console.log("✅ 리뷰 탭 이동 성공");
       } else {
         console.log(
@@ -1224,8 +1224,8 @@ export class NaverCrawler {
 
       if (await sortButton.isVisible({ timeout: 5000 })) {
         await sortButton.click();
-        // await page.waitForLoadState("networkidle", { timeout: 10000 });
-        // await this.browserService.randomWait(2000, 4000);
+        await page.waitForLoadState("networkidle", { timeout: 10000 });
+        await this.browserService.randomWait(2000, 4000);
         console.log(`✅ 정렬 변경 완료: ${sortMap[sort]}`);
       } else {
         console.log("⚠️ 정렬 버튼을 찾을 수 없음");
