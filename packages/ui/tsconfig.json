@@ -1,0 +1,14 @@
+{
+  "extends": "@repo/typescript-config/react-library.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@repo/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "../../apps/naver-crawler/src/components/ui"],
+  "exclude": ["node_modules", "dist"]
+}
