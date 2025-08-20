@@ -7,10 +7,12 @@ export interface LicenseKey {
 export interface LicenseVerificationResult {
   success: boolean;
   message?: string;
+  userType: "user" | "admin";
   licenseInfo?: {
     expiryDate: string;
     userEmail: string;
     productName: string;
+    phoneNumber?: string;
   };
 }
 
@@ -19,6 +21,7 @@ export interface LicenseState {
   isVerifying: boolean;
   error: string;
   isValid: boolean;
+  userType?: "user" | "admin";
   verificationResult?: LicenseVerificationResult;
 }
 
