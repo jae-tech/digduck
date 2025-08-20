@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LicenseRouteImport } from './routes/license'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedCrawlerRouteImport } from './routes/_authenticated/crawler'
+import { Route as AuthenticatedAdminLicenseManagerRouteImport } from './routes/_authenticated/admin/license-manager'
+import { Route as AuthenticatedAdminLicenseGeneratorRouteImport } from './routes/_authenticated/admin/license-generator'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 
 const LicenseRoute = LicenseRouteImport.update({
@@ -29,6 +31,18 @@ const AuthenticatedCrawlerRoute = AuthenticatedCrawlerRouteImport.update({
   path: '/crawler',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminLicenseManagerRoute =
+  AuthenticatedAdminLicenseManagerRouteImport.update({
+    id: '/_authenticated/admin/license-manager',
+    path: '/admin/license-manager',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedAdminLicenseGeneratorRoute =
+  AuthenticatedAdminLicenseGeneratorRouteImport.update({
+    id: '/_authenticated/admin/license-generator',
+    path: '/admin/license-generator',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminDashboardRoute =
   AuthenticatedAdminDashboardRouteImport.update({
     id: '/_authenticated/admin/dashboard',
@@ -41,12 +55,16 @@ export interface FileRoutesByFullPath {
   '/license': typeof LicenseRoute
   '/crawler': typeof AuthenticatedCrawlerRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/admin/license-generator': typeof AuthenticatedAdminLicenseGeneratorRoute
+  '/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/license': typeof LicenseRoute
   '/crawler': typeof AuthenticatedCrawlerRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/admin/license-generator': typeof AuthenticatedAdminLicenseGeneratorRoute
+  '/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -54,18 +72,34 @@ export interface FileRoutesById {
   '/license': typeof LicenseRoute
   '/_authenticated/crawler': typeof AuthenticatedCrawlerRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/_authenticated/admin/license-generator': typeof AuthenticatedAdminLicenseGeneratorRoute
+  '/_authenticated/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/license' | '/crawler' | '/admin/dashboard'
+  fullPaths:
+    | '/'
+    | '/license'
+    | '/crawler'
+    | '/admin/dashboard'
+    | '/admin/license-generator'
+    | '/admin/license-manager'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/license' | '/crawler' | '/admin/dashboard'
+  to:
+    | '/'
+    | '/license'
+    | '/crawler'
+    | '/admin/dashboard'
+    | '/admin/license-generator'
+    | '/admin/license-manager'
   id:
     | '__root__'
     | '/'
     | '/license'
     | '/_authenticated/crawler'
     | '/_authenticated/admin/dashboard'
+    | '/_authenticated/admin/license-generator'
+    | '/_authenticated/admin/license-manager'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -73,6 +107,8 @@ export interface RootRouteChildren {
   LicenseRoute: typeof LicenseRoute
   AuthenticatedCrawlerRoute: typeof AuthenticatedCrawlerRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
+  AuthenticatedAdminLicenseGeneratorRoute: typeof AuthenticatedAdminLicenseGeneratorRoute
+  AuthenticatedAdminLicenseManagerRoute: typeof AuthenticatedAdminLicenseManagerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -98,6 +134,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrawlerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/license-manager': {
+      id: '/_authenticated/admin/license-manager'
+      path: '/admin/license-manager'
+      fullPath: '/admin/license-manager'
+      preLoaderRoute: typeof AuthenticatedAdminLicenseManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin/license-generator': {
+      id: '/_authenticated/admin/license-generator'
+      path: '/admin/license-generator'
+      fullPath: '/admin/license-generator'
+      preLoaderRoute: typeof AuthenticatedAdminLicenseGeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/dashboard': {
       id: '/_authenticated/admin/dashboard'
       path: '/admin/dashboard'
@@ -113,6 +163,9 @@ const rootRouteChildren: RootRouteChildren = {
   LicenseRoute: LicenseRoute,
   AuthenticatedCrawlerRoute: AuthenticatedCrawlerRoute,
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
+  AuthenticatedAdminLicenseGeneratorRoute:
+    AuthenticatedAdminLicenseGeneratorRoute,
+  AuthenticatedAdminLicenseManagerRoute: AuthenticatedAdminLicenseManagerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
