@@ -6,7 +6,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Shield } from "lucide-react";
 
 interface LicenseKeyInputProps {
   value: string;
@@ -23,60 +23,146 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
   isValid = false,
   error,
 }) => {
+  const isAdminLicense = value.startsWith("ADMIN");
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 w-full">
       <div className="text-center">
         <Label className="text-sm font-medium text-gray-700">
           라이센스 코드 (16자리)
         </Label>
+        {isAdminLicense && (
+          <div className="flex items-center justify-center mt-1 text-xs text-orange-600">
+            <Shield className="w-3 h-3 mr-1" />
+            관리자 라이센스 감지됨
+          </div>
+        )}
       </div>
 
-      <div className="flex justify-center">
-        <div className="relative">
-          <InputOTP
-            maxLength={16}
-            value={value}
-            onChange={onChange}
-            disabled={disabled}
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-            </InputOTPGroup>
-            <InputOTPSeparator />
-            <InputOTPGroup>
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-              <InputOTPSlot index={6} />
-              <InputOTPSlot index={7} />
-            </InputOTPGroup>
-            <InputOTPSeparator />
-            <InputOTPGroup>
-              <InputOTPSlot index={8} />
-              <InputOTPSlot index={9} />
-              <InputOTPSlot index={10} />
-              <InputOTPSlot index={11} />
-            </InputOTPGroup>
-            <InputOTPSeparator />
-            <InputOTPGroup>
-              <InputOTPSlot index={12} />
-              <InputOTPSlot index={13} />
-              <InputOTPSlot index={14} />
-              <InputOTPSlot index={15} />
-            </InputOTPGroup>
-          </InputOTP>
+      {/* 완전 반응형 - 화면 크기에 따라 조정 */}
+      <div className="w-full">
+        {/* 큰 화면 (md 이상) - 한 줄로 표시 */}
+        <div className="hidden md:flex justify-center">
+          <div className="relative flex items-center">
+            <InputOTP
+              maxLength={16}
+              value={value}
+              onChange={onChange}
+              disabled={disabled}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot
+                  index={0}
+                  className={`w-8 h-10 text-sm ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+                <InputOTPSlot
+                  index={1}
+                  className={`w-8 h-10 text-sm ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+                <InputOTPSlot
+                  index={2}
+                  className={`w-8 h-10 text-sm ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+                <InputOTPSlot
+                  index={3}
+                  className={`w-8 h-10 text-sm ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup>
+                <InputOTPSlot
+                  index={4}
+                  className={`w-8 h-10 text-sm ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+                <InputOTPSlot index={5} className="w-8 h-10 text-sm" />
+                <InputOTPSlot index={6} className="w-8 h-10 text-sm" />
+                <InputOTPSlot index={7} className="w-8 h-10 text-sm" />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup>
+                <InputOTPSlot index={8} className="w-8 h-10 text-sm" />
+                <InputOTPSlot index={9} className="w-8 h-10 text-sm" />
+                <InputOTPSlot index={10} className="w-8 h-10 text-sm" />
+                <InputOTPSlot index={11} className="w-8 h-10 text-sm" />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup>
+                <InputOTPSlot index={12} className="w-8 h-10 text-sm" />
+                <InputOTPSlot index={13} className="w-8 h-10 text-sm" />
+                <InputOTPSlot index={14} className="w-8 h-10 text-sm" />
+                <InputOTPSlot index={15} className="w-8 h-10 text-sm" />
+              </InputOTPGroup>
+            </InputOTP>
+            {isValid && (
+              <CheckCircle2 className="ml-3 w-5 h-5 text-green-500" />
+            )}
+          </div>
+        </div>
 
-          {isValid && (
-            <CheckCircle2 className="absolute -right-8 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
-          )}
+        {/* 작은 화면 (md 미만) - 더 작은 크기로 한 줄 */}
+        <div className="md:hidden flex justify-center">
+          <div className="relative flex items-center scale-90 origin-center">
+            <InputOTP
+              maxLength={16}
+              value={value}
+              onChange={onChange}
+              disabled={disabled}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot
+                  index={0}
+                  className={`w-6 h-8 text-xs ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+                <InputOTPSlot
+                  index={1}
+                  className={`w-6 h-8 text-xs ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+                <InputOTPSlot
+                  index={2}
+                  className={`w-6 h-8 text-xs ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+                <InputOTPSlot
+                  index={3}
+                  className={`w-6 h-8 text-xs ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+              </InputOTPGroup>
+              <InputOTPSeparator className="mx-0.5" />
+              <InputOTPGroup>
+                <InputOTPSlot
+                  index={4}
+                  className={`w-6 h-8 text-xs ${isAdminLicense ? "bg-orange-50 border-orange-200" : ""}`}
+                />
+                <InputOTPSlot index={5} className="w-6 h-8 text-xs" />
+                <InputOTPSlot index={6} className="w-6 h-8 text-xs" />
+                <InputOTPSlot index={7} className="w-6 h-8 text-xs" />
+              </InputOTPGroup>
+              <InputOTPSeparator className="mx-0.5" />
+              <InputOTPGroup>
+                <InputOTPSlot index={8} className="w-6 h-8 text-xs" />
+                <InputOTPSlot index={9} className="w-6 h-8 text-xs" />
+                <InputOTPSlot index={10} className="w-6 h-8 text-xs" />
+                <InputOTPSlot index={11} className="w-6 h-8 text-xs" />
+              </InputOTPGroup>
+              <InputOTPSeparator className="mx-0.5" />
+              <InputOTPGroup>
+                <InputOTPSlot index={12} className="w-6 h-8 text-xs" />
+                <InputOTPSlot index={13} className="w-6 h-8 text-xs" />
+                <InputOTPSlot index={14} className="w-6 h-8 text-xs" />
+                <InputOTPSlot index={15} className="w-6 h-8 text-xs" />
+              </InputOTPGroup>
+            </InputOTP>
+            {isValid && (
+              <CheckCircle2 className="ml-2 w-4 h-4 text-green-500" />
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="text-center">
+      <div className="text-center space-y-1 px-2">
         <p className="text-xs text-gray-500">
-          구매 확인 이메일에서 16자리 숫자 코드를 확인하세요
+          {isAdminLicense
+            ? "ADMIN + 휴대폰번호 (11자리) 형식입니다"
+            : "구매 확인 이메일에서 16자리 영문숫자 코드를 확인하세요"}
         </p>
       </div>
     </div>
