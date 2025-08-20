@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { LicenseVerificationResult } from "../types/license.types";
+import { type LicenseVerificationResult } from "../types/license.types";
 
 interface LicenseStore {
   isLicenseValid: boolean;
