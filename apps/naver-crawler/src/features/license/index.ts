@@ -7,7 +7,7 @@ export { LicenseVerificationStatus } from "./components/LicenseVerificationStatu
 export { useLicenseVerification } from "./hooks/useLicenseVerification";
 
 // Services
-export { LicenseService } from "./services/licenseService";
+export { LicenseService } from "./services/license.service";
 
 // Types
 export type {
