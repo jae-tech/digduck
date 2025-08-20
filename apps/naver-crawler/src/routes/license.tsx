@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { LicenseKeyScreen } from "../features/license";
 import { useLicenseStore } from "../features/license/store/license.store";
 import { type LicenseVerificationResult } from "../features/license/types/license.types";
-import CenteredLayout from "@/components/layout/CenteredLayout";
+import CenteredLayout from "@/components/layouts/CenteredLayout";
 
 export const Route = createFileRoute("/license")({
   component: LicenseRoute,
