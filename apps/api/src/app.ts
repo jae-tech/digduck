@@ -6,14 +6,14 @@ import postgres from "@fastify/postgres";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import path from "path";
 import prismaPlugin from "./plugins/prisma";
 
 import { env } from "@/config/env";
-import { registerRoutes } from "@/routes";
+import { autoRegisterControllers } from "@/utils/auto-register";
 import { errorHandler } from "@/middlewares/error.middleware";
 import { setupAuthDecorator } from "@/middlewares/auth.middleware";
 import { setAppInstance } from "@/controllers/auth.controller";
-import { setUserAppInstance } from "@/controllers/user.controller";
 import type { JWTPayload } from "@repo/shared";
 import logger, { loggerConfig } from "@/utils/logger";
 
@@ -184,13 +184,13 @@ export const build = async (): Promise<FastifyInstance> => {
 
   // 컨트롤러에 app 인스턴스 전달
   setAppInstance(app);
-  setUserAppInstance(app);
 
   // Error handler
   app.setErrorHandler(errorHandler);
 
-  // Routes
-  await registerRoutes(app);
+  // Auto-register controllers
+  const controllersPath = path.join(__dirname, "controllers");
+  await autoRegisterControllers(app, controllersPath);
 
   return app;
 };
