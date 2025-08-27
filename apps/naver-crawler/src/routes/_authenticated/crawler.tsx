@@ -8,6 +8,12 @@ import {
   TrendingUp,
   Clock,
   FileText,
+  AlertCircle,
+  LogIn,
+  Navigation,
+  MousePointer,
+  Download,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +24,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import AgGridTable from "@/components/AgGridTable";
-import { useReviewsCrawlMutation } from "@/hooks/useReviewsCrawl";
+import { useReviewsCrawlWithProgress } from "@/hooks/useReviewsCrawl";
 import LabelRadio from "@/components/LabelRadio";
 import LabelInput from "@/components/LabelInput";
 import { formatMilliSecondsToMinutes } from "@/lib/utils";
@@ -37,9 +44,15 @@ function CrawlerComponent() {
   const [sort, setSort] = useState<
     "ranking" | "latest" | "high-rating" | "low-rating"
   >("ranking");
-  const [maxPage, setMaxPage] = useState(1);
+  const [maxPages, setMaxPages] = useState(5);
 
-  const { mutate: crawlReviews, isPending, data } = useReviewsCrawlMutation();
+  const { 
+    crawlWithProgress, 
+    progress, 
+    isLoading, 
+    finalResult, 
+    error 
+  } = useReviewsCrawlWithProgress();
 
   // URL 유효성 검사
   const isValidUrl = useMemo(() => {
@@ -69,15 +82,22 @@ function CrawlerComponent() {
 
   const handleStartCrawling = () => {
     if (!isValidUrl) return;
-    crawlReviews({ url, sort, maxPage });
+    crawlWithProgress({ url, sort, maxPages });
   };
 
   // 통계 데이터
   const stats = {
-    totalReviews: data?.totalReviews || 0,
-    crawledReviews: data?.crawledReviews || 0,
-    crawledPages: data?.crawledPages || 0,
-    duration: data?.duration || 0,
+    totalReviews: progress.totalReviews || finalResult?.totalReviews || 0,
+    crawledReviews: progress.crawledReviews || finalResult?.totalCount || 0,
+    crawledPages: progress.currentPage || finalResult?.processedPages || 0,
+    estimatedPages: progress.estimatedTotalPages || maxPages,
+    duration: Math.floor(
+      (progress.elapsedTime || finalResult?.executionTime || 0) / 1000
+    ),
+    progressPercentage:
+      progress.totalReviews > 0
+        ? Math.round((progress.crawledReviews / progress.totalReviews) * 100)
+        : 0,
   };
 
   const columnDefs = [
@@ -195,13 +215,13 @@ function CrawlerComponent() {
                   {[1, 5, 10, 20, 50, 100].map((page) => (
                     <Button
                       key={page}
-                      variant={maxPage === page ? "default" : "outline"}
+                      variant={maxPages === page ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setMaxPage(page)}
+                      onClick={() => setMaxPages(page)}
                       className={`
                           px-3 py-1 text-sm font-medium rounded-md transition-all duration-200
                           ${
-                            maxPage === page
+                            maxPages === page
                               ? "bg-blue-600 text-white shadow-md"
                               : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                           }
@@ -216,11 +236,11 @@ function CrawlerComponent() {
                 <div className="space-y-2">
                   <LabelInput
                     variant="default"
-                    id="maxPage"
+                    id="maxPages"
                     label="또는 직접 입력"
                     type="number"
-                    value={maxPage}
-                    onChange={(e) => setMaxPage(Number(e.target.value))}
+                    value={maxPages}
+                    onChange={(e) => setMaxPages(Number(e.target.value))}
                     placeholder="페이지 수 입력"
                     min="1"
                     max="100"
@@ -229,7 +249,7 @@ function CrawlerComponent() {
                   <p className="text-xs text-muted-foreground">
                     1-100 페이지까지 설정 가능 • 현재 설정:{" "}
                     <span className="font-semibold text-blue-600">
-                      {maxPage}페이지
+                      {maxPages}페이지
                     </span>
                   </p>
                 </div>
@@ -242,21 +262,21 @@ function CrawlerComponent() {
             <div className="flex justify-end">
               <Button
                 onClick={handleStartCrawling}
-                disabled={!isValidUrl || isPending}
+                disabled={!isValidUrl || isLoading}
                 className={`
                     px-8 py-3 font-medium rounded-lg transition-all duration-200 
                     ${
-                      !isValidUrl || isPending
+                      !isValidUrl || isLoading
                         ? "bg-gray-400 text-gray-600 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                     }
                   `}
                 size="lg"
               >
-                {isPending ? (
+                {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-                    크롤링 중...
+                    크롤링 중... ({stats.progressPercentage}%)
                   </>
                 ) : (
                   <>
@@ -294,7 +314,7 @@ function CrawlerComponent() {
                     </p>
                     <p>
                       <span className="font-medium">페이지:</span> 최대{" "}
-                      {maxPage}
+                      {maxPages}
                       페이지
                     </p>
                   </div>
@@ -302,6 +322,77 @@ function CrawlerComponent() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* 진행 상황 표시 */}
+        {(isLoading || progress.elapsedTime > 0) && (
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800">
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    {progress.status === "logging_in" ? (
+                      <LogIn className="w-5 h-5 text-white" />
+                    ) : progress.status === "navigating" ? (
+                      <Navigation className="w-5 h-5 text-white" />
+                    ) : progress.status === "scrolling" ? (
+                      <MousePointer className="w-5 h-5 text-white" />
+                    ) : progress.status === "finding_reviews" ||
+                      progress.status === "loading_reviews" ? (
+                      <Search className="w-5 h-5 text-white" />
+                    ) : progress.status === "extracting_reviews" ? (
+                      <Download className="w-5 h-5 text-white" />
+                    ) : (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                      크롤링 진행 중...
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      {progress.message || "리뷰 데이터를 수집하고 있습니다..."}
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      페이지 {progress.currentPage}/
+                      {progress.estimatedTotalPages} | 리뷰{" "}
+                      {progress.crawledReviews.toLocaleString()}/
+                      {progress.totalReviews.toLocaleString()} | 소요시간{" "}
+                      {Math.floor(progress.elapsedTime / 1000)}초
+                    </p>
+                  </div>
+                </div>
+
+                {/* 프로그레스 바 */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-blue-700 dark:text-blue-300">
+                      진행률
+                    </span>
+                    <span className="text-blue-700 dark:text-blue-300">
+                      {stats.progressPercentage}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-100 dark:bg-blue-900/50 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${stats.progressPercentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 에러 표시 */}
+        {error && (
+          <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800 dark:text-red-300">
+              크롤링 중 오류가 발생했습니다: {error}
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* 통계 정보 */}
@@ -349,7 +440,7 @@ function CrawlerComponent() {
                     크롤링한 페이지
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {stats.crawledPages}
+                    {stats.crawledPages}/{stats.estimatedPages}
                   </p>
                 </div>
               </div>
@@ -365,7 +456,7 @@ function CrawlerComponent() {
                 <div>
                   <p className="text-sm text-muted-foreground">소요 시간</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {formatMilliSecondsToMinutes(stats.duration)}
+                    {stats.duration}초
                   </p>
                 </div>
               </div>
@@ -401,11 +492,11 @@ function CrawlerComponent() {
             </div>
           </CardHeader>
           <CardContent className="pt-6">
-            {data?.reviews && data.reviews.length > 0 ? (
+            {finalResult?.reviews && finalResult.reviews.length > 0 ? (
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <AgGridTable columnDefs={columnDefs} rowData={data.reviews} />
+                <AgGridTable columnDefs={columnDefs} rowData={finalResult.reviews} />
               </div>
-            ) : !isPending ? (
+            ) : !isLoading ? (
               <div className="w-full h-64 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                 <div className="text-center space-y-3">
                   <Database className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto" />
