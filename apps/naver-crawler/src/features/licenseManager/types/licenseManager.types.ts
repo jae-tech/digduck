@@ -7,7 +7,7 @@ export interface LicenseRecord {
   status: "active" | "expired" | "revoked" | "suspended";
   issueDate: string;
   expiryDate: string;
-  lastUsed: string | null;
+  lastUsed: string | undefined;
   activationCount: number;
   maxActivations: number;
   phoneNumber?: string; // 관리자 라이센스용

@@ -1,7 +1,6 @@
 import {
   type LicenseConfig,
   type LicenseGenerationResult,
-  type GeneratedLicense,
   type BulkLicenseConfig,
 } from "../types/licenseGenerator.types";
 

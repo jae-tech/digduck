@@ -29,8 +29,6 @@
     "@tanstack/react-router-devtools": "^1.131.28",
     "@tanstack/react-table": "^8.21.3",
     "add": "^2.0.6",
-    "ag-grid-community": "^34.1.2",
-    "ag-grid-react": "^34.1.2",
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

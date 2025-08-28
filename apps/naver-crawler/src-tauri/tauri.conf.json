@@ -4,7 +4,7 @@
   "identifier": "com.naverCrawler.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "",
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173"
   },

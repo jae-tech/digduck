@@ -12,7 +12,6 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  RefreshCw,
   Trash2,
   Play,
   AlertCircle,
@@ -53,9 +52,6 @@ export const LicenseManagerPage: React.FC = () => {
     loadLicenses(currentFilter, page);
   };
 
-  const handleRefresh = () => {
-    loadLicenses(currentFilter, currentPage);
-  };
 
   const handleExport = () => {
     // CSV 내보내기 로직

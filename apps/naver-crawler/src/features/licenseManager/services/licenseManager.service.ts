@@ -226,7 +226,7 @@ export class LicenseManagerService {
         status: "suspended",
         issueDate: "2024-08-01",
         expiryDate: "2024-09-01",
-        lastUsed: null,
+        lastUsed: undefined,
         activationCount: 0,
         maxActivations: 1,
       },
