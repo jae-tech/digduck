@@ -1,12 +1,11 @@
 export interface ProductReview {
-  id: string;
   author: string;
   rating: number;
-  content: string;
+  review: string;
   date: string;
-  attachedImages?: string[];
   productVariant?: string;
-  helpfulCount?: number;
+  reviewPoints?: string;
+  image?: string;
 }
 
 export interface CrawledProduct {
@@ -59,7 +58,7 @@ export interface PaginationInfo {
 }
 
 export interface AuthenticationCredentials {
-  username: string;
+  id: string;
   password: string;
 }
 
