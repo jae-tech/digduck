@@ -223,7 +223,7 @@ export function DataTable<TData>({
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 dark:text-gray-300"
                       style={{
                         width:
                           header.getSize() !== 150
@@ -265,7 +265,7 @@ export function DataTable<TData>({
               ))}
             </thead>
 
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {loading ? (
                 <tr>
                   <td
@@ -293,12 +293,12 @@ export function DataTable<TData>({
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className={`hover:bg-gray-50 transition-colors ${
-                      row.getIsSelected() ? "bg-blue-50" : ""
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                      row.getIsSelected() ? "bg-blue-50 dark:bg-blue-900/20" : ""
                     }`}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3 text-sm">
+                      <td key={cell.id} className="px-4 py-3 text-sm dark:text-gray-300">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
@@ -316,10 +316,10 @@ export function DataTable<TData>({
         {enablePagination &&
           !loading &&
           table.getRowModel().rows.length > 0 && (
-            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
+            <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
                     {table.getRowModel().rows.length > 0 ? (
                       <>
                         {table.getState().pagination.pageIndex *
@@ -341,7 +341,7 @@ export function DataTable<TData>({
                   <select
                     value={table.getState().pagination.pageSize}
                     onChange={(e) => table.setPageSize(Number(e.target.value))}
-                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                    className="text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded px-2 py-1"
                   >
                     {pageSizeOptions.map((size) => (
                       <option key={size} value={size}>
@@ -369,7 +369,7 @@ export function DataTable<TData>({
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
 
-                  <span className="text-sm px-3 py-1">
+                  <span className="text-sm px-3 py-1 dark:text-gray-300">
                     페이지 {table.getState().pagination.pageIndex + 1} /{" "}
                     {table.getPageCount()}
                   </span>
