@@ -1,7 +1,7 @@
 import axios, {
   AxiosError,
-  AxiosResponse,
-  InternalAxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
 } from "axios";
 import { getApiUrl, isDevelopment, getCurrentConfig } from "@/config/env";
 
