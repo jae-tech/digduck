@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,7 @@ interface LicenseFilter {
   productName?: string;
   dateFrom?: string;
   dateTo?: string;
+  expiringSoon?: string;
 }
 
 interface LicenseFiltersProps {
@@ -47,7 +48,6 @@ export const LicenseFilters: React.FC<LicenseFiltersProps> = ({
 }) => {
   const [filter, setFilter] = useState<LicenseFilter>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleFilterChange = (key: keyof LicenseFilter, value: string) => {
     const newFilter = { ...filter };

@@ -21,7 +21,6 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
   onChange,
   disabled = false,
   isValid = false,
-  error,
 }) => {
   const isAdminLicense = value.startsWith("ADMIN");
 

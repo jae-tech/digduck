@@ -131,7 +131,7 @@ apiClient.interceptors.response.use(
     const apiError: ApiError = {
       message: getErrorMessage(error),
       status: error.response?.status,
-      code: error.response?.data?.code || error.code,
+      code: (error.response?.data as any)?.code || error.code,
       details: error.response?.data,
     };
 
@@ -329,8 +329,8 @@ declare module "axios" {
 
 // 개발 환경에서 글로벌 디버깅 정보 제공
 if (isDevelopment()) {
-  window.__APP_ENV__ = import.meta.env;
-  window.__DEV__ = true;
+  (window as any).__APP_ENV__ = import.meta.env;
+  (window as any).__DEV__ = true;
 
   console.log("🛠️ 개발 도구:", {
     env: "window.__APP_ENV__에서 환경변수 확인 가능",

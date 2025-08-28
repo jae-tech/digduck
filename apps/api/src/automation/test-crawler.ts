@@ -350,12 +350,10 @@ async function crawlProductReviews(
         // 유효한 데이터가 있을 때만 저장
         if (rating || author !== "익명" || content) {
           reviews.push({
-            id: `${Date.now()}-${i}`, // 각 리뷰에 고유 id 생성
             rating,
             author,
             review: content,
             date,
-            helpfulCount: 0,
           });
           console.log(`리뷰 ${i + 1}: ${author} - ${rating}점`);
         }

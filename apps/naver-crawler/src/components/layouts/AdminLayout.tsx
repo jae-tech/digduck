@@ -64,21 +64,25 @@ export default function AdminLayout({
       to: "/admin/dashboard",
       icon: <LayoutDashboard className="w-5 h-5" />,
       label: "대시보드",
+      badge: undefined,
     },
     {
       to: "/admin/license-generator",
       icon: <Zap className="w-5 h-5" />,
       label: "라이센스 생성",
+      badge: undefined,
     },
     {
       to: "/admin/license-manager",
       icon: <Key className="w-5 h-5" />,
       label: "라이센스 관리",
+      badge: undefined,
     },
     {
       to: "/admin/settings",
       icon: <Settings className="w-5 h-5" />,
       label: "시스템 설정",
+      badge: undefined,
     },
   ];
 
