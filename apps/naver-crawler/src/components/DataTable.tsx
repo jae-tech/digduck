@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -6,7 +6,6 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
-  createColumnHelper,
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
@@ -30,7 +29,6 @@ import {
   ArrowUpDown,
   MoreHorizontal,
   Loader2,
-  Copy,
   Edit,
   Trash2,
   Eye,
@@ -38,9 +36,6 @@ import {
   XCircle,
   Clock,
   AlertTriangle,
-  Shield,
-  User,
-  Plus,
 } from "lucide-react";
 
 // 🎯 타입 정의

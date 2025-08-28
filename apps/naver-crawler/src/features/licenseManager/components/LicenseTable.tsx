@@ -79,11 +79,23 @@ interface LicenseRecord {
 interface LicenseTableProps {
   licenses: LicenseRecord[];
   loading?: boolean;
+  selectedLicenses?: string[];
+  onToggleSelection?: (licenseId: string) => void;
+  onSelectAll?: () => void;
+  onClearSelection?: () => void;
   onUpdate?: (licenseId: string, data: any) => Promise<boolean>;
   onDelete?: (licenseId: string) => Promise<boolean>;
   onRefresh?: () => void;
   onExport?: () => void;
   onSelectionChange?: (selectedLicenses: LicenseRecord[]) => void;
+}
+
+interface EditForm {
+  userEmail?: string;
+  productName?: string;
+  expiryDate?: string;
+  maxActivations?: number;
+  status?: "active" | "expired" | "revoked" | "suspended";
 }
 
 // 🎨 재사용 가능한 셀 컴포넌트들
@@ -399,7 +411,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
   const [deletingLicense, setDeletingLicense] = useState<LicenseRecord | null>(
     null
   );
-  const [editForm, setEditForm] = useState<any>({});
+  const [editForm, setEditForm] = useState<EditForm>({});
 
   // 🏗️ 컬럼 정의
   const columns: ColumnDef<LicenseRecord>[] = useMemo(
@@ -573,16 +585,6 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
     }
   };
 
-  const handleEditClick = (license: LicenseRecord) => {
-    setEditingLicense(license);
-    setEditForm({
-      userEmail: license.userEmail,
-      productName: license.productName,
-      expiryDate: license.expiryDate,
-      maxActivations: license.maxActivations,
-      status: license.status,
-    });
-  };
 
   const selectedRowCount = Object.keys(rowSelection).length;
 
@@ -866,7 +868,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                 id="edit-email"
                 value={editForm.userEmail || ""}
                 onChange={(e) =>
-                  setEditForm((prev) => ({
+                  setEditForm((prev: EditForm) => ({
                     ...prev,
                     userEmail: e.target.value,
                   }))
@@ -884,7 +886,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                 id="edit-product"
                 value={editForm.productName || ""}
                 onChange={(e) =>
-                  setEditForm((prev) => ({
+                  setEditForm((prev: EditForm) => ({
                     ...prev,
                     productName: e.target.value,
                   }))
@@ -902,7 +904,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                 type="date"
                 value={editForm.expiryDate || ""}
                 onChange={(e) =>
-                  setEditForm((prev) => ({
+                  setEditForm((prev: EditForm) => ({
                     ...prev,
                     expiryDate: e.target.value,
                   }))
@@ -924,7 +926,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                 min="1"
                 value={editForm.maxActivations || ""}
                 onChange={(e) =>
-                  setEditForm((prev) => ({
+                  setEditForm((prev: EditForm) => ({
                     ...prev,
                     maxActivations: parseInt(e.target.value) || 1,
                   }))
@@ -941,7 +943,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                 id="edit-status"
                 value={editForm.status || ""}
                 onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, status: e.target.value }))
+                  setEditForm((prev: EditForm) => ({ ...prev, status: e.target.value as "active" | "expired" | "revoked" | "suspended" }))
                 }
                 className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >

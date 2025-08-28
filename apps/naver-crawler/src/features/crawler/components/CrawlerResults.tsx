@@ -1,12 +1,5 @@
 import { Database } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/DataTable";
 import { createColumnHelper } from "@tanstack/react-table";
 
@@ -22,7 +15,6 @@ interface CrawlerResultsProps {
 export function CrawlerResults({
   finalResult,
   isLoading,
-  crawledReviews,
 }: CrawlerResultsProps) {
   // DataTable column helper for type safety
   const columnHelper = createColumnHelper<any>();
@@ -135,29 +127,6 @@ export function CrawlerResults({
 
   return (
     <Card className="bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-800">
-      <CardHeader className="space-y-1 border-b border-gray-100 dark:border-gray-800">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gray-900 dark:bg-white rounded-lg flex items-center justify-center">
-              <Database className="w-4 h-4 text-white dark:text-gray-900" />
-            </div>
-            <div>
-              <CardTitle className="text-gray-900 dark:text-white">
-                크롤링 결과
-              </CardTitle>
-              <CardDescription>수집된 리뷰 데이터를 확인하세요</CardDescription>
-            </div>
-            {crawledReviews > 0 && (
-              <Badge
-                variant="secondary"
-                className="ml-2 bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-              >
-                {crawledReviews}건
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
       <CardContent className="pt-6">
         {finalResult?.reviews && finalResult.reviews.length > 0 ? (
           <DataTable

@@ -101,14 +101,14 @@ export class PlaywrightActionRecorder {
       ],
     });
 
-    this.context = await this.browser.newContext({
+    this.context = await this.browser?.newContext({
       recordVideo: {
         dir: path.join(this.recordingsDir, "videos"),
         size: { width: 1920, height: 1080 },
       },
-    });
+    }) || null;
 
-    this.page = await this.context.newPage();
+    this.page = await this.context?.newPage() || null;
 
     // 기록 세션 초기화
     const startTime = Date.now();
@@ -125,9 +125,9 @@ export class PlaywrightActionRecorder {
         totalIdleTime: 0,
       },
       browserInfo: {
-        userAgent: await this.page.evaluate(() => navigator.userAgent),
-        platform: await this.page.evaluate(() => navigator.platform),
-        viewport: this.page.viewportSize() || { width: 1920, height: 1080 },
+        userAgent: await this.page?.evaluate(() => navigator.userAgent) || '',
+        platform: await this.page?.evaluate(() => navigator.platform) || '',
+        viewport: this.page?.viewportSize() || { width: 1920, height: 1080 },
       },
     };
 
@@ -144,10 +144,10 @@ export class PlaywrightActionRecorder {
     }
 
     console.log(`기록 세션 시작됨: ${this.currentSession.sessionId}`);
-    return this.page;
+    return this.page!;
   }
 
-  private async setupDetailedEventListeners(): void {
+  private async setupDetailedEventListeners(): Promise<void> {
     if (!this.page) return;
 
     // 클릭 이벤트 상세 기록
@@ -171,7 +171,7 @@ export class PlaywrightActionRecorder {
         // 속성 정보 수집
         for (let i = 0; i < target.attributes.length; i++) {
           const attr = target.attributes[i];
-          elementInfo.attributes[attr.name] = attr.value;
+          (elementInfo.attributes as Record<string, string>)[attr.name] = attr.value;
         }
 
         (window as any).__detailedActions =
