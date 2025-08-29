@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { Controller, Post, Get, Schema, Auth } from '../decorators/controller.decorator';
 import { env } from '../config/env';
 import type { LoginCredentials, RegisterData, User, JWTPayload } from '@repo/shared';
+import { prisma } from '../plugins/prisma';
 
 // 의존성 주입을 위한 전역 변수 (임시)
 let appInstance: FastifyInstance;
@@ -16,14 +17,15 @@ export class AuthController {
   
   @Post('/login')
   @Schema({
-    description: 'User login',
+    description: 'User login with license key',
     tags: ['auth'],
     body: {
       type: 'object',
-      required: ['email', 'password'],
+      required: ['licenseKey', 'deviceId'],
       properties: {
-        email: { type: 'string', format: 'email' },
-        password: { type: 'string', minLength: 6 }
+        licenseKey: { type: 'string' },
+        deviceId: { type: 'string' },
+        platform: { type: 'string', enum: ['WEB', 'DESKTOP'], default: 'WEB' }
       }
     },
     response: {
@@ -43,6 +45,14 @@ export class AuthController {
                   email: { type: 'string' },
                   name: { type: 'string' }
                 }
+              },
+              licenseInfo: {
+                type: 'object',
+                properties: {
+                  allowedDevices: { type: 'number' },
+                  activatedDevices: { type: 'array' },
+                  isActive: { type: 'boolean' }
+                }
               }
             }
           }
@@ -50,115 +60,182 @@ export class AuthController {
       }
     }
   })
-  async login(request: FastifyRequest<{ Body: LoginCredentials }>, reply: FastifyReply) {
+  async login(request: FastifyRequest<{ Body: { licenseKey: string; deviceId: string; platform?: string } }>, reply: FastifyReply) {
     try {
-      const { email, password } = request.body;
+      const { licenseKey, deviceId, platform = 'WEB' } = request.body;
 
-      // 간단한 사용자 조회 (실제로는 UserService 사용)
-      const query = 'SELECT * FROM users WHERE email = $1';
-      const result = await appInstance.pg.query(query, [email]);
-      const user = result.rows[0];
+      // 라이센스 검증
+      const licenseData = await prisma.license_users.findUnique({
+        where: { licenseKey },
+        include: {
+          users: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        }
+      });
 
-      if (!user) {
+      if (!licenseData) {
         return reply.status(401).send({
           success: false,
-          error: 'Invalid credentials'
+          error: '잘못된 라이센스 키'
         });
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return reply.status(401).send({
+      // 구독 확인
+      const activeSubscription = await prisma.license_subscriptions.findFirst({
+        where: {
+          userEmail: licenseData.email,
+          isActive: true,
+          endDate: {
+            gt: new Date()
+          }
+        }
+      });
+
+      if (!activeSubscription) {
+        return reply.status(402).send({
           success: false,
-          error: 'Invalid credentials'
+          error: '라이센스가 만료되었거나 비활성 상태입니다'
         });
       }
 
+      // 디바이스 활성화 확인 및 처리
+      const activatedDevices = licenseData.activatedDevices as any[] || [];
+      const isDeviceActivated = activatedDevices.some((device: any) => device.device_id === deviceId);
+      
+      if (!isDeviceActivated) {
+        // 디바이스 한도 확인
+        if (activatedDevices.length >= licenseData.allowedDevices) {
+          return reply.status(400).send({
+            success: false,
+            error: '디바이스 한도 초과'
+          });
+        }
+
+        // 새 디바이스 추가
+        const newDevice = {
+          device_id: deviceId,
+          platform: platform,
+          activated_at: new Date().toISOString()
+        };
+        const updatedDevices = [...activatedDevices, newDevice];
+
+        // 디바이스 정보 업데이트
+        await prisma.license_users.update({
+          where: { licenseKey },
+          data: { 
+            activatedDevices: updatedDevices 
+          }
+        });
+        
+        // 업데이트된 디바이스 정보로 갱신
+        activatedDevices.push(newDevice);
+      }
+
+      // JWT 토큰 생성
       const token = appInstance.jwt.sign(
-        { userId: user.id, email: user.email },
+        { 
+          userId: licenseData.users.id, 
+          email: licenseData.users.email, 
+          licenseKey: licenseKey,
+          deviceId: deviceId
+        },
         { expiresIn: env.JWT_EXPIRES_IN }
       );
 
-      const { password: _, ...userWithoutPassword } = user;
+      const user = {
+        id: licenseData.users.id,
+        email: licenseData.users.email,
+        name: licenseData.users.name
+      };
 
       return reply.send({
         success: true,
         data: {
           token,
-          user: userWithoutPassword
+          user,
+          licenseInfo: {
+            allowedDevices: licenseData.allowedDevices,
+            activatedDevices: activatedDevices,
+            isActive: true
+          }
         }
       });
     } catch (error) {
       request.log.error('Login error:', error);
       return reply.status(500).send({
         success: false,
-        error: 'Internal server error'
+        error: '서버 내부 오류'
       });
     }
   }
 
   @Post('/register')
   @Schema({
-    description: 'User registration',
+    description: 'User registration (email and name only)',
     tags: ['auth'],
     body: {
       type: 'object',
-      required: ['email', 'password', 'name'],
+      required: ['email', 'name'],
       properties: {
         email: { type: 'string', format: 'email' },
-        password: { type: 'string', minLength: 6 },
         name: { type: 'string', minLength: 1 }
       }
     }
   })
-  async register(request: FastifyRequest<{ Body: RegisterData }>, reply: FastifyReply) {
+  async register(request: FastifyRequest<{ Body: { email: string; name: string } }>, reply: FastifyReply) {
     try {
-      const { email, password, name } = request.body;
+      const { email, name } = request.body;
 
       // 이메일 중복 확인
-      const existingQuery = 'SELECT 1 FROM users WHERE email = $1';
-      const existingResult = await appInstance.pg.query(existingQuery, [email]);
+      const existingUser = await prisma.users.findUnique({
+        where: { email }
+      });
       
-      if (existingResult.rows.length > 0) {
+      if (existingUser) {
         return reply.status(409).send({
           success: false,
-          error: 'Email already exists'
+          error: '이메일이 이미 존재합니다'
         });
       }
 
-      const hashedPassword = await bcrypt.hash(password, env.BCRYPT_SALT_ROUNDS);
-
-      const insertQuery = `
-        INSERT INTO users (email, password, name) 
-        VALUES ($1, $2, $3) 
-        RETURNING id, email, name, created_at, updated_at
-      `;
-      const insertResult = await appInstance.pg.query(insertQuery, [email, hashedPassword, name]);
-      const user = insertResult.rows[0];
-
-      const token = appInstance.jwt.sign(
-        { userId: user.id, email: user.email },
-        { expiresIn: env.JWT_EXPIRES_IN }
-      );
+      // 사용자 생성
+      const user = await prisma.users.create({
+        data: {
+          email,
+          name
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          createdAt: true
+        }
+      });
 
       return reply.status(201).send({
         success: true,
         data: {
-          token,
-          user
+          user,
+          message: '사용자가 성공적으로 등록되었습니다. 애플리케이션에 액세스하려면 라이센스 키를 획득하세요.'
         }
       });
     } catch (error) {
+      console.error('등록 오류:', error);
       request.log.error('Register error:', error);
       return reply.status(500).send({
         success: false,
-        error: 'Internal server error'
+        error: '서버 내부 오류',
+        debug: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
 
   @Get('/profile')
-  @Auth()
   @Schema({
     description: 'Get user profile',
     tags: ['auth'],
@@ -166,16 +243,32 @@ export class AuthController {
   })
   async getProfile(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const user = (request as any).user as JWTPayload;
+      // 수동 JWT 검증 (임시 해결)
+      let user: JWTPayload;
+      try {
+        user = (await request.jwtVerify()) as JWTPayload;
+      } catch (err) {
+        return reply.status(401).send({
+          success: false,
+          error: '인증되지 않음'
+        });
+      }
       
-      const query = 'SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1';
-      const result = await appInstance.pg.query(query, [user.userId]);
-      const userData = result.rows[0];
+      const userData = await prisma.users.findUnique({
+        where: { id: user.userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
 
       if (!userData) {
         return reply.status(404).send({
           success: false,
-          error: 'User not found'
+          error: '사용자를 찾을 수 없습니다'
         });
       }
 
@@ -187,7 +280,7 @@ export class AuthController {
       request.log.error('Get profile error:', error);
       return reply.status(500).send({
         success: false,
-        error: 'Internal server error'
+        error: '서버 내부 오류'
       });
     }
   }
