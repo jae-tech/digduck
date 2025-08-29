@@ -1,6 +1,10 @@
-import { PrismaClient, LicenseSubscriptionType, PlatformType, ItemType } from '@prisma/client'
-import { createHash, randomUUID } from 'crypto'
-import { env } from '../config/env'
+import {
+  PrismaClient,
+  LicenseSubscriptionType,
+  ItemType,
+} from "@prisma/client";
+import { createHash, randomUUID } from "crypto";
+import { env } from "@/config/env";
 import {
   CreateLicenseUserRequest,
   CreateSubscriptionRequest,
@@ -12,8 +16,8 @@ import {
   LicenseStatusResponse,
   DeviceInfo,
   LicenseError,
-  LicenseErrorCodes
-} from '../types/license.types'
+  LicenseErrorCodes,
+} from "@/types/license.types";
 
 export class LicenseService {
   constructor(private prisma: PrismaClient) {}
@@ -22,34 +26,42 @@ export class LicenseService {
    * 라이센스 키 생성
    */
   private generateLicenseKey(email: string): string {
-    const uuid = randomUUID()
-    const salt = env.LICENSE_SALT
-    const data = `${email}-${uuid}-${salt}`
-    return createHash('sha256').update(data).digest('hex').toUpperCase()
+    const uuid = randomUUID();
+    const salt = env.LICENSE_SALT;
+    const data = `${email}-${uuid}-${salt}`;
+    const fullHash = createHash("sha256")
+      .update(data)
+      .digest("hex")
+      .toUpperCase();
+    // 16자리로 자르기
+    return fullHash.substring(0, 16);
   }
 
   /**
    * 구독 기간 계산
    */
-  private calculateEndDate(startDate: Date, subscriptionType: LicenseSubscriptionType): Date {
-    const endDate = new Date(startDate)
-    
+  private calculateEndDate(
+    startDate: Date,
+    subscriptionType: LicenseSubscriptionType
+  ): Date {
+    const endDate = new Date(startDate);
+
     switch (subscriptionType) {
-      case 'ONE_MONTH':
-        endDate.setMonth(endDate.getMonth() + 1)
-        break
-      case 'THREE_MONTHS':
-        endDate.setMonth(endDate.getMonth() + 3)
-        break
-      case 'SIX_MONTHS':
-        endDate.setMonth(endDate.getMonth() + 6)
-        break
-      case 'TWELVE_MONTHS':
-        endDate.setFullYear(endDate.getFullYear() + 1)
-        break
+      case "ONE_MONTH":
+        endDate.setMonth(endDate.getMonth() + 1);
+        break;
+      case "THREE_MONTHS":
+        endDate.setMonth(endDate.getMonth() + 3);
+        break;
+      case "SIX_MONTHS":
+        endDate.setMonth(endDate.getMonth() + 6);
+        break;
+      case "TWELVE_MONTHS":
+        endDate.setFullYear(endDate.getFullYear() + 1);
+        break;
     }
-    
-    return endDate
+
+    return endDate;
   }
 
   /**
@@ -57,46 +69,46 @@ export class LicenseService {
    */
   async createLicenseUser(data: CreateLicenseUserRequest) {
     // 사용자 존재 확인
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: data.email }
-    })
+    const existingUser = await this.prisma.users.findUnique({
+      where: { email: data.email },
+    });
 
     if (!existingUser) {
       throw new LicenseError(
         `User with email ${data.email} not found`,
         LicenseErrorCodes.USER_NOT_FOUND,
         404
-      )
+      );
     }
 
     // 이미 라이센스가 있는지 확인
-    const existingLicense = await this.prisma.licenseUser.findUnique({
-      where: { email: data.email }
-    })
+    const existingLicense = await this.prisma.license_users.findUnique({
+      where: { email: data.email },
+    });
 
     if (existingLicense) {
       throw new LicenseError(
-        'License already exists for this user',
+        "License already exists for this user",
         LicenseErrorCodes.DUPLICATE_LICENSE,
         409
-      )
+      );
     }
 
     // 라이센스 키 생성
-    const licenseKey = this.generateLicenseKey(data.email)
+    const licenseKey = this.generateLicenseKey(data.email);
 
     // 라이센스 사용자 생성
-    const licenseUser = await this.prisma.licenseUser.create({
+    const licenseUser = await this.prisma.license_users.create({
       data: {
         email: data.email,
         licenseKey,
         allowedDevices: data.allowedDevices || 3,
         maxTransfers: data.maxTransfers || 5,
-        activatedDevices: []
-      }
-    })
+        activatedDevices: [],
+      },
+    });
 
-    return licenseUser
+    return licenseUser;
   }
 
   /**
@@ -104,47 +116,47 @@ export class LicenseService {
    */
   async createSubscription(data: CreateSubscriptionRequest) {
     // 라이센스 사용자 확인
-    const licenseUser = await this.prisma.licenseUser.findUnique({
-      where: { email: data.userEmail }
-    })
+    const licenseUser = await this.prisma.license_users.findUnique({
+      where: { email: data.userEmail },
+    });
 
     if (!licenseUser) {
       throw new LicenseError(
-        'License user not found',
+        "License user not found",
         LicenseErrorCodes.LICENSE_NOT_FOUND,
         404
-      )
+      );
     }
 
-    const startDate = new Date()
-    const endDate = this.calculateEndDate(startDate, data.subscriptionType)
+    const startDate = new Date();
+    const endDate = this.calculateEndDate(startDate, data.subscriptionType);
 
     // 트랜잭션으로 구독 생성
     const subscription = await this.prisma.$transaction(async (tx) => {
       // 기존 활성 구독 비활성화
-      await tx.licenseSubscription.updateMany({
+      await tx.license_subscriptions.updateMany({
         where: {
           userEmail: data.userEmail,
-          isActive: true
+          isActive: true,
         },
         data: {
-          isActive: false
-        }
-      })
+          isActive: false,
+        },
+      });
 
       // 새 구독 생성
-      return tx.licenseSubscription.create({
+      return tx.license_subscriptions.create({
         data: {
           userEmail: data.userEmail,
           subscriptionType: data.subscriptionType,
           startDate,
           endDate,
-          paymentId: data.paymentId
-        }
-      })
-    })
+          paymentId: data.paymentId,
+        },
+      });
+    });
 
-    return subscription
+    return subscription;
   }
 
   /**
@@ -154,107 +166,111 @@ export class LicenseService {
     // 동시성 제어를 위한 락
     return await this.prisma.$transaction(async (tx) => {
       // 현재 활성 구독 찾기
-      const activeSubscription = await tx.licenseSubscription.findFirst({
+      const activeSubscription = await tx.license_subscriptions.findFirst({
         where: {
           userEmail: data.userEmail,
-          isActive: true
-        }
-      })
+          isActive: true,
+        },
+      });
 
-      let subscription
+      let subscription;
 
       if (activeSubscription) {
         // 기존 구독 연장
-        const newEndDate = new Date(activeSubscription.endDate)
-        newEndDate.setMonth(newEndDate.getMonth() + data.months)
+        const newEndDate = new Date(activeSubscription.endDate);
+        newEndDate.setMonth(newEndDate.getMonth() + data.months);
 
-        subscription = await tx.licenseSubscription.update({
+        subscription = await tx.license_subscriptions.update({
           where: { id: activeSubscription.id },
           data: {
             endDate: newEndDate,
-            subscriptionType: data.subscriptionType || activeSubscription.subscriptionType
-          }
-        })
+            subscriptionType:
+              data.subscriptionType || activeSubscription.subscriptionType,
+          },
+        });
       } else {
         // 신규 구독 생성
-        const startDate = new Date()
-        const endDate = new Date(startDate)
-        endDate.setMonth(endDate.getMonth() + data.months)
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + data.months);
 
-        subscription = await tx.licenseSubscription.create({
+        subscription = await tx.license_subscriptions.create({
           data: {
             userEmail: data.userEmail,
-            subscriptionType: data.subscriptionType || 'ONE_MONTH',
+            subscriptionType: data.subscriptionType || "ONE_MONTH",
             startDate,
             endDate,
-            paymentId: data.paymentId
-          }
-        })
+            paymentId: data.paymentId,
+          },
+        });
       }
 
       // 연장 기록 저장
-      await tx.licenseItem.create({
+      await tx.license_items.create({
         data: {
           userEmail: data.userEmail,
           itemType: ItemType.SUBSCRIPTION_EXTENSION,
-          quantity: data.months
-        }
-      })
+          quantity: data.months,
+        },
+      });
 
-      return subscription
-    })
+      return subscription;
+    });
   }
 
   /**
    * 디바이스 활성화
    */
   async activateDevice(data: ActivateDeviceRequest) {
-    const licenseUser = await this.prisma.licenseUser.findUnique({
-      where: { email: data.userEmail }
-    })
+    const licenseUser = await this.prisma.license_users.findUnique({
+      where: { email: data.userEmail },
+    });
 
     if (!licenseUser) {
       throw new LicenseError(
-        'License user not found',
+        "License user not found",
         LicenseErrorCodes.LICENSE_NOT_FOUND,
         404
-      )
+      );
     }
 
-    const activatedDevices = licenseUser.activatedDevices as unknown as DeviceInfo[]
+    const activatedDevices =
+      licenseUser.activatedDevices as unknown as DeviceInfo[];
 
     // 이미 활성화된 디바이스인지 확인
-    const existingDevice = activatedDevices.find(device => device.device_id === data.deviceId)
+    const existingDevice = activatedDevices.find(
+      (device) => device.device_id === data.deviceId
+    );
     if (existingDevice) {
-      return licenseUser // 이미 활성화됨
+      return licenseUser; // 이미 활성화됨
     }
 
     // 디바이스 한도 확인
     if (activatedDevices.length >= licenseUser.allowedDevices) {
       throw new LicenseError(
-        'Device limit exceeded',
+        "Device limit exceeded",
         LicenseErrorCodes.DEVICE_LIMIT_EXCEEDED,
         400
-      )
+      );
     }
 
     // 새 디바이스 추가
     const newDevice: DeviceInfo = {
       device_id: data.deviceId,
       platform: data.platform,
-      activated_at: new Date().toISOString()
-    }
+      activated_at: new Date().toISOString(),
+    };
 
-    const updatedDevices = [...activatedDevices, newDevice]
+    const updatedDevices = [...activatedDevices, newDevice];
 
-    const updatedUser = await this.prisma.licenseUser.update({
+    const updatedUser = await this.prisma.license_users.update({
       where: { email: data.userEmail },
       data: {
-        activatedDevices: updatedDevices as any
-      }
-    })
+        activatedDevices: updatedDevices as any,
+      },
+    });
 
-    return updatedUser
+    return updatedUser;
   }
 
   /**
@@ -262,100 +278,106 @@ export class LicenseService {
    */
   async transferDevice(data: TransferDeviceRequest) {
     return await this.prisma.$transaction(async (tx) => {
-      const licenseUser = await tx.licenseUser.findUnique({
-        where: { email: data.userEmail }
-      })
+      const licenseUser = await tx.license_users.findUnique({
+        where: { email: data.userEmail },
+      });
 
       if (!licenseUser) {
         throw new LicenseError(
-          'License user not found',
+          "License user not found",
           LicenseErrorCodes.LICENSE_NOT_FOUND,
           404
-        )
+        );
       }
 
       // 이전 횟수 확인
       if (licenseUser.maxTransfers <= 0) {
         throw new LicenseError(
-          'No transfers remaining',
+          "No transfers remaining",
           LicenseErrorCodes.TRANSFER_LIMIT_EXCEEDED,
           400
-        )
+        );
       }
 
-      const activatedDevices = licenseUser.activatedDevices as unknown as DeviceInfo[]
-      const deviceIndex = activatedDevices.findIndex(device => device.device_id === data.oldDeviceId)
+      const activatedDevices =
+        licenseUser.activatedDevices as unknown as DeviceInfo[];
+      const deviceIndex = activatedDevices.findIndex(
+        (device) => device.device_id === data.oldDeviceId
+      );
 
       if (deviceIndex === -1) {
         throw new LicenseError(
-          'Old device not found',
+          "Old device not found",
           LicenseErrorCodes.DEVICE_NOT_FOUND,
           404
-        )
+        );
       }
 
       // 디바이스 정보 업데이트
-      const updatedDevices = [...activatedDevices]
+      const updatedDevices = [...activatedDevices];
       updatedDevices[deviceIndex] = {
         device_id: data.newDeviceId,
         platform: data.platform,
-        activated_at: new Date().toISOString()
-      }
+        activated_at: new Date().toISOString(),
+      };
 
       // 라이센스 사용자 업데이트
-      const updatedUser = await tx.licenseUser.update({
+      const updatedUser = await tx.license_users.update({
         where: { email: data.userEmail },
         data: {
           activatedDevices: updatedDevices as any,
-          maxTransfers: licenseUser.maxTransfers - 1
-        }
-      })
+          maxTransfers: licenseUser.maxTransfers - 1,
+        },
+      });
 
       // 이전 로그 저장
-      await tx.deviceTransfer.create({
+      await tx.device_transfers.create({
         data: {
           userEmail: data.userEmail,
           oldDeviceId: data.oldDeviceId,
           newDeviceId: data.newDeviceId,
-          platform: data.platform
-        }
-      })
+          platform: data.platform,
+        },
+      });
 
-      return updatedUser
-    })
+      return updatedUser;
+    });
   }
 
   /**
    * 라이센스 키로 검증
    */
-  async verifyLicenseByKey(licenseKey: string): Promise<LicenseVerificationResponse> {
-    const licenseUser = await this.prisma.licenseUser.findUnique({
+  async verifyLicenseByKey(
+    licenseKey: string
+  ): Promise<LicenseVerificationResponse> {
+    const licenseUser = await this.prisma.license_users.findUnique({
       where: { licenseKey },
       include: {
-        subscriptions: {
+        license_subscriptions: {
           where: { isActive: true },
-          orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      }
-    })
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+    });
 
     if (!licenseUser) {
       return {
         isValid: false,
         isActive: false,
-        userEmail: '',
-        licenseKey: '',
+        userEmail: "",
+        licenseKey: "",
         allowedDevices: 0,
         activatedDevices: [],
-        maxTransfers: 0
-      }
+        maxTransfers: 0,
+      };
     }
 
-    const activeSubscription = licenseUser.subscriptions[0]
-    const hasActiveSubscription = activeSubscription && 
-      activeSubscription.isActive && 
-      new Date(activeSubscription.endDate) > new Date()
+    const activeSubscription = licenseUser.license_subscriptions[0];
+    const hasActiveSubscription =
+      activeSubscription &&
+      activeSubscription.isActive &&
+      new Date(activeSubscription.endDate) > new Date();
 
     return {
       isValid: true,
@@ -365,49 +387,53 @@ export class LicenseService {
       allowedDevices: licenseUser.allowedDevices,
       activatedDevices: licenseUser.activatedDevices as unknown as DeviceInfo[],
       maxTransfers: licenseUser.maxTransfers,
-      subscription: activeSubscription ? {
-        type: activeSubscription.subscriptionType,
-        startDate: activeSubscription.startDate,
-        endDate: activeSubscription.endDate,
-        isActive: activeSubscription.isActive
-      } : undefined
-    }
+      subscription: activeSubscription
+        ? {
+            type: activeSubscription.subscriptionType,
+            startDate: activeSubscription.startDate,
+            endDate: activeSubscription.endDate,
+            isActive: activeSubscription.isActive,
+          }
+        : undefined,
+    };
   }
 
   /**
    * 사용자 이메일로 라이센스 상태 조회
    */
   async getLicenseStatus(userEmail: string): Promise<LicenseStatusResponse> {
-    const licenseUser = await this.prisma.licenseUser.findUnique({
+    const licenseUser = await this.prisma.license_users.findUnique({
       where: { email: userEmail },
       include: {
-        subscriptions: {
+        license_subscriptions: {
           where: { isActive: true },
-          orderBy: { createdAt: 'desc' },
-          take: 1
+          orderBy: { createdAt: "desc" },
+          take: 1,
         },
-        items: {
-          orderBy: { purchaseDate: 'desc' }
+        license_items: {
+          orderBy: { purchaseDate: "desc" },
         },
-        deviceTransfers: {
-          orderBy: { transferDate: 'desc' }
-        }
-      }
-    })
+        device_transfers: {
+          orderBy: { transferDate: "desc" },
+        },
+      },
+    });
 
     if (!licenseUser) {
       throw new LicenseError(
-        'License user not found',
+        "License user not found",
         LicenseErrorCodes.LICENSE_NOT_FOUND,
         404
-      )
+      );
     }
 
-    const activatedDevices = licenseUser.activatedDevices as unknown as DeviceInfo[]
-    const activeSubscription = licenseUser.subscriptions[0]
-    const hasActiveSubscription = activeSubscription && 
-      activeSubscription.isActive && 
-      new Date(activeSubscription.endDate) > new Date()
+    const activatedDevices =
+      licenseUser.activatedDevices as unknown as DeviceInfo[];
+    const activeSubscription = licenseUser.license_subscriptions[0];
+    const hasActiveSubscription =
+      activeSubscription &&
+      activeSubscription.isActive &&
+      new Date(activeSubscription.endDate) > new Date();
 
     return {
       userEmail: licenseUser.email,
@@ -417,89 +443,92 @@ export class LicenseService {
       activatedDevices: activatedDevices as unknown as DeviceInfo[],
       activeDeviceCount: activatedDevices.length,
       hasActiveSubscription: hasActiveSubscription || false,
-      subscription: activeSubscription ? {
-        id: activeSubscription.id,
-        type: activeSubscription.subscriptionType,
-        startDate: activeSubscription.startDate,
-        endDate: activeSubscription.endDate,
-        isActive: activeSubscription.isActive,
-        paymentId: activeSubscription.paymentId || undefined
-      } : undefined,
-      items: licenseUser.items.map(item => ({
+      subscription: activeSubscription
+        ? {
+            id: activeSubscription.id,
+            type: activeSubscription.subscriptionType,
+            startDate: activeSubscription.startDate,
+            endDate: activeSubscription.endDate,
+            isActive: activeSubscription.isActive,
+            paymentId: activeSubscription.paymentId || undefined,
+          }
+        : undefined,
+      items: licenseUser.license_items.map((item) => ({
         id: item.id,
         itemType: item.itemType,
         quantity: item.quantity,
-        purchaseDate: item.purchaseDate
+        purchaseDate: item.purchaseDate,
       })),
-      deviceTransfers: licenseUser.deviceTransfers.map(transfer => ({
+      deviceTransfers: licenseUser.device_transfers.map((transfer) => ({
         id: transfer.id,
         oldDeviceId: transfer.oldDeviceId,
         newDeviceId: transfer.newDeviceId,
         platform: transfer.platform,
-        transferDate: transfer.transferDate
-      }))
-    }
+        transferDate: transfer.transferDate,
+      })),
+    };
   }
 
   /**
    * 아이템 구매
    */
   async purchaseItem(data: PurchaseItemRequest) {
-    const licenseUser = await this.prisma.licenseUser.findUnique({
-      where: { email: data.userEmail }
-    })
+    const licenseUser = await this.prisma.license_users.findUnique({
+      where: { email: data.userEmail },
+    });
 
     if (!licenseUser) {
       throw new LicenseError(
-        'License user not found',
+        "License user not found",
         LicenseErrorCodes.LICENSE_NOT_FOUND,
         404
-      )
+      );
     }
 
     return await this.prisma.$transaction(async (tx) => {
       // 아이템 구매 기록
-      const item = await tx.licenseItem.create({
+      const item = await tx.license_items.create({
         data: {
           userEmail: data.userEmail,
           itemType: data.itemType,
-          quantity: data.quantity
-        }
-      })
+          quantity: data.quantity,
+        },
+      });
 
       // 아이템 유형별 처리
       if (data.itemType === ItemType.EXTRA_DEVICE) {
         // 추가 디바이스: 허용 디바이스 수 증가
-        await tx.licenseUser.update({
+        await tx.license_users.update({
           where: { email: data.userEmail },
           data: {
-            allowedDevices: licenseUser.allowedDevices + data.quantity
-          }
-        })
+            allowedDevices: licenseUser.allowedDevices + data.quantity,
+          },
+        });
       }
 
-      return item
-    })
+      return item;
+    });
   }
 
   /**
    * 구독 만료 확인 및 업데이트 (스케줄러용)
    */
   async checkAndUpdateExpiredSubscriptions() {
-    const now = new Date()
-    
-    const expiredSubscriptions = await this.prisma.licenseSubscription.updateMany({
-      where: {
-        isActive: true,
-        endDate: {
-          lt: now
-        }
-      },
-      data: {
-        isActive: false
-      }
-    })
+    const now = new Date();
 
-    return expiredSubscriptions
+    const expiredSubscriptions =
+      await this.prisma.license_subscriptions.updateMany({
+        where: {
+          isActive: true,
+          endDate: {
+            lt: now,
+          },
+        },
+        data: {
+          isActive: false,
+        },
+      });
+
+    return expiredSubscriptions;
   }
 }

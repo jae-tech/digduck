@@ -6,9 +6,12 @@ export const authMiddleware = async (
   reply: FastifyReply
 ) => {
   try {
+    console.log('authMiddleware called, headers:', request.headers.authorization);
     const decoded = (await request.jwtVerify()) as JWTPayload;
+    console.log('JWT verified, decoded:', decoded);
     request.user = decoded;
   } catch (err) {
+    console.error('JWT verification failed:', err);
     reply.status(401).send({
       success: false,
       error: "Unauthorized",
