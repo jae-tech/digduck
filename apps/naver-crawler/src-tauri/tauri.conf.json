@@ -1,7 +1,7 @@
 {
-  "productName": "Naver Crawler",
+  "productName": "Dig Dug",
   "version": "0.0.0",
-  "identifier": "com.naverCrawler.app",
+  "identifier": "com.digdug.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "",
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "Naver Crawler",
+        "title": "Dig Dug",
         "width": 1200,
         "height": 800,
         "resizable": true,
