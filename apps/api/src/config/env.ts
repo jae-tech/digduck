@@ -21,6 +21,7 @@ const envSchema = z.object({
   BCRYPT_SALT_ROUNDS: z.coerce.number().positive().default(12),
   NAVER_LOGIN_ID: z.string().min(2).max(100).default(""),
   NAVER_LOGIN_PASSWORD: z.string().min(6).max(100).default(""),
+  LICENSE_SALT: z.string().min(16, "License salt must be at least 16 characters").default("default-license-salt-key"),
 });
 
 const parseResult = envSchema.safeParse(process.env);
