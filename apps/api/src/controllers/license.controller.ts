@@ -1,475 +1,82 @@
-import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify'
-import { LicenseService } from '../services/license.service'
-import { prisma } from '../plugins/prisma'
-import { 
-  CreateLicenseUserRequest, 
-  CreateSubscriptionRequest, 
-  ExtendSubscriptionRequest,
-  ActivateDeviceRequest,
-  TransferDeviceRequest,
-  PurchaseItemRequest,
-  LicenseError 
-} from '../types/license.types'
+import { FastifyRequest, FastifyReply } from "fastify";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+} from "@/decorators/controller.decorator";
+import { prisma } from "@/plugins/prisma";
 
+interface CreateLicenseUserBody {
+  email: string;
+  allowedDevices?: number;
+  maxTransfers?: number;
+}
+
+interface CreateSubscriptionBody {
+  userEmail: string;
+  subscriptionType:
+    | "ONE_MONTH"
+    | "THREE_MONTHS"
+    | "SIX_MONTHS"
+    | "TWELVE_MONTHS";
+  paymentId: string;
+}
+
+interface AdminUsersQuery {
+  page?: string;
+  limit?: string;
+  search?: string;
+}
+
+@Controller("/license")
 export class LicenseController {
-  private licenseService: LicenseService
-
-  constructor() {
-    this.licenseService = new LicenseService(prisma)
-  }
-
-  /**
-   * Fastify 플러그인으로 라우트 등록
-   */
-  async routes(fastify: FastifyInstance) {
-    // Public routes
-    fastify.post('/validate', {
-      schema: {
-        tags: ['License'],
-        description: 'Validate license key',
-        body: {
-          type: 'object',
-          required: ['licenseKey'],
-          properties: {
-            licenseKey: { type: 'string' },
-            deviceId: { type: 'string' }
-          }
-        }
-      }
-    }, this.validateLicense)
-
-    fastify.get('/verify/:licenseKey', {
-      schema: {
-        tags: ['License'],
-        description: 'Verify license by key',
-        params: {
-          type: 'object',
-          properties: {
-            licenseKey: { type: 'string' }
-          }
-        }
-      }
-    }, this.verifyLicense)
-
-    // User management
-    fastify.post('/users', {
-      schema: {
-        tags: ['License'],
-        description: 'Create license user',
-        body: {
-          type: 'object',
-          required: ['email'],
-          properties: {
-            email: { type: 'string', format: 'email' },
-            allowedDevices: { type: 'integer', minimum: 1, maximum: 10 },
-            maxTransfers: { type: 'integer', minimum: 0, maximum: 20 }
-          }
-        }
-      }
-    }, this.createUser)
-
-    fastify.get('/status/:email', {
-      schema: {
-        tags: ['License'],
-        description: 'Get license status by email',
-        params: {
-          type: 'object',
-          properties: {
-            email: { type: 'string', format: 'email' }
-          }
-        }
-      }
-    }, this.getLicenseStatus)
-
-    // Subscription management
-    fastify.post('/subscriptions', {
-      schema: {
-        tags: ['License'],
-        description: 'Create subscription',
-        body: {
-          type: 'object',
-          required: ['userEmail', 'subscriptionType'],
-          properties: {
-            userEmail: { type: 'string', format: 'email' },
-            subscriptionType: { 
-              type: 'string',
-              enum: ['ONE_MONTH', 'THREE_MONTHS', 'SIX_MONTHS', 'TWELVE_MONTHS']
-            },
-            paymentId: { type: 'string' }
-          }
-        }
-      }
-    }, this.createSubscription)
-
-    fastify.post('/subscriptions/extend', {
-      schema: {
-        tags: ['License'],
-        description: 'Extend subscription',
-        body: {
-          type: 'object',
-          required: ['userEmail', 'months'],
-          properties: {
-            userEmail: { type: 'string', format: 'email' },
-            months: { type: 'integer', minimum: 1, maximum: 12 },
-            subscriptionType: { 
-              type: 'string',
-              enum: ['ONE_MONTH', 'THREE_MONTHS', 'SIX_MONTHS', 'TWELVE_MONTHS']
-            },
-            paymentId: { type: 'string' }
-          }
-        }
-      }
-    }, this.extendSubscription)
-
-    // Device management
-    fastify.post('/devices/activate', {
-      schema: {
-        tags: ['License'],
-        description: 'Activate device',
-        body: {
-          type: 'object',
-          required: ['userEmail', 'deviceId', 'platform'],
-          properties: {
-            userEmail: { type: 'string', format: 'email' },
-            deviceId: { type: 'string' },
-            platform: { type: 'string', enum: ['WEB', 'DESKTOP'] }
-          }
-        }
-      }
-    }, this.activateDevice)
-
-    fastify.post('/devices/transfer', {
-      schema: {
-        tags: ['License'],
-        description: 'Transfer device',
-        body: {
-          type: 'object',
-          required: ['userEmail', 'oldDeviceId', 'newDeviceId', 'platform'],
-          properties: {
-            userEmail: { type: 'string', format: 'email' },
-            oldDeviceId: { type: 'string' },
-            newDeviceId: { type: 'string' },
-            platform: { type: 'string', enum: ['WEB', 'DESKTOP'] }
-          }
-        }
-      }
-    }, this.transferDevice)
-
-    // Item purchase
-    fastify.post('/items/purchase', {
-      schema: {
-        tags: ['License'],
-        description: 'Purchase item',
-        body: {
-          type: 'object',
-          required: ['userEmail', 'itemType', 'quantity'],
-          properties: {
-            userEmail: { type: 'string', format: 'email' },
-            itemType: { 
-              type: 'string',
-              enum: ['SMARTSTORE_CRAWLER', 'SUBSCRIPTION_EXTENSION', 'EXTRA_DEVICE']
-            },
-            quantity: { type: 'integer', minimum: 1, maximum: 100 }
-          }
-        }
-      }
-    }, this.purchaseItem)
-
-    // Admin routes
-    fastify.post('/admin/update-expired', {
-      schema: {
-        tags: ['License Admin'],
-        description: 'Update expired subscriptions'
-      }
-    }, this.updateExpiredSubscriptions)
-
-    fastify.get('/admin/users', {
-      schema: {
-        tags: ['License Admin'],
-        description: 'Get all license users',
-        querystring: {
-          type: 'object',
-          properties: {
-            page: { type: 'integer', minimum: 1 },
-            limit: { type: 'integer', minimum: 1, maximum: 100 },
-            search: { type: 'string' }
-          }
-        }
-      }
-    }, this.getAllLicenseUsers)
-  }
-
-  /**
-   * 라이센스 사용자 생성
-   * POST /api/license/users
-   */
-  createUser = async (request: FastifyRequest, reply: FastifyReply) => {
+  @Get("/admin/users")
+  async getAdminUsers(
+    request: FastifyRequest<{ Querystring: AdminUsersQuery }>,
+    reply: FastifyReply
+  ) {
     try {
-      const data = request.body as CreateLicenseUserRequest
-      const licenseUser = await this.licenseService.createLicenseUser(data)
-      
-      reply.code(201).send({
-        success: true,
-        data: licenseUser
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
+      const { page = "1", limit = "20", search } = request.query;
 
-  /**
-   * 구독 생성
-   * POST /api/license/subscriptions
-   */
-  createSubscription = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const data = request.body as CreateSubscriptionRequest
-      const subscription = await this.licenseService.createSubscription(data)
-      
-      reply.code(201).send({
-        success: true,
-        data: subscription
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
+      const skip = (Number(page) - 1) * Number(limit);
 
-  /**
-   * 구독 연장
-   * POST /api/license/subscriptions/extend
-   */
-  extendSubscription = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const data = request.body as ExtendSubscriptionRequest
-      const subscription = await this.licenseService.extendSubscription(data)
-      
-      reply.code(200).send({
-        success: true,
-        data: subscription
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
+      // 검색 조건 구성
+      const where: any = {};
 
-  /**
-   * 디바이스 활성화
-   * POST /api/license/devices/activate
-   */
-  activateDevice = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const data = request.body as ActivateDeviceRequest
-      const licenseUser = await this.licenseService.activateDevice(data)
-      
-      reply.code(200).send({
-        success: true,
-        data: {
-          userEmail: licenseUser.email,
-          activatedDevices: licenseUser.activatedDevices,
-          allowedDevices: licenseUser.allowedDevices
-        }
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
-
-  /**
-   * 디바이스 이전
-   * POST /api/license/devices/transfer
-   */
-  transferDevice = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const data = request.body as TransferDeviceRequest
-      const licenseUser = await this.licenseService.transferDevice(data)
-      
-      reply.code(200).send({
-        success: true,
-        data: {
-          userEmail: licenseUser.email,
-          activatedDevices: licenseUser.activatedDevices,
-          maxTransfers: licenseUser.maxTransfers
-        }
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
-
-  /**
-   * 라이센스 키로 검증
-   * GET /api/license/verify/:licenseKey
-   */
-  verifyLicense = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { licenseKey } = request.params as { licenseKey: string }
-      const verification = await this.licenseService.verifyLicenseByKey(licenseKey)
-      
-      reply.code(200).send({
-        success: true,
-        data: verification
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
-
-  /**
-   * 사용자 라이센스 상태 조회
-   * GET /api/license/status/:email
-   */
-  getLicenseStatus = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { email } = request.params as { email: string }
-      const status = await this.licenseService.getLicenseStatus(email)
-      
-      reply.code(200).send({
-        success: true,
-        data: status
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
-
-  /**
-   * 아이템 구매
-   * POST /api/license/items/purchase
-   */
-  purchaseItem = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const data = request.body as PurchaseItemRequest
-      const item = await this.licenseService.purchaseItem(data)
-      
-      reply.code(201).send({
-        success: true,
-        data: item
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
-
-  /**
-   * 만료된 구독 확인 및 업데이트 (관리자용)
-   * POST /api/license/admin/update-expired
-   */
-  updateExpiredSubscriptions = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const result = await this.licenseService.checkAndUpdateExpiredSubscriptions()
-      
-      reply.code(200).send({
-        success: true,
-        data: {
-          updatedCount: result.count,
-          message: `${result.count} expired subscriptions updated`
-        }
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
-
-  /**
-   * 라이센스 키 검증 (간단한 버전 - 클라이언트용)
-   * POST /api/license/validate
-   */
-  validateLicense = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { licenseKey, deviceId } = request.body as { licenseKey: string, deviceId?: string }
-      
-      if (!licenseKey) {
-        return reply.code(400).send({
-          success: false,
-          error: 'License key is required'
-        })
+      if (search) {
+        where.OR = [
+          { licenseKey: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { users: { name: { contains: search, mode: "insensitive" } } },
+        ];
       }
-
-      const verification = await this.licenseService.verifyLicenseByKey(licenseKey)
-      
-      if (!verification.isValid) {
-        return reply.code(401).send({
-          success: false,
-          error: 'Invalid license key'
-        })
-      }
-
-      if (!verification.isActive) {
-        return reply.code(402).send({
-          success: false,
-          error: 'License expired or inactive'
-        })
-      }
-
-      // 디바이스 ID가 제공된 경우 디바이스 활성화 확인
-      if (deviceId) {
-        const isDeviceActivated = verification.activatedDevices.some(
-          device => device.device_id === deviceId
-        )
-        
-        return reply.code(200).send({
-          success: true,
-          data: {
-            isValid: true,
-            isActive: true,
-            isDeviceActivated,
-            userEmail: verification.userEmail,
-            allowedDevices: verification.allowedDevices,
-            activatedDeviceCount: verification.activatedDevices.length
-          }
-        })
-      }
-
-      reply.code(200).send({
-        success: true,
-        data: {
-          isValid: true,
-          isActive: true,
-          userEmail: verification.userEmail
-        }
-      })
-    } catch (error) {
-      this.handleError(error, reply)
-    }
-  }
-
-  /**
-   * 사용자별 라이센스 정보 조회 (관리자용)
-   * GET /api/license/admin/users
-   */
-  getAllLicenseUsers = async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { page = 1, limit = 10, search } = request.query as { page?: number, limit?: number, search?: string }
-      const skip = (Number(page) - 1) * Number(limit)
-
-      const where = search ? {
-        OR: [
-          { email: { contains: search as string, mode: 'insensitive' as const } },
-          { licenseKey: { contains: search as string, mode: 'insensitive' as const } }
-        ]
-      } : {}
 
       const [users, total] = await Promise.all([
-        prisma.licenseUser.findMany({
+        prisma.license_users.findMany({
           where,
           skip,
           take: Number(limit),
           include: {
-            subscriptions: {
+            license_subscriptions: {
               where: { isActive: true },
-              take: 1
+              take: 1,
+              orderBy: { createdAt: "desc" },
             },
-            items: true,
-            deviceTransfers: {
-              take: 5,
-              orderBy: { transferDate: 'desc' }
-            }
+            users: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+              },
+            },
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: "desc" },
         }),
-        prisma.licenseUser.count({ where })
-      ])
+        prisma.license_users.count({ where }),
+      ]);
 
       reply.code(200).send({
         success: true,
@@ -479,33 +86,212 @@ export class LicenseController {
             page: Number(page),
             limit: Number(limit),
             total,
-            totalPages: Math.ceil(total / Number(limit))
-          }
-        }
-      })
+            totalPages: Math.ceil(total / Number(limit)),
+          },
+        },
+      });
     } catch (error) {
-      this.handleError(error, reply)
+      console.error("라이센스 관리자 사용자 오류:", error);
+      reply.code(500).send({
+        success: false,
+        error: "라이센스 사용자 조회 실패",
+      });
+    }
+  }
+
+  @Post("/users")
+  async createLicenseUser(
+    request: FastifyRequest<{ Body: CreateLicenseUserBody }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const { email, allowedDevices = 3, maxTransfers = 5 } = request.body;
+
+      // 라이센스 키 생성
+      const licenseKey = this.generateLicenseKey(email);
+
+      // 라이센스 사용자 생성
+      const licenseUser = await prisma.license_users.create({
+        data: {
+          email,
+          licenseKey,
+          allowedDevices,
+          maxTransfers,
+          activatedDevices: [],
+        },
+      });
+
+      reply.code(201).send({
+        success: true,
+        data: licenseUser,
+        message: "라이센스 사용자가 성공적으로 생성되었습니다",
+      });
+    } catch (error) {
+      console.error("라이센스 사용자 생성 오류:", error);
+      reply.code(500).send({
+        success: false,
+        error: "라이센스 사용자 생성 실패",
+      });
+    }
+  }
+
+  @Post("/subscriptions")
+  async createSubscription(
+    request: FastifyRequest<{ Body: CreateSubscriptionBody }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const { userEmail, subscriptionType, paymentId } = request.body;
+
+      // 구독 기간 계산
+      const now = new Date();
+      const endDate = new Date(now);
+
+      switch (subscriptionType) {
+        case "ONE_MONTH":
+          endDate.setMonth(endDate.getMonth() + 1);
+          break;
+        case "THREE_MONTHS":
+          endDate.setMonth(endDate.getMonth() + 3);
+          break;
+        case "SIX_MONTHS":
+          endDate.setMonth(endDate.getMonth() + 6);
+          break;
+        case "TWELVE_MONTHS":
+          endDate.setMonth(endDate.getMonth() + 12);
+          break;
+      }
+
+      // 기존 활성 구독 비활성화
+      await prisma.license_subscriptions.updateMany({
+        where: {
+          userEmail,
+          isActive: true,
+        },
+        data: { isActive: false },
+      });
+
+      // 새 구독 생성
+      const subscription = await prisma.license_subscriptions.create({
+        data: {
+          userEmail,
+          subscriptionType,
+          startDate: now,
+          endDate,
+          isActive: true,
+          paymentId,
+        },
+      });
+
+      reply.code(201).send({
+        success: true,
+        data: subscription,
+        message: "구독이 성공적으로 생성되었습니다",
+      });
+    } catch (error) {
+      console.error("구독 생성 오류:", error);
+      reply.code(500).send({
+        success: false,
+        error: "구독 생성 실패",
+      });
+    }
+  }
+
+  @Get("/validate/:licenseKey")
+  async validateLicense(
+    request: FastifyRequest<{ Params: { licenseKey: string } }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const { licenseKey } = request.params;
+
+      // 라이센스 조회
+      const licenseUser = await prisma.license_users.findUnique({
+        where: { licenseKey },
+        include: {
+          license_subscriptions: {
+            where: { isActive: true },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+          users: {
+            select: { id: true, email: true, name: true },
+          },
+        },
+      });
+
+      if (!licenseUser) {
+        return reply.code(404).send({
+          success: false,
+          error: "라이센스를 찾을 수 없습니다",
+        });
+      }
+
+      // 활성 구독 확인
+      const activeSubscription = licenseUser.license_subscriptions[0];
+      if (!activeSubscription || activeSubscription.endDate < new Date()) {
+        return reply.code(400).send({
+          success: false,
+          error: "라이센스가 만료되었거나 비활성 상태입니다",
+        });
+      }
+
+      reply.code(200).send({
+        success: true,
+        data: {
+          licenseKey,
+          user: licenseUser.users,
+          subscription: activeSubscription,
+          allowedDevices: licenseUser.allowedDevices,
+          activatedDevices: licenseUser.activatedDevices?.length || 0,
+        },
+        message: "라이센스가 유효합니다",
+      });
+    } catch (error) {
+      console.error("라이센스 검증 오류:", error);
+      reply.code(500).send({
+        success: false,
+        error: "라이센스 검증 실패",
+      });
+    }
+  }
+
+  @Delete("/users/:email")
+  async deleteLicenseUser(
+    request: FastifyRequest<{ Params: { email: string } }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const { email } = request.params;
+
+      // 라이센스 사용자 삭제 (CASCADE로 구독도 함께 삭제됨)
+      await prisma.license_users.delete({
+        where: { email },
+      });
+
+      reply.code(200).send({
+        success: true,
+        message: "라이센스 사용자가 성공적으로 삭제되었습니다",
+      });
+    } catch (error) {
+      console.error("라이센스 사용자 삭제 오류:", error);
+      reply.code(500).send({
+        success: false,
+        error: "라이센스 사용자 삭제 실패",
+      });
     }
   }
 
   /**
-   * 에러 처리 헬퍼
+   * 라이센스 키 생성 함수
    */
-  private handleError(error: any, reply: FastifyReply) {
-    console.error('License Controller Error:', error)
-    
-    if (error instanceof LicenseError) {
-      return reply.code(error.statusCode).send({
-        success: false,
-        error: error.message,
-        code: error.code
-      })
+  private generateLicenseKey(email: string): string {
+    // 일반 사용자 라이센스 키 생성 (16자리 영문숫자)
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for (let i = 0; i < 16; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-
-    reply.code(500).send({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR'
-    })
+    return result;
   }
 }

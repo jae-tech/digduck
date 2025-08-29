@@ -94,7 +94,7 @@ export class NaverController {
       status?: string;
       message?: string;
     }) => {
-      console.log('📊 Sending SSE progress:', progress);
+      console.log('📊 SSE 진행 상황 전송:', progress);
       const data = JSON.stringify(progress);
       reply.raw.write(`data: ${data}\n\n`);
     };
