@@ -8,7 +8,6 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import path from "path";
 import prismaPlugin from "./plugins/prisma";
-import licensePlugin from "./plugins/license.plugin";
 import crawlHistoryPlugin from "./plugins/crawl-history.plugin";
 
 import { env } from "@/config/env";
@@ -173,8 +172,6 @@ export const build = async (): Promise<FastifyInstance> => {
   // Prisma 플러그인 등록
   await app.register(prismaPlugin);
 
-  // License management 플러그인 등록
-  await app.register(licensePlugin);
 
   // Crawl history 플러그인 등록
   await app.register(crawlHistoryPlugin);

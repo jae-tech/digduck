@@ -96,12 +96,12 @@ export class CrawlService {
         .locator(paginationSelector)
         .isVisible();
       if (paginationVisible) {
-        console.log("✅ Pagination area is now visible");
+        console.log("✅ 페이지네이션 영역이 이제 표시됩니다");
       } else {
-        console.log("⚠️ Pagination area not found, continuing anyway");
+        console.log("⚠️ 페이지네이션 영역을 찾을 수 없지만 계속 진행합니다");
       }
     } catch (error) {
-      console.log("⚠️ Failed to scroll to pagination:", error);
+      console.log("⚠️ 페이지네이션으로 스크롤 실패:", error);
     }
   }
 
@@ -147,7 +147,7 @@ export class CrawlService {
         }
       }
     } catch (error) {
-      console.log("⚠️ Failed to set sort order:", error);
+      console.log("⚠️ 정렬 순서 설정 실패:", error);
     }
   }
 
@@ -248,7 +248,7 @@ export class CrawlService {
 
       return result;
     } catch (error) {
-      console.error("❌ Review crawling failed:", error);
+      console.error("❌ 리뷰 크롤링 실패:", error);
 
       // 캡챠 감지로 인한 에러인 경우 이미 브라우저가 종료되었을 수 있음
       if (error instanceof Error && error.message.includes("캡챠가 감지되어")) {
@@ -263,7 +263,7 @@ export class CrawlService {
             this.stealthPageFactory = null;
           }
         } catch (cleanupError) {
-          console.error("Failed to cleanup browser after error:", cleanupError);
+          console.error("오류 후 브라우저 정리 실패:", cleanupError);
         }
 
         throw new Error(
@@ -310,7 +310,7 @@ export class CrawlService {
           await page.waitForSelector(selector, { timeout: 3000 });
           await page.click(selector);
           reviewTabFound = true;
-          console.log("✅ Found and clicked review tab");
+          console.log("✅ 리뷰 탭을 찾아 클릭했습니다");
           break;
         } catch {
           continue;
@@ -319,7 +319,7 @@ export class CrawlService {
 
       if (!reviewTabFound) {
         console.log(
-          "⚠️ Review tab not found, looking for reviews on current page"
+          "⚠️ 리뷰 탭을 찾을 수 없습니다. 현재 페이지에서 리뷰를 찾습니다"
         );
       }
 
