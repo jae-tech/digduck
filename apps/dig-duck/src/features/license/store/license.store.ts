@@ -12,6 +12,8 @@ interface LicenseStore {
   setLicenseData: (key: string, result: LicenseVerificationResult) => void;
   clearLicense: () => void;
   isLicenseExpired: () => boolean;
+  isAdminUser: () => boolean;
+  isAuthenticated: () => boolean;
 }
 
 export const useLicenseStore = create<LicenseStore>()(
@@ -44,6 +46,16 @@ export const useLicenseStore = create<LicenseStore>()(
         const { expiryDate } = get();
         if (!expiryDate) return true;
         return new Date(expiryDate) < new Date();
+      },
+
+      isAdminUser: () => {
+        const { licenseKey } = get();
+        return licenseKey?.startsWith("ADMIN") || false;
+      },
+
+      isAuthenticated: () => {
+        const { isLicenseValid, licenseKey } = get();
+        return isLicenseValid && !!licenseKey && !get().isLicenseExpired();
       },
     }),
     {
