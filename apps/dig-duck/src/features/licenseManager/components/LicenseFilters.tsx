@@ -20,9 +20,9 @@ import {
   Zap,
   Clock,
   UserX,
-  Shield,
   Users,
 } from "lucide-react";
+import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
 
 // 타입 정의
 interface LicenseFilter {
@@ -180,7 +180,7 @@ export const LicenseFilters: React.FC<LicenseFiltersProps> = ({
                   </SelectItem>
                   <SelectItem value="admin">
                     <div className="flex items-center">
-                      <Shield className="w-3 h-3 mr-2 text-orange-500" />
+                      <DigDuckIcon className="mr-2 text-orange-500" size={12} />
                       관리자
                     </div>
                   </SelectItem>
@@ -337,7 +337,7 @@ export const LicenseFilters: React.FC<LicenseFiltersProps> = ({
                     onClick={() => applyPresetFilter("admin")}
                     className="justify-start text-xs bg-white border-gray-300 hover:bg-orange-50 hover:border-orange-300"
                   >
-                    <Shield className="w-3 h-3 mr-2 text-orange-600" />
+                    <DigDuckIcon className="mr-2 text-orange-600" size={12} />
                     관리자
                   </Button>
                   <Button

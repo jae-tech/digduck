@@ -25,7 +25,7 @@ dist-ssr
 
 
 # Rust 빌드 결과물
-src-tauri/target/
+src-tauri/target
 
 # 프로덕션 빌드 결과
 src-tauri/src-tauri/target/release/

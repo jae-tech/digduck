@@ -144,6 +144,7 @@ export class LicenseGeneratorService {
   }
 
   // 개발용 시뮬레이션
+  // @ts-ignore
   private static async simulateGeneration(
     config: LicenseConfig
   ): Promise<LicenseGenerationResult> {
