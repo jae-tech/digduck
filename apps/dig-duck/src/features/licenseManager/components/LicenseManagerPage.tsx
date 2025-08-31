@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Key, Plus, Search, Filter } from "lucide-react";
+import { Key, Plus, Search } from "lucide-react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { LicenseGeneratorDialog } from "../../licenseGenerator/components/LicenseGeneratorDialog";
 import { DataTable } from "@/components/DataTable";

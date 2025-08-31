@@ -547,6 +547,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dig-duck"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-shell",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1800,17 +1811,6 @@ dependencies = [
  "serde",
  "thiserror 2.0.16",
  "windows-sys 0.60.2",
-]
-
-[[package]]
-name = "naver-crawler"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-shell",
 ]
 
 [[package]]
