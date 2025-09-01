@@ -18,6 +18,7 @@ import {
   LicenseError,
   LicenseErrorCodes,
 } from "@/types/license.types";
+import { mailService } from "@/services";
 
 export class LicenseService {
   constructor(private prisma: PrismaClient) {}
@@ -35,6 +36,26 @@ export class LicenseService {
       .toUpperCase();
     // 16자리로 자르기
     return fullHash.substring(0, 16);
+  }
+
+  /**
+   * 구독 타입명 변환
+   */
+  private getSubscriptionTypeName(subscriptionType: LicenseSubscriptionType): string {
+    switch (subscriptionType) {
+      case "ONE_MONTH":
+        return "1개월";
+      case "THREE_MONTHS":
+        return "3개월";
+      case "SIX_MONTHS":
+        return "6개월";
+      case "ONE_YEAR":
+        return "1년";
+      case "LIFETIME":
+        return "평생";
+      default:
+        return "알 수 없음";
+    }
   }
 
   /**
@@ -155,6 +176,39 @@ export class LicenseService {
         },
       });
     });
+
+    // 라이센스 발급 완료 메일 발송
+    if (mailService.isConfigured()) {
+      try {
+        const licenseUser = await this.prisma.license_users.findUnique({
+          where: { email: data.userEmail }
+        });
+
+        if (licenseUser) {
+          await mailService.sendTemplatedMail(
+            'license-created',
+            {
+              userName: licenseUser.userName || data.userEmail.split('@')[0],
+              productName: env.PRODUCT_NAME || 'DigDuck',
+              licenseKey: licenseUser.licenseKey,
+              userEmail: data.userEmail,
+              issueDate: subscription.startDate.toLocaleDateString('ko-KR'),
+              expirationDate: subscription.endDate.toLocaleDateString('ko-KR'),
+              licenseType: this.getSubscriptionTypeName(data.subscriptionType),
+              loginUrl: env.CLIENT_URL || 'https://app.example.com/login',
+              companyName: env.COMPANY_NAME || 'DigDuck'
+            },
+            {
+              from: env.MAIL_FROM || 'noreply@digduck.com',
+              to: data.userEmail
+            }
+          );
+        }
+      } catch (error) {
+        console.error('라이센스 발급 메일 발송 실패:', error);
+        // 메일 발송 실패는 라이센스 생성을 막지 않음
+      }
+    }
 
     return subscription;
   }
