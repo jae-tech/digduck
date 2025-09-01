@@ -39,7 +39,6 @@ import {
   Copy,
   Pause,
   Play,
-  Shield,
   User,
   AlertCircle,
   CheckCircle,
@@ -59,6 +58,7 @@ import {
   Loader2,
   Plus,
 } from "lucide-react";
+import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
 
 // 🎯 타입 정의
 interface LicenseRecord {
@@ -146,7 +146,7 @@ const LicenseTypeBadge = ({ type }: { type: string }) => {
       variant="outline"
       className="bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 border-orange-200 shadow-sm px-2.5 py-1 font-medium"
     >
-      <Shield className="w-3 h-3 mr-1.5" />
+      <DigDuckIcon className="mr-1.5" size={12} />
       관리자
     </Badge>
   ) : (

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { LicenseKeyScreen } from "../features/license";
 import { useLicenseStore } from "../features/license/store/license.store";
@@ -6,6 +6,21 @@ import { type LicenseVerificationResult } from "../features/license/types/licens
 import CenteredLayout from "@/components/layouts/CenteredLayout";
 
 export const Route = createFileRoute("/license")({
+  beforeLoad: () => {
+    // 스토어에서 직접 상태 확인 (React 훅 없이)
+    const state = useLicenseStore.getState();
+    const isAuthenticated =
+      state.isLicenseValid && !!state.licenseKey && !state.isLicenseExpired();
+    const isAdmin = state.licenseKey?.startsWith("ADMIN") || false;
+
+    if (isAuthenticated) {
+      if (isAdmin) {
+        throw redirect({ to: "/admin/dashboard" });
+      } else {
+        throw redirect({ to: "/crawler" });
+      }
+    }
+  },
   component: LicenseRoute,
 });
 

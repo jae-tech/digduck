@@ -97,6 +97,7 @@ export class LicenseService {
   }
 
   // 프론트엔드 개발용 시뮬레이션
+  // @ts-ignore
   private static async simulateVerification(
     licenseKey: string
   ): Promise<LicenseVerificationResult> {

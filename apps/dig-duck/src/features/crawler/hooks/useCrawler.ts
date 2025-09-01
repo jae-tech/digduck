@@ -48,6 +48,7 @@ export const useReviewsCrawlWithProgress = () => {
           url: params.url,
           sort: params.sort,
           maxPages: params.maxPages,
+          useUserIp: params.useUserIp || false,
         }),
       });
 
@@ -136,6 +137,7 @@ const fetchReviews = async (params: CrawlParams): Promise<CrawlResult> => {
         url: params.url,
         sort: params.sort,
         maxPages: params.maxPages,
+        useUserIp: params.useUserIp || false,
       }),
     });
 

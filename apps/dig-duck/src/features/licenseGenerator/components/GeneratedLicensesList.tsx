@@ -12,9 +12,9 @@ import {
   Key,
   Mail,
   Calendar,
-  Shield,
   User,
 } from "lucide-react";
+import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
 import { useLicenseGenerator } from "../hooks/useLicenseGenerator";
 
 export const GeneratedLicensesList: React.FC = () => {
@@ -149,7 +149,7 @@ export const GeneratedLicensesList: React.FC = () => {
                       >
                         {license.config.licenseType === "admin" ? (
                           <>
-                            <Shield className="w-3 h-3 mr-1" />
+                            <DigDuckIcon className="mr-1" size={12} />
                             관리자
                           </>
                         ) : (

@@ -126,7 +126,7 @@ export function CrawlerResults({
   ];
 
   return (
-    <Card className="bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-800">
+    <Card className="h-full bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-800">
       <CardContent className="pt-6">
         {finalResult?.reviews && finalResult.reviews.length > 0 ? (
           <DataTable
@@ -135,7 +135,7 @@ export function CrawlerResults({
             searchPlaceholder="리뷰 내용, 작성자 검색..."
             initialPageSize={20}
             pageSizeOptions={[10, 20, 50, 100]}
-            maxHeight="500px"
+            maxHeight="100%"
             enableSorting={true}
             enableFiltering={true}
             enablePagination={true}
