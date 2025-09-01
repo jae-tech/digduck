@@ -21,7 +21,22 @@ const envSchema = z.object({
   BCRYPT_SALT_ROUNDS: z.coerce.number().positive().default(12),
   NAVER_LOGIN_ID: z.string().min(2).max(100).default(""),
   NAVER_LOGIN_PASSWORD: z.string().min(6).max(100).default(""),
-  LICENSE_SALT: z.string().min(16, "License salt must be at least 16 characters").default("default-license-salt-key"),
+  LICENSE_SALT: z
+    .string()
+    .min(16, "License salt must be at least 16 characters")
+    .default("default-license-salt-key"),
+
+  // Mail Service Configuration
+  MAIL_FROM: z.string().email().optional(),
+  PRODUCT_NAME: z.string().default("DigDuck"),
+  CLIENT_URL: z.string().url().optional(),
+  COMPANY_NAME: z.string().default("DigDuck"),
+  MAIL_PROVIDER: z.enum(["smtp", "gmail", "outlook"]).optional(),
+  MAIL_USER: z.string().email().optional(),
+  MAIL_PASS: z.string().optional(),
+  MAIL_HOST: z.string().optional(),
+  MAIL_PORT: z.coerce.number().optional(),
+  MAIL_SECURE: z.string().optional().default("opvt pqki jwwz hmot"),
 });
 
 const parseResult = envSchema.safeParse(process.env);
