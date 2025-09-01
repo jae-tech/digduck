@@ -6,6 +6,7 @@ export interface CrawlParams {
   url: string;
   sort: CrawlSort;
   maxPages: number;
+  useUserIp?: boolean;
 }
 
 // 리뷰 데이터 타입

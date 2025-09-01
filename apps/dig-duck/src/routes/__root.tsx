@@ -2,6 +2,7 @@ import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { useEffect } from "react";
 import { useLicenseStore } from "../features/license/store/license.store";
+import { NotFoundPage } from "@/components/pages/NotFoundPage";
 
 interface RootContext {
   isLicenseValid: boolean;
@@ -9,6 +10,7 @@ interface RootContext {
 
 export const Route = createRootRoute({
   component: RootComponent,
+  notFoundComponent: NotFoundPage,
   context: (): RootContext => ({
     isLicenseValid: false, // 기본값, 실제 값은 컴포넌트에서 설정
   }),

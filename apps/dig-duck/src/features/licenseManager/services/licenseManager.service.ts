@@ -167,8 +167,8 @@ export class LicenseManagerService {
       {
         id: "1",
         licenseKey: "ABC123DEF4567890",
-        userEmail: "user1@example.com",
-        productName: "Standard License",
+        userEmail: "user1@digduck.app",
+        productName: "Dig Duck Standard",
         licenseType: "user",
         status: "active",
         issueDate: "2024-01-15",
@@ -182,8 +182,8 @@ export class LicenseManagerService {
       {
         id: "2",
         licenseKey: "ADMIN01012345678",
-        userEmail: "admin@company.com",
-        productName: "Admin License",
+        userEmail: "admin@digduck.app",
+        productName: "Dig Duck Admin",
         licenseType: "admin",
         status: "active",
         issueDate: "2024-01-01",
@@ -197,8 +197,8 @@ export class LicenseManagerService {
       {
         id: "3",
         licenseKey: "XYZ789GHI0123456",
-        userEmail: "user2@example.com",
-        productName: "Pro License",
+        userEmail: "user2@digduck.app",
+        productName: "Dig Duck Pro",
         licenseType: "user",
         status: "expired",
         issueDate: "2023-06-01",
@@ -210,8 +210,8 @@ export class LicenseManagerService {
       {
         id: "4",
         licenseKey: "TEST1234DEMO567",
-        userEmail: "test@example.com",
-        productName: "Trial License",
+        userEmail: "trial@digduck.app",
+        productName: "Dig Duck Trial",
         licenseType: "user",
         status: "suspended",
         issueDate: "2024-08-01",

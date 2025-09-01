@@ -71,12 +71,12 @@ export function CrawlerProgress({
         message: progress.message || `${progress.status} 진행 중...`,
         icon: getStatusIcon(progress.status),
       };
-      
-      setLogs(prev => {
+
+      setLogs((prev) => {
         // 중복 메시지 방지
-        const isDuplicate = prev.length > 0 && 
-          prev[0].message === newLog.message;
-        
+        const isDuplicate =
+          prev.length > 0 && prev[0].message === newLog.message;
+
         if (!isDuplicate) {
           return [newLog, ...prev.slice(0, 4)]; // 최신을 맨 위에, 최대 5개 유지
         }
@@ -92,28 +92,36 @@ export function CrawlerProgress({
         message: error,
         icon: <AlertCircle className="w-3 h-3 text-red-500" />,
       };
-      
-      setLogs(prev => {
-        const isDuplicate = prev.length > 0 && 
-          prev[0].message === errorLog.message;
-        
+
+      setLogs((prev) => {
+        const isDuplicate =
+          prev.length > 0 && prev[0].message === errorLog.message;
+
         if (!isDuplicate) {
           return [errorLog, ...prev.slice(0, 4)];
         }
         return prev;
       });
     }
-  }, [progress.message, progress.status, progress.currentPage, isLoading, error]);
+  }, [
+    progress.message,
+    progress.status,
+    progress.currentPage,
+    isLoading,
+    error,
+  ]);
 
   // 새로운 크롤링 시작시 로그 초기화
   useEffect(() => {
     if (isLoading) {
       // 완전히 초기화 후 시작 메시지 추가
-      setLogs([{
-        timestamp: new Date().toLocaleTimeString(),
-        message: "크롤링을 시작합니다...",
-        icon: <Activity className="w-3 h-3" />,
-      }]);
+      setLogs([
+        {
+          timestamp: new Date().toLocaleTimeString(),
+          message: "크롤링을 시작합니다...",
+          icon: <Activity className="w-3 h-3" />,
+        },
+      ]);
     }
   }, [isLoading]);
 
@@ -180,7 +188,6 @@ export function CrawlerProgress({
           </div>
         </CardContent>
       </Card>
-
     </>
   );
 }
