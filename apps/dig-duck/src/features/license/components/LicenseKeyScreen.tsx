@@ -65,7 +65,14 @@ export const LicenseKeyScreen: React.FC<LicenseVerificationProps> = ({
             라이센스 활성화
           </CardTitle>
           <CardDescription className="text-gray-600 mt-2 px-2">
-            Dig Duck을 시작하려면 라이센스 코드를 입력해주세요
+            <span className="hidden sm:inline">
+              Dig Duck을 시작하려면 라이센스 코드를 입력해주세요
+            </span>
+            <span className="sm:hidden">
+              Dig Duck을 시작하려면
+              <br />
+              라이센스 코드를 입력해주세요
+            </span>
           </CardDescription>
         </CardHeader>
 
@@ -115,7 +122,6 @@ export const LicenseKeyScreen: React.FC<LicenseVerificationProps> = ({
               </Button>
             </div>
           </div>
-
         </CardContent>
       </Card>
     </div>
