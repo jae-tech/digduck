@@ -115,7 +115,9 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* 사이드바 - 데스크톱 */}
-      <aside className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 transition-all duration-300 ${isSidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}`}>
+      <aside
+        className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 transition-all duration-300 ${isSidebarCollapsed ? "lg:w-16" : "lg:w-64"}`}
+      >
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           {/* 로고 영역 */}
           <div className="flex items-center px-4 py-4 border-b border-gray-200">
@@ -139,7 +141,7 @@ export default function AdminLayout({
                     {/* 메인 메뉴 */}
                     <button
                       onClick={() => setIsServicesOpen(!isServicesOpen)}
-                      className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'} py-2 rounded-lg transition-colors group relative text-gray-700 hover:bg-gray-100`}
+                      className={`w-full flex items-center ${isSidebarCollapsed ? "justify-center px-2" : "justify-between px-3"} py-2 rounded-lg transition-colors group relative text-gray-700 hover:bg-gray-100`}
                     >
                       <div className="flex items-center">
                         {item.icon}
@@ -178,7 +180,9 @@ export default function AdminLayout({
                             }`}
                           >
                             {subItem.icon}
-                            <span className="font-medium text-sm">{subItem.label}</span>
+                            <span className="font-medium text-sm">
+                              {subItem.label}
+                            </span>
                             <ExternalLink className="w-3 h-3 ml-auto opacity-60" />
                           </Link>
                         ))}
@@ -192,7 +196,7 @@ export default function AdminLayout({
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'space-x-3 px-3'} py-2 rounded-lg transition-colors group relative ${
+                  className={`flex items-center ${isSidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"} py-2 rounded-lg transition-colors group relative ${
                     location.pathname === item.to
                       ? "bg-blue-100 text-blue-700 border border-blue-200"
                       : "text-gray-700 hover:bg-gray-100"
@@ -259,7 +263,9 @@ export default function AdminLayout({
       </aside>
 
       {/* 메인 컨텐츠 영역 */}
-      <div className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
+      <div
+        className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? "lg:ml-16" : "lg:ml-64"}`}
+      >
         {/* 모바일 헤더 */}
         <header className="lg:hidden bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-4">
@@ -292,11 +298,11 @@ export default function AdminLayout({
         {isMobileMenuOpen && (
           <>
             {/* 배경 오버레이 - 클릭시 메뉴 닫기 */}
-            <div 
+            <div
               className="lg:hidden fixed inset-0 z-40 bg-gray-600 bg-opacity-75"
               onClick={toggleMobileMenu}
             ></div>
-            
+
             {/* 사이드 메뉴 */}
             <div className="lg:hidden fixed inset-y-0 left-0 w-64 bg-white z-50 shadow-xl">
               <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
@@ -312,17 +318,19 @@ export default function AdminLayout({
               </div>
 
               <nav className="px-4 py-4 space-y-2">
-                {menuItems.map((item) => (
-                  <MenuItem
-                    key={item.to}
-                    to={item.to}
-                    icon={item.icon}
-                    label={item.label}
-                    badge={item.badge}
-                    isActive={location.pathname === item.to}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  />
-                ))}
+                {menuItems
+                  .filter((item) => typeof item.to === "string")
+                  .map((item) => (
+                    <MenuItem
+                      key={item.to}
+                      to={item.to as string}
+                      icon={item.icon}
+                      label={item.label}
+                      badge={item.badge}
+                      isActive={location.pathname === item.to}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    />
+                  ))}
               </nav>
 
               {/* 모바일 메뉴 하단 사용자 정보 */}
@@ -368,19 +376,23 @@ export default function AdminLayout({
                 <h2 className="text-2xl font-bold text-gray-900">
                   {(() => {
                     // 직접 매치되는 메뉴 찾기
-                    let found = menuItems.find((item) => item.to === location.pathname);
+                    let found = menuItems.find(
+                      (item) => item.to === location.pathname
+                    );
                     if (found) return found.label;
-                    
+
                     // 서브메뉴에서 찾기
                     for (const item of menuItems) {
                       if (item.submenu) {
-                        const subItem = item.submenu.find((sub) => sub.to === location.pathname);
+                        const subItem = item.submenu.find(
+                          (sub) => sub.to === location.pathname
+                        );
                         if (subItem) return subItem.label;
                       }
                     }
-                    
+
                     return "관리자 패널";
-                  })()} 
+                  })()}
                 </h2>
               </div>
               <div className="flex items-center space-x-4">
