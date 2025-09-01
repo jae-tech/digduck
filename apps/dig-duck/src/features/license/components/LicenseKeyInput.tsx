@@ -6,7 +6,8 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Shield } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
 
 interface LicenseKeyInputProps {
   value: string;
@@ -32,7 +33,7 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
         </Label>
         {isAdminLicense && (
           <div className="flex items-center justify-center mt-1 text-xs text-orange-600">
-            <Shield className="w-3 h-3 mr-1" />
+            <DigDuckIcon className="mr-1" size={12} />
             관리자 라이센스 감지됨
           </div>
         )}
@@ -160,8 +161,8 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
       <div className="text-center space-y-1 px-2">
         <p className="text-xs text-gray-500">
           {isAdminLicense
-            ? "ADMIN + 휴대폰번호 (11자리) 형식입니다"
-            : "구매 확인 이메일에서 16자리 영문숫자 코드를 확인하세요"}
+            ? "관리자 전용 라이센스입니다"
+            : "라이센스 코드 16자리를 입력해주세요"}
         </p>
       </div>
     </div>

@@ -3,11 +3,10 @@
   "version": "0.0.0",
   "identifier": "com.digduck.app",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "",
     "beforeBuildCommand": "",
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:5173",
-    "externalUrl": "https://digduck.io"
+    "frontendDist": "../",
+    "devUrl": "http://localhost:5173"
   },
   "app": {
     "windows": [
