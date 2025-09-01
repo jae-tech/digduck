@@ -7,6 +7,8 @@ import {
   Delete,
 } from "@/decorators/controller.decorator";
 import { prisma } from "@/plugins/prisma";
+import { mailService } from "@/services";
+import { env } from "@/config/env";
 
 interface CreateLicenseUserBody {
   email: string;
@@ -183,6 +185,40 @@ export class LicenseController {
         },
       });
 
+      // 라이센스 발급 완료 메일 발송
+      if (mailService.isConfigured()) {
+        try {
+          const licenseUser = await prisma.license_users.findUnique({
+            where: { email: userEmail }
+          });
+
+          if (licenseUser) {
+            await mailService.sendTemplatedMail(
+              'license-created',
+              {
+                userName: licenseUser.userName || userEmail.split('@')[0],
+                productName: env.PRODUCT_NAME || 'DigDuck',
+                licenseKey: licenseUser.licenseKey,
+                userEmail: userEmail,
+                issueDate: subscription.startDate.toLocaleDateString('ko-KR'),
+                expirationDate: subscription.endDate.toLocaleDateString('ko-KR'),
+                licenseType: this.getSubscriptionTypeName(subscriptionType),
+                loginUrl: env.CLIENT_URL || 'https://app.example.com/login',
+                companyName: env.COMPANY_NAME || 'DigDuck'
+              },
+              {
+                from: env.MAIL_FROM || 'noreply@digduck.com',
+                to: userEmail
+              }
+            );
+            console.log(`라이센스 발급 메일 발송 완료: ${userEmail}`);
+          }
+        } catch (error) {
+          console.error('라이센스 발급 메일 발송 실패:', error);
+          // 메일 발송 실패는 라이센스 생성을 막지 않음
+        }
+      }
+
       reply.code(201).send({
         success: true,
         data: subscription,
@@ -293,5 +329,20 @@ export class LicenseController {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
+  }
+
+  private getSubscriptionTypeName(subscriptionType: string): string {
+    switch (subscriptionType) {
+      case "ONE_MONTH":
+        return "1개월";
+      case "THREE_MONTHS":
+        return "3개월";
+      case "SIX_MONTHS":
+        return "6개월";
+      case "TWELVE_MONTHS":
+        return "12개월";
+      default:
+        return "알 수 없음";
+    }
   }
 }
