@@ -2,6 +2,8 @@ import { NaverShoppingAPI } from "@/external/apis/naver-shopping-api";
 import { ComparisonService } from "./comparison.service";
 import { CrawlService } from "./crawl.service";
 import { MailService } from "./mail.service";
+import { MailHistoryService } from "./mail-history.service";
+import { MailTemplateService } from "./mail-template.service";
 import { LicenseNotificationService } from "./license-notification.service";
 import { PrismaClient } from "@prisma/client";
 
@@ -13,6 +15,8 @@ const prisma = new PrismaClient();
 export const comparisonService = new ComparisonService(naverShoppingAPI);
 export const crawlService = new CrawlService();
 export const mailService = new MailService();
+export const mailHistoryService = new MailHistoryService(prisma);
+export const mailTemplateService = new MailTemplateService();
 export const licenseNotificationService = new LicenseNotificationService(
   prisma
 );

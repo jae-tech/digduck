@@ -167,7 +167,7 @@ model plans {
   features      Json
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
-  billingCycle  BillingCycle    @default(MONTHLY) @map("billing_cycle")
+  billingCycle  BillingCycle    @default(ONE_MONTH) @map("billing_cycle")
   subscriptions subscriptions[]
 }
 
@@ -223,11 +223,14 @@ model users {
   license_users   license_users?
   products        products[]
   subscriptions   subscriptions[]
+  mail_history    mail_history[]
 }
 
 enum BillingCycle {
-  MONTHLY
-  ANNUAL
+  ONE_MONTH
+  THREE_MONTHS
+  SIX_MONTHS
+  TWELVE_MONTHS
 }
 
 enum CrawlStatus {
@@ -264,6 +267,51 @@ enum SourceSite {
   GMARKET
   AUCTION
   ELEVENST
+}
+
+model mail_history {
+  id             Int            @id @default(autoincrement())
+  userEmail      String?        @map("user_email")
+  fromEmail      String         @map("from_email")
+  toEmail        String         @map("to_email")
+  ccEmails       String[]       @default([]) @map("cc_emails")
+  bccEmails      String[]       @default([]) @map("bcc_emails")
+  subject        String
+  templateId     String?        @map("template_id")
+  templateVars   Json?          @map("template_vars")
+  provider       MailProvider
+  messageId      String?        @map("message_id")
+  status         MailStatus     @default(PENDING)
+  errorMessage   String?        @map("error_message")
+  sentAt         DateTime?      @map("sent_at")
+  deliveredAt    DateTime?      @map("delivered_at")
+  openedAt       DateTime?      @map("opened_at")
+  clickedAt      DateTime?      @map("clicked_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  users          users?         @relation(fields: [userEmail], references: [email], onDelete: SetNull)
+
+  @@index([userEmail])
+  @@index([status])
+  @@index([createdAt])
+  @@index([templateId])
+}
+
+enum MailStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+  OPENED
+  CLICKED
+}
+
+enum MailProvider {
+  SMTP
+  GMAIL
+  OUTLOOK
+  ZOHO
 }
 
 enum SubscriptionStatus {
