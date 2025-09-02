@@ -633,7 +633,7 @@ export class MailController {
     const result = await mailHistoryService.getMailHistory(filter);
     
     // 템플릿별 사용량 집계
-    const templateUsage = result.data.reduce((acc, mail) => {
+    const templateUsage = result.data.reduce((acc: any, mail: any) => {
       if (mail.templateId) {
         if (!acc[mail.templateId]) {
           acc[mail.templateId] = {

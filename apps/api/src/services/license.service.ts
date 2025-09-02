@@ -141,7 +141,7 @@ export class LicenseService {
     const endDate = this.calculateEndDate(startDate, data.subscriptionType);
 
     // 트랜잭션으로 구독 생성
-    const subscription = await this.prisma.$transaction(async (tx) => {
+    const subscription = await this.prisma.$transaction(async (tx: any) => {
       // 기존 활성 구독 비활성화
       await tx.licenseSubscriptions.updateMany({
         where: {
@@ -206,7 +206,7 @@ export class LicenseService {
    */
   async extendSubscription(data: ExtendSubscriptionRequest) {
     // 동시성 제어를 위한 락
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx: any) => {
       // 현재 활성 구독 찾기
       const activeSubscription = await tx.licenseSubscriptions.findFirst({
         where: {
@@ -319,7 +319,7 @@ export class LicenseService {
    * 디바이스 이전
    */
   async transferDevice(data: TransferDeviceRequest) {
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx: any) => {
       const licenseUser = await tx.licenseUsers.findUnique({
         where: { email: data.userEmail },
       });
@@ -495,13 +495,13 @@ export class LicenseService {
             paymentId: activeSubscription.paymentId || undefined,
           }
         : undefined,
-      items: licenseUser.licenseItems.map((item) => ({
+      items: licenseUser.licenseItems.map((item: any) => ({
         id: item.id,
         itemType: item.itemType,
         quantity: item.quantity,
         purchasedAt: item.purchasedAt,
       })),
-      deviceTransfers: licenseUser.deviceTransfers.map((transfer) => ({
+      deviceTransfers: licenseUser.deviceTransfers.map((transfer: any) => ({
         id: transfer.id,
         oldDeviceId: transfer.oldDeviceId,
         newDeviceId: transfer.newDeviceId,
@@ -527,7 +527,7 @@ export class LicenseService {
       );
     }
 
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx: any) => {
       // 아이템 구매 기록
       const item = await tx.licenseItems.create({
         data: {

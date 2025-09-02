@@ -189,12 +189,12 @@ export class MailHistoryService {
       ]);
 
       return {
-        statusStats: statusStats.reduce((acc, stat) => {
+        statusStats: statusStats.reduce((acc: any, stat: any) => {
           acc[stat.status as keyof typeof MailStatus] = stat._count.id;
           return acc;
         }, {} as Record<string, number>),
         
-        providerStats: providerStats.reduce((acc, stat) => {
+        providerStats: providerStats.reduce((acc: any, stat: any) => {
           acc[stat.provider as keyof typeof MailProvider] = stat._count.id;
           return acc;
         }, {} as Record<string, number>),
