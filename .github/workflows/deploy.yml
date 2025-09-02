@@ -155,7 +155,7 @@ jobs:
               echo "🐳 Docker 설치 중..."
               curl -fsSL https://get.docker.com -o get-docker.sh
               sudo sh get-docker.sh
-              sudo usermod -aG docker ${{ secrets.EC2_USERNAME }}
+              sudo usermod -aG docker ubuntu
               sudo systemctl start docker
               sudo systemctl enable docker
               echo "Docker 설치 완료"
@@ -191,7 +191,7 @@ jobs:
               docker run -d \
                 --name postgres17 \
                 --restart unless-stopped \
-                -e POSTGRES_DB=latte \
+                -e POSTGRES_DB=digduck \
                 -e POSTGRES_USER=${{ secrets.DB_USER }} \
                 -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} \
                 -p 5432:5432 \
@@ -204,7 +204,7 @@ jobs:
               
               # DB 연결 확인
               for i in {1..20}; do
-                if docker exec postgres17 pg_isready -U ${{ secrets.DB_USER }} -d latte > /dev/null 2>&1; then
+                if docker exec postgres17 pg_isready -U ${{ secrets.DB_USER }} -d digduck > /dev/null 2>&1; then
                   echo "✅ PostgreSQL 17 준비 완료!"
                   break
                 fi
@@ -231,16 +231,36 @@ jobs:
 
             echo "색상 전환: $CURRENT_COLOR (포트:$CURRENT_PORT) -> $NEW_COLOR (포트:$NEW_PORT)"
 
-            # 새 컨테이너 실행
+            # 새 컨테이너 실행 (모든 환경변수 포함)
             echo "🚀 새 컨테이너($NEW_COLOR) 시작 중..."
             docker run -d \
               --name dig-duck-api-$NEW_COLOR \
               --restart unless-stopped \
               --link postgres17:postgres \
               -p $NEW_PORT:8000 \
-              -e NODE_ENV=production \
-              -e DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@postgres:5432/digduck \
-              -e PORT=8000 \
+              -e NODE_ENV=${{ secrets.NODE_ENV || 'production' }} \
+              -e PORT=${{ secrets.PORT || '8000' }} \
+              -e HOST=${{ secrets.HOST || '0.0.0.0' }} \
+              -e DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@postgres:5432/${{ secrets.DB_NAME || 'digduck' }} \
+              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              -e JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN || '7d' }} \
+              -e LOG_LEVEL=${{ secrets.LOG_LEVEL || 'info' }} \
+              -e CORS_ORIGIN=${{ secrets.CORS_ORIGIN || 'https://digduck.app' }} \
+              -e RATE_LIMIT_MAX=${{ secrets.RATE_LIMIT_MAX || '50' }} \
+              -e BCRYPT_SALT_ROUNDS=${{ secrets.BCRYPT_SALT_ROUNDS || '12' }} \
+              -e NAVER_LOGIN_ID=${{ secrets.NAVER_LOGIN_ID }} \
+              -e NAVER_LOGIN_PASSWORD=${{ secrets.NAVER_LOGIN_PASSWORD }} \
+              -e LICENSE_SALT=${{ secrets.LICENSE_SALT }} \
+              -e MAIL_FROM=${{ secrets.MAIL_FROM || 'hello@digduck.app' }} \
+              -e PRODUCT_NAME=${{ secrets.PRODUCT_NAME || 'DigDuck' }} \
+              -e CLIENT_URL=${{ secrets.CLIENT_URL || 'https://digduck.app' }} \
+              -e COMPANY_NAME=${{ secrets.COMPANY_NAME || 'DigDuck' }} \
+              -e MAIL_PROVIDER=${{ secrets.MAIL_PROVIDER || 'zoho' }} \
+              -e MAIL_USER=${{ secrets.MAIL_USER }} \
+              -e MAIL_PASS=${{ secrets.MAIL_PASS }} \
+              -e MAIL_HOST=${{ secrets.MAIL_HOST || 'smtp.zoho.com' }} \
+              -e MAIL_PORT=${{ secrets.MAIL_PORT || '587' }} \
+              -e MAIL_SECURE=${{ secrets.MAIL_SECURE || 'false' }} \
               ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
 
             # Health check 및 트래픽 전환
