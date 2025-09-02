@@ -1,10 +1,64 @@
-name: Deploy Dig-Duck to S3 and CloudFront
+name: Deploy Dig-Duck to S3, CloudFront and EC2
+
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: "배포 대상 선택"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - frontend
+          - backend
+          - both
+
 jobs:
-  deploy:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.changes.outputs.frontend }}
+      backend: ${{ steps.changes.outputs.backend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        id: changes
+        run: |
+          echo "=== 변경된 파일들 ==="
+          git diff --name-only HEAD~1 HEAD || echo "초기 커밋"
+          echo "===================="
+
+          # Frontend 변경 감지 (dig-duck 앱 + shared packages)
+          if git diff --name-only HEAD~1 HEAD | grep -E "^(apps/dig-duck/|packages/)" > /dev/null || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "✅ Frontend 변경 감지"
+          else
+            echo "frontend=false" >> $GITHUB_OUTPUT
+            echo "❌ Frontend 변경 없음"
+          fi
+
+          # Backend 변경 감지 (api 폴더 + shared packages)
+          if git diff --name-only HEAD~1 HEAD | grep -E "^(api/|packages/)" > /dev/null || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "✅ Backend 변경 감지"
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+            echo "❌ Backend 변경 없음"
+          fi
+
+  deploy-frontend:
+    needs: detect-changes
+    if: |
+      (needs.detect-changes.outputs.frontend == 'true') || 
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.deploy_target == 'frontend' || github.event.inputs.deploy_target == 'both'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -44,3 +98,274 @@ jobs:
 
       - name: Invalidate CloudFront Cache
         run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+      - name: Frontend deployment notification
+        run: echo "✅ Frontend 배포 완료! S3 + CloudFront 업데이트됨"
+
+  deploy-backend:
+    needs: detect-changes
+    if: |
+      (needs.detect-changes.outputs.backend == 'true') ||
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.deploy_target == 'backend' || github.event.inputs.deploy_target == 'both'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build API
+        run: pnpm turbo run build --filter=api
+
+      - name: Build Docker image
+        run: |
+          docker build -t dig-duck-api:latest -f api/Dockerfile .
+
+      - name: Login to Docker Registry
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Tag and push Docker image
+        run: |
+          docker tag dig-duck-api:latest ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
+          docker tag dig-duck-api:latest ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:${{ github.sha }}
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          password: ${{ secrets.EC2_PASSWORD }}
+          timeout: 300s
+          script: |
+            # Docker 설치 확인 및 자동 설치
+            if ! command -v docker &> /dev/null; then
+              echo "🐳 Docker 설치 중..."
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+              sudo usermod -aG docker ${{ secrets.EC2_USERNAME }}
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              echo "Docker 설치 완료"
+            fi
+
+            # Docker 서비스 확인
+            if ! sudo systemctl is-active --quiet docker; then
+              sudo systemctl start docker
+            fi
+
+            # Docker 로그인
+            echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+            # 최신 이미지 다운로드
+            echo "📥 최신 이미지 다운로드 중..."
+            docker pull ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
+
+            # 기존 컨테이너 중지 및 백업
+            if docker ps -q -f name=dig-duck-api > /dev/null 2>&1; then
+              echo "📦 기존 컨테이너 백업 및 중지..."
+              docker commit dig-duck-api dig-duck-api:backup 2>/dev/null || true
+              docker stop dig-duck-api
+              docker rm dig-duck-api
+            fi
+
+            # PostgreSQL 17 컨테이너 실행 (없으면)
+            if ! docker ps -q -f name=postgres17 > /dev/null 2>&1; then
+              echo "🐘 PostgreSQL 17 컨테이너 시작 중..."
+              
+              # PostgreSQL 데이터 디렉토리 생성
+              mkdir -p ~/postgres-data
+              
+              docker run -d \
+                --name postgres17 \
+                --restart unless-stopped \
+                -e POSTGRES_DB=latte \
+                -e POSTGRES_USER=${{ secrets.DB_USER }} \
+                -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} \
+                -p 5432:5432 \
+                -v ~/postgres-data:/var/lib/postgresql/data \
+                postgres:17-alpine
+              
+              # PostgreSQL 시작 대기
+              echo "⏳ PostgreSQL 시작 대기 중..."
+              sleep 15
+              
+              # DB 연결 확인
+              for i in {1..20}; do
+                if docker exec postgres17 pg_isready -U ${{ secrets.DB_USER }} -d latte > /dev/null 2>&1; then
+                  echo "✅ PostgreSQL 17 준비 완료!"
+                  break
+                fi
+                sleep 2
+              done
+            else
+              echo "✅ PostgreSQL 17 이미 실행 중"
+            fi
+
+            # 🔄 블루그린 배포 시작
+            echo "🚀 블루그린 배포 시작..."
+
+            # 현재 활성 색상 확인
+            CURRENT_COLOR=$(cat /etc/nginx/current_color 2>/dev/null || echo "blue")
+            if [ "$CURRENT_COLOR" = "blue" ]; then
+              NEW_COLOR="green"
+              NEW_PORT="8001"
+              CURRENT_PORT="8000"
+            else
+              NEW_COLOR="blue" 
+              NEW_PORT="8000"
+              CURRENT_PORT="8001"
+            fi
+
+            echo "색상 전환: $CURRENT_COLOR (포트:$CURRENT_PORT) -> $NEW_COLOR (포트:$NEW_PORT)"
+
+            # 새 컨테이너 실행
+            echo "🚀 새 컨테이너($NEW_COLOR) 시작 중..."
+            docker run -d \
+              --name dig-duck-api-$NEW_COLOR \
+              --restart unless-stopped \
+              --link postgres17:postgres \
+              -p $NEW_PORT:8000 \
+              -e NODE_ENV=production \
+              -e DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@postgres:5432/digduck \
+              -e PORT=8000 \
+              ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
+
+            # Health check 및 트래픽 전환
+            echo "🔍 새 버전($NEW_COLOR) Health check 중..."
+            sleep 15
+
+            # Health check 시도
+            HEALTH_SUCCESS=false
+            for i in {1..30}; do
+              if curl -f -s http://localhost:$NEW_PORT/health >/dev/null 2>&1; then
+                echo "✅ 새 버전 Health check 성공! (시도 $i/30)"
+                HEALTH_SUCCESS=true
+                break
+              fi
+              
+              if [ $i -eq 15 ]; then
+                echo "⏳ Health check 진행 중... ($i/30)"
+              fi
+              sleep 2
+            done
+
+            if [ "$HEALTH_SUCCESS" = "true" ]; then
+              echo "🔄 트래픽을 새 버전($NEW_COLOR)으로 전환 중..."
+              
+              # Nginx 설정 백업
+              sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S)
+              
+              # Nginx upstream 포트 변경
+              sudo sed -i "s/server 127\.0\.0\.1:[0-9]* max_fails/server 127.0.0.1:$NEW_PORT max_fails/" /etc/nginx/nginx.conf
+              
+              # Nginx 설정 테스트 및 리로드
+              if sudo nginx -t; then
+                sudo nginx -s reload
+                echo "$NEW_COLOR" > /etc/nginx/current_color
+                
+                echo "✅ 트래픽 전환 완료!"
+                echo "📋 현재 상태:"
+                docker ps --filter name=dig-duck-api --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                
+                # 30초 대기 후 이전 컨테이너 정리
+                echo "⏳ 30초 대기 후 이전 컨테이너($CURRENT_COLOR) 정리..."
+                sleep 30
+                
+                # 이전 컨테이너 중지 및 제거
+                docker stop dig-duck-api-$CURRENT_COLOR 2>/dev/null || true
+                docker rm dig-duck-api-$CURRENT_COLOR 2>/dev/null || true
+                
+                echo "🧹 이전 컨테이너 정리 완료"
+                echo "🎉 블루그린 배포 성공!"
+                
+                # 최종 상태 확인
+                echo "📋 최종 컨테이너 상태:"
+                docker ps | grep -E "(dig-duck-api|postgres17)"
+                echo "📋 새 버전 로그 (최근 5줄):"
+                docker logs --tail 5 dig-duck-api-$NEW_COLOR
+                
+                exit 0
+              else
+                echo "❌ Nginx 설정 에러! 설정 복원 중..."
+                sudo cp /etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S) /etc/nginx/nginx.conf
+                HEALTH_SUCCESS=false
+              fi
+            fi
+
+            # Health check 실패 또는 Nginx 설정 실패시 롤백
+            echo "💥 배포 실패! 롤백 시작..."
+
+            # 실패한 새 컨테이너 로그 확인
+            echo "📋 실패한 컨테이너($NEW_COLOR) 로그:"
+            docker logs --tail 20 dig-duck-api-$NEW_COLOR 2>/dev/null || echo "로그를 가져올 수 없습니다."
+
+            # 새 컨테이너 정리
+            docker stop dig-duck-api-$NEW_COLOR 2>/dev/null || true
+            docker rm dig-duck-api-$NEW_COLOR 2>/dev/null || true
+
+            # 이전 컨테이너가 여전히 실행 중인지 확인
+            if docker ps | grep -q dig-duck-api-$CURRENT_COLOR; then
+              echo "✅ 이전 버전($CURRENT_COLOR)이 여전히 실행 중입니다."
+              
+              # 이전 버전 Health check
+              if curl -f -s http://localhost:$CURRENT_PORT/health >/dev/null 2>&1; then
+                echo "✅ 이전 버전이 정상 동작 중입니다. 서비스 영향 없음."
+              else
+                echo "⚠️  이전 버전도 비정상적입니다. 수동 확인 필요!"
+              fi
+            else
+              echo "❌ 심각: 이전 버전도 실행되지 않고 있습니다!"
+            fi
+
+            echo "💥 블루그린 배포 실패!"
+            exit 1
+
+  deployment-summary:
+    needs: [detect-changes, deploy-frontend, deploy-backend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "# 🚀 Dig-Duck 배포 요약"
+          echo ""
+          echo "## 변경 감지 결과"
+          echo "- 🎨 Frontend: ${{ needs.detect-changes.outputs.frontend }}"
+          echo "- 🔧 Backend: ${{ needs.detect-changes.outputs.backend }}"
+          echo ""
+          echo "## 배포 결과"
+          echo "- 🎨 Frontend 배포: ${{ needs.deploy-frontend.result }}"
+          echo "- 🔧 Backend 배포: ${{ needs.deploy-backend.result }}"
+          echo ""
+
+          # 배포 실패 체크
+          if [ "${{ needs.deploy-frontend.result }}" = "failure" ] || [ "${{ needs.deploy-backend.result }}" = "failure" ]; then
+            echo "❌ 일부 배포가 실패했습니다!"
+            echo ""
+            if [ "${{ needs.deploy-frontend.result }}" = "failure" ]; then
+              echo "🎨 Frontend 배포 실패: S3/CloudFront 배포를 확인하세요."
+            fi
+            if [ "${{ needs.deploy-backend.result }}" = "failure" ]; then
+              echo "🔧 Backend 배포 실패: EC2/Docker 상태를 확인하세요."
+            fi
+            exit 1
+          else
+            echo "✅ 모든 배포가 성공적으로 완료되었습니다!"
+            echo ""
+            echo "🌐 Frontend: https://digduck.app"
+            echo "🔧 Backend: http://your-ec2-ip:8000"
+            echo "🐘 Database: PostgreSQL 17"
+          fi
