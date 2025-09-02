@@ -43,7 +43,7 @@ export class CrawlHistoryService {
     // 템플릿 설정 로드 (있는 경우)
     let crawlSettings = data.crawlSettings
     if (data.templateId) {
-      const template = await this.prisma.crawlTemplate.findFirst({
+      const template = await this.prisma.crawlTemplates.findFirst({
         where: {
           id: data.templateId,
           OR: [
@@ -64,7 +64,7 @@ export class CrawlHistoryService {
         }
 
         // 사용 횟수 증가
-        await this.prisma.crawlTemplate.update({
+        await this.prisma.crawlTemplates.update({
           where: { id: template.id },
           data: { usageCount: { increment: 1 } }
         })
@@ -149,7 +149,7 @@ export class CrawlHistoryService {
     // 트랜잭션으로 배치 삽입
     const createdItems = await this.prisma.$transaction(
       items.map(item =>
-        this.prisma.crawlItem.create({
+        this.prisma.crawlItems.create({
           data: {
             crawlHistoryId: item.crawlHistoryId,
             itemId: item.itemId,
@@ -201,7 +201,7 @@ export class CrawlHistoryService {
     const { page = 1, limit = 20, includeItems = false, itemsLimit = 100 } = options
     const skip = (page - 1) * limit
 
-    const where: Prisma.CrawlHistoryWhereInput = {
+    const where: Prisma.crawlHistoryWhereInput = {
       userEmail: filter.userEmail,
       sourceSite: filter.sourceSite,
       status: filter.status,
@@ -254,7 +254,7 @@ export class CrawlHistoryService {
     crawlId: number,
     userEmail?: string
   ): Promise<CrawlHistoryResponse> {
-    const where: Prisma.CrawlHistoryWhereInput = {
+    const where: Prisma.crawlHistoryWhereInput = {
       id: crawlId,
       ...(userEmail && { userEmail })
     }
@@ -283,7 +283,7 @@ export class CrawlHistoryService {
    * 크롤링 템플릿 생성
    */
   async createCrawlTemplate(data: CreateCrawlTemplateRequest): Promise<CrawlTemplateResponse> {
-    const template = await this.prisma.crawlTemplate.create({
+    const template = await this.prisma.crawlTemplates.create({
       data: {
         userEmail: data.userEmail,
         name: data.name,
@@ -316,7 +316,7 @@ export class CrawlHistoryService {
     const { includePublic = true, sourceSite, page = 1, limit = 20 } = options
     const skip = (page - 1) * limit
 
-    const where: Prisma.CrawlTemplateWhereInput = {
+    const where: Prisma.crawlTemplatesWhereInput = {
       OR: [
         { userEmail },
         ...(includePublic ? [{ isPublic: true }] : [])
@@ -325,7 +325,7 @@ export class CrawlHistoryService {
     }
 
     const [templates, total] = await Promise.all([
-      this.prisma.crawlTemplate.findMany({
+      this.prisma.crawlTemplates.findMany({
         where,
         skip,
         take: limit,
@@ -334,7 +334,7 @@ export class CrawlHistoryService {
           { createdAt: 'desc' }
         ]
       }),
-      this.prisma.crawlTemplate.count({ where })
+      this.prisma.crawlTemplates.count({ where })
     ])
 
     return {
@@ -355,7 +355,7 @@ export class CrawlHistoryService {
     userEmail: string,
     dateRange?: { from?: Date, to?: Date }
   ): Promise<CrawlStatistics> {
-    const where: Prisma.CrawlHistoryWhereInput = {
+    const where: Prisma.crawlHistoryWhereInput = {
       userEmail,
       ...(dateRange && {
         createdAt: {
@@ -465,10 +465,10 @@ export class CrawlHistoryService {
    * 라이센스 검증
    */
   private async validateUserLicense(userEmail: string, deviceId: string) {
-    const licenseUser = await this.prisma.licenseUser.findUnique({
+    const licenseUser = await this.prisma.licenseUsers.findUnique({
       where: { email: userEmail },
       include: {
-        subscriptions: {
+        licenseSubscriptions: {
           where: { isActive: true },
           take: 1
         }
@@ -484,7 +484,7 @@ export class CrawlHistoryService {
     }
 
     // 구독 확인
-    const activeSubscription = licenseUser.subscriptions[0]
+    const activeSubscription = licenseUser.licenseSubscriptions[0]
     if (!activeSubscription || new Date(activeSubscription.endDate) < new Date()) {
       throw new CrawlHistoryError(
         'License expired',

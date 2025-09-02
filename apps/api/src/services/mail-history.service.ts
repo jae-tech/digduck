@@ -15,7 +15,7 @@ export class MailHistoryService {
 
   async createMailHistory(data: CreateMailHistoryData) {
     try {
-      const mailHistory = await this.prisma.mail_history.create({
+      const mailHistory = await this.prisma.mailHistory.create({
         data: {
           userEmail: data.userEmail,
           fromEmail: data.fromEmail,
@@ -47,7 +47,7 @@ export class MailHistoryService {
     clickedAt?: Date;
   }) {
     try {
-      const updatedHistory = await this.prisma.mail_history.update({
+      const updatedHistory = await this.prisma.mailHistory.update({
         where: { id },
         data: {
           ...updates,
@@ -89,8 +89,8 @@ export class MailHistoryService {
       }
 
       const [totalCount, mailHistory] = await Promise.all([
-        this.prisma.mail_history.count({ where }),
-        this.prisma.mail_history.findMany({
+        this.prisma.mailHistory.count({ where }),
+        this.prisma.mailHistory.findMany({
           where,
           orderBy: { createdAt: 'desc' },
           skip: (page - 1) * limit,
@@ -123,7 +123,7 @@ export class MailHistoryService {
 
   async getMailHistoryById(id: number) {
     try {
-      const mailHistory = await this.prisma.mail_history.findUnique({
+      const mailHistory = await this.prisma.mailHistory.findUnique({
         where: { id },
         include: {
           users: {
@@ -155,7 +155,7 @@ export class MailHistoryService {
 
       const [statusStats, providerStats, dailyStats] = await Promise.all([
         // 상태별 통계
-        this.prisma.mail_history.groupBy({
+        this.prisma.mailHistory.groupBy({
           by: ['status'],
           where,
           _count: {
@@ -164,7 +164,7 @@ export class MailHistoryService {
         }),
         
         // 프로바이더별 통계
-        this.prisma.mail_history.groupBy({
+        this.prisma.mailHistory.groupBy({
           by: ['provider'],
           where,
           _count: {
@@ -179,7 +179,7 @@ export class MailHistoryService {
             COUNT(*) as count,
             COUNT(CASE WHEN status = 'SENT' THEN 1 END) as sent_count,
             COUNT(CASE WHEN status = 'FAILED' THEN 1 END) as failed_count
-          FROM mail_history
+          FROM mailHistory
           WHERE created_at >= NOW() - INTERVAL '30 days'
           ${userEmail ? `AND user_email = '${userEmail}'` : ''}
           GROUP BY DATE(created_at)
@@ -212,7 +212,7 @@ export class MailHistoryService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-      const deletedCount = await this.prisma.mail_history.deleteMany({
+      const deletedCount = await this.prisma.mailHistory.deleteMany({
         where: {
           createdAt: {
             lt: cutoffDate

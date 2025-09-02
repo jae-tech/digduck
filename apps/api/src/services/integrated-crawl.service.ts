@@ -1,4 +1,4 @@
-import { PrismaClient, SourceSite, CrawlStatus } from "@prisma/client";
+import { PrismaClient, CrawlStatus } from "@prisma/client";
 import { CrawlHistoryService } from "./crawl-history.service";
 import { CrawlerFactory } from "./crawlers/crawler-factory";
 import {
@@ -61,7 +61,7 @@ export class IntegratedCrawlService {
   /**
    * 크롤링 작업 중단
    */
-  async stopCrawlJob(crawlId: number, userEmail?: string): Promise<boolean> {
+  async stopCrawlJob(crawlId: number, _userEmail?: string): Promise<boolean> {
     const crawler = this.activeCrawlers.get(crawlId);
 
     if (crawler) {
@@ -294,13 +294,13 @@ export class IntegratedCrawlService {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [dailyCount, monthlyCount] = await Promise.all([
-      this.prisma.crawl_history.count({
+      this.prisma.crawlHistory.count({
         where: {
           userEmail,
           createdAt: { gte: startOfDay },
         },
       }),
-      this.prisma.crawl_history.count({
+      this.prisma.crawlHistory.count({
         where: {
           userEmail,
           createdAt: { gte: startOfMonth },

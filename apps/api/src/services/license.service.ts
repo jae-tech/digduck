@@ -43,12 +43,6 @@ export class LicenseService {
    */
   private getSubscriptionTypeName(subscriptionType: LicenseSubscriptionType): string {
     switch (subscriptionType) {
-      case "ONE_MONTH":
-        return "1개월";
-      case "THREE_MONTHS":
-        return "3개월";
-      case "SIX_MONTHS":
-        return "6개월";
       case "ONE_YEAR":
         return "1년";
       case "LIFETIME":
@@ -68,17 +62,11 @@ export class LicenseService {
     const endDate = new Date(startDate);
 
     switch (subscriptionType) {
-      case "ONE_MONTH":
-        endDate.setMonth(endDate.getMonth() + 1);
-        break;
-      case "THREE_MONTHS":
-        endDate.setMonth(endDate.getMonth() + 3);
-        break;
-      case "SIX_MONTHS":
-        endDate.setMonth(endDate.getMonth() + 6);
-        break;
-      case "TWELVE_MONTHS":
+      case "ONE_YEAR":
         endDate.setFullYear(endDate.getFullYear() + 1);
+        break;
+      case "LIFETIME":
+        endDate.setFullYear(endDate.getFullYear() + 100); // 100 years from now for lifetime
         break;
     }
 
@@ -103,7 +91,7 @@ export class LicenseService {
     }
 
     // 이미 라이센스가 있는지 확인
-    const existingLicense = await this.prisma.license_users.findUnique({
+    const existingLicense = await this.prisma.licenseUsers.findUnique({
       where: { email: data.email },
     });
 
@@ -119,7 +107,7 @@ export class LicenseService {
     const licenseKey = this.generateLicenseKey(data.email);
 
     // 라이센스 사용자 생성
-    const licenseUser = await this.prisma.license_users.create({
+    const licenseUser = await this.prisma.licenseUsers.create({
       data: {
         email: data.email,
         licenseKey,
@@ -137,7 +125,7 @@ export class LicenseService {
    */
   async createSubscription(data: CreateSubscriptionRequest) {
     // 라이센스 사용자 확인
-    const licenseUser = await this.prisma.license_users.findUnique({
+    const licenseUser = await this.prisma.licenseUsers.findUnique({
       where: { email: data.userEmail },
     });
 
@@ -155,7 +143,7 @@ export class LicenseService {
     // 트랜잭션으로 구독 생성
     const subscription = await this.prisma.$transaction(async (tx) => {
       // 기존 활성 구독 비활성화
-      await tx.license_subscriptions.updateMany({
+      await tx.licenseSubscriptions.updateMany({
         where: {
           userEmail: data.userEmail,
           isActive: true,
@@ -166,7 +154,7 @@ export class LicenseService {
       });
 
       // 새 구독 생성
-      return tx.license_subscriptions.create({
+      return tx.licenseSubscriptions.create({
         data: {
           userEmail: data.userEmail,
           subscriptionType: data.subscriptionType,
@@ -180,7 +168,7 @@ export class LicenseService {
     // 라이센스 발급 완료 메일 발송
     if (mailService.isConfigured()) {
       try {
-        const licenseUser = await this.prisma.license_users.findUnique({
+        const licenseUser = await this.prisma.licenseUsers.findUnique({
           where: { email: data.userEmail }
         });
 
@@ -188,7 +176,7 @@ export class LicenseService {
           await mailService.sendTemplatedMail(
             'license-created',
             {
-              userName: licenseUser.userName || data.userEmail.split('@')[0],
+              userName: data.userEmail.split('@')[0],
               productName: env.PRODUCT_NAME || 'DigDuck',
               licenseKey: licenseUser.licenseKey,
               userEmail: data.userEmail,
@@ -220,7 +208,7 @@ export class LicenseService {
     // 동시성 제어를 위한 락
     return await this.prisma.$transaction(async (tx) => {
       // 현재 활성 구독 찾기
-      const activeSubscription = await tx.license_subscriptions.findFirst({
+      const activeSubscription = await tx.licenseSubscriptions.findFirst({
         where: {
           userEmail: data.userEmail,
           isActive: true,
@@ -234,7 +222,7 @@ export class LicenseService {
         const newEndDate = new Date(activeSubscription.endDate);
         newEndDate.setMonth(newEndDate.getMonth() + data.months);
 
-        subscription = await tx.license_subscriptions.update({
+        subscription = await tx.licenseSubscriptions.update({
           where: { id: activeSubscription.id },
           data: {
             endDate: newEndDate,
@@ -248,10 +236,10 @@ export class LicenseService {
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + data.months);
 
-        subscription = await tx.license_subscriptions.create({
+        subscription = await tx.licenseSubscriptions.create({
           data: {
             userEmail: data.userEmail,
-            subscriptionType: data.subscriptionType || "ONE_MONTH",
+            subscriptionType: data.subscriptionType || "ONE_YEAR",
             startDate,
             endDate,
             paymentId: data.paymentId,
@@ -260,7 +248,7 @@ export class LicenseService {
       }
 
       // 연장 기록 저장
-      await tx.license_items.create({
+      await tx.licenseItems.create({
         data: {
           userEmail: data.userEmail,
           itemType: ItemType.SUBSCRIPTION_EXTENSION,
@@ -276,7 +264,7 @@ export class LicenseService {
    * 디바이스 활성화
    */
   async activateDevice(data: ActivateDeviceRequest) {
-    const licenseUser = await this.prisma.license_users.findUnique({
+    const licenseUser = await this.prisma.licenseUsers.findUnique({
       where: { email: data.userEmail },
     });
 
@@ -293,7 +281,7 @@ export class LicenseService {
 
     // 이미 활성화된 디바이스인지 확인
     const existingDevice = activatedDevices.find(
-      (device) => device.device_id === data.deviceId
+      (device) => device.deviceId === data.deviceId
     );
     if (existingDevice) {
       return licenseUser; // 이미 활성화됨
@@ -310,14 +298,14 @@ export class LicenseService {
 
     // 새 디바이스 추가
     const newDevice: DeviceInfo = {
-      device_id: data.deviceId,
+      deviceId: data.deviceId,
       platform: data.platform,
-      activated_at: new Date().toISOString(),
+      activatedAt: new Date().toISOString(),
     };
 
     const updatedDevices = [...activatedDevices, newDevice];
 
-    const updatedUser = await this.prisma.license_users.update({
+    const updatedUser = await this.prisma.licenseUsers.update({
       where: { email: data.userEmail },
       data: {
         activatedDevices: updatedDevices as any,
@@ -332,7 +320,7 @@ export class LicenseService {
    */
   async transferDevice(data: TransferDeviceRequest) {
     return await this.prisma.$transaction(async (tx) => {
-      const licenseUser = await tx.license_users.findUnique({
+      const licenseUser = await tx.licenseUsers.findUnique({
         where: { email: data.userEmail },
       });
 
@@ -356,7 +344,7 @@ export class LicenseService {
       const activatedDevices =
         licenseUser.activatedDevices as unknown as DeviceInfo[];
       const deviceIndex = activatedDevices.findIndex(
-        (device) => device.device_id === data.oldDeviceId
+        (device) => device.deviceId === data.oldDeviceId
       );
 
       if (deviceIndex === -1) {
@@ -370,13 +358,13 @@ export class LicenseService {
       // 디바이스 정보 업데이트
       const updatedDevices = [...activatedDevices];
       updatedDevices[deviceIndex] = {
-        device_id: data.newDeviceId,
+        deviceId: data.newDeviceId,
         platform: data.platform,
-        activated_at: new Date().toISOString(),
+        activatedAt: new Date().toISOString(),
       };
 
       // 라이센스 사용자 업데이트
-      const updatedUser = await tx.license_users.update({
+      const updatedUser = await tx.licenseUsers.update({
         where: { email: data.userEmail },
         data: {
           activatedDevices: updatedDevices as any,
@@ -385,7 +373,7 @@ export class LicenseService {
       });
 
       // 이전 로그 저장
-      await tx.device_transfers.create({
+      await tx.deviceTransfers.create({
         data: {
           userEmail: data.userEmail,
           oldDeviceId: data.oldDeviceId,
@@ -404,10 +392,10 @@ export class LicenseService {
   async verifyLicenseByKey(
     licenseKey: string
   ): Promise<LicenseVerificationResponse> {
-    const licenseUser = await this.prisma.license_users.findUnique({
+    const licenseUser = await this.prisma.licenseUsers.findUnique({
       where: { licenseKey },
       include: {
-        license_subscriptions: {
+        licenseSubscriptions: {
           where: { isActive: true },
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -427,7 +415,7 @@ export class LicenseService {
       };
     }
 
-    const activeSubscription = licenseUser.license_subscriptions[0];
+    const activeSubscription = licenseUser.licenseSubscriptions[0];
     const hasActiveSubscription =
       activeSubscription &&
       activeSubscription.isActive &&
@@ -456,18 +444,18 @@ export class LicenseService {
    * 사용자 이메일로 라이센스 상태 조회
    */
   async getLicenseStatus(userEmail: string): Promise<LicenseStatusResponse> {
-    const licenseUser = await this.prisma.license_users.findUnique({
+    const licenseUser = await this.prisma.licenseUsers.findUnique({
       where: { email: userEmail },
       include: {
-        license_subscriptions: {
+        licenseSubscriptions: {
           where: { isActive: true },
           orderBy: { createdAt: "desc" },
           take: 1,
         },
-        license_items: {
-          orderBy: { purchaseDate: "desc" },
+        licenseItems: {
+          orderBy: { purchasedAt: "desc" },
         },
-        device_transfers: {
+        deviceTransfers: {
           orderBy: { transferDate: "desc" },
         },
       },
@@ -483,7 +471,7 @@ export class LicenseService {
 
     const activatedDevices =
       licenseUser.activatedDevices as unknown as DeviceInfo[];
-    const activeSubscription = licenseUser.license_subscriptions[0];
+    const activeSubscription = licenseUser.licenseSubscriptions[0];
     const hasActiveSubscription =
       activeSubscription &&
       activeSubscription.isActive &&
@@ -507,13 +495,13 @@ export class LicenseService {
             paymentId: activeSubscription.paymentId || undefined,
           }
         : undefined,
-      items: licenseUser.license_items.map((item) => ({
+      items: licenseUser.licenseItems.map((item) => ({
         id: item.id,
         itemType: item.itemType,
         quantity: item.quantity,
-        purchaseDate: item.purchaseDate,
+        purchasedAt: item.purchasedAt,
       })),
-      deviceTransfers: licenseUser.device_transfers.map((transfer) => ({
+      deviceTransfers: licenseUser.deviceTransfers.map((transfer) => ({
         id: transfer.id,
         oldDeviceId: transfer.oldDeviceId,
         newDeviceId: transfer.newDeviceId,
@@ -527,7 +515,7 @@ export class LicenseService {
    * 아이템 구매
    */
   async purchaseItem(data: PurchaseItemRequest) {
-    const licenseUser = await this.prisma.license_users.findUnique({
+    const licenseUser = await this.prisma.licenseUsers.findUnique({
       where: { email: data.userEmail },
     });
 
@@ -541,7 +529,7 @@ export class LicenseService {
 
     return await this.prisma.$transaction(async (tx) => {
       // 아이템 구매 기록
-      const item = await tx.license_items.create({
+      const item = await tx.licenseItems.create({
         data: {
           userEmail: data.userEmail,
           itemType: data.itemType,
@@ -552,7 +540,7 @@ export class LicenseService {
       // 아이템 유형별 처리
       if (data.itemType === ItemType.EXTRA_DEVICE) {
         // 추가 디바이스: 허용 디바이스 수 증가
-        await tx.license_users.update({
+        await tx.licenseUsers.update({
           where: { email: data.userEmail },
           data: {
             allowedDevices: licenseUser.allowedDevices + data.quantity,
@@ -571,7 +559,7 @@ export class LicenseService {
     const now = new Date();
 
     const expiredSubscriptions =
-      await this.prisma.license_subscriptions.updateMany({
+      await this.prisma.licenseSubscriptions.updateMany({
         where: {
           isActive: true,
           endDate: {
