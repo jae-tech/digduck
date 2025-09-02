@@ -237,7 +237,7 @@ export class CrawlHistoryService {
     ])
 
     return {
-      data: crawlHistories.map(ch => this.formatCrawlHistoryResponse(ch)),
+      data: crawlHistories.map((ch: any) => this.formatCrawlHistoryResponse(ch)),
       pagination: {
         page,
         limit,
@@ -410,11 +410,11 @@ export class CrawlHistoryService {
       failedCrawls,
       totalItemsCrawled: totalItems._sum.itemsCrawled || 0,
       averageDuration: Math.round(avgDuration._avg.durationMs || 0),
-      crawlsByStatus: crawlsByStatus.reduce((acc, item) => {
+      crawlsByStatus: crawlsByStatus.reduce((acc: any, item: any) => {
         acc[item.status] = item._count.status
         return acc
       }, {} as { [status: string]: number }),
-      crawlsBySite: crawlsBySite.reduce((acc, item) => {
+      crawlsBySite: crawlsBySite.reduce((acc: any, item: any) => {
         acc[item.sourceSite] = item._count.sourceSite
         return acc
       }, {} as { [site: string]: number }),
