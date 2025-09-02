@@ -1,8 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
-import bcrypt from 'bcryptjs';
-import { Controller, Post, Get, Schema, Auth } from '../decorators/controller.decorator';
+import { Controller, Post, Get, Schema } from '../decorators/controller.decorator';
 import { env } from '../config/env';
-import type { LoginCredentials, RegisterData, User, JWTPayload } from '@repo/shared';
+import type { JWTPayload } from '@repo/shared';
 import { prisma } from '../plugins/prisma';
 
 // 의존성 주입을 위한 전역 변수 (임시)
@@ -65,7 +64,7 @@ export class AuthController {
       const { licenseKey, deviceId, platform = 'WEB' } = request.body;
 
       // 라이센스 검증
-      const licenseData = await prisma.license_users.findUnique({
+      const licenseData = await prisma.licenseUsers.findUnique({
         where: { licenseKey },
         include: {
           users: {
@@ -86,7 +85,7 @@ export class AuthController {
       }
 
       // 구독 확인
-      const activeSubscription = await prisma.license_subscriptions.findFirst({
+      const activeSubscription = await prisma.licenseSubscriptions.findFirst({
         where: {
           userEmail: licenseData.email,
           isActive: true,
@@ -105,7 +104,7 @@ export class AuthController {
 
       // 디바이스 활성화 확인 및 처리
       const activatedDevices = licenseData.activatedDevices as any[] || [];
-      const isDeviceActivated = activatedDevices.some((device: any) => device.device_id === deviceId);
+      const isDeviceActivated = activatedDevices.some((device: any) => device.deviceId === deviceId);
       
       if (!isDeviceActivated) {
         // 디바이스 한도 확인
@@ -118,14 +117,14 @@ export class AuthController {
 
         // 새 디바이스 추가
         const newDevice = {
-          device_id: deviceId,
+          deviceId: deviceId,
           platform: platform,
-          activated_at: new Date().toISOString()
+          activatedAt: new Date().toISOString()
         };
         const updatedDevices = [...activatedDevices, newDevice];
 
         // 디바이스 정보 업데이트
-        await prisma.license_users.update({
+        await prisma.licenseUsers.update({
           where: { licenseKey },
           data: { 
             activatedDevices: updatedDevices 
@@ -139,7 +138,7 @@ export class AuthController {
       // JWT 토큰 생성
       const token = appInstance.jwt.sign(
         { 
-          userId: licenseData.users.id, 
+          userId: licenseData.users.id.toString(), 
           email: licenseData.users.email, 
           licenseKey: licenseKey,
           deviceId: deviceId
@@ -247,7 +246,7 @@ export class AuthController {
       let user: JWTPayload;
       try {
         user = (await request.jwtVerify()) as JWTPayload;
-      } catch (err) {
+      } catch {
         return reply.status(401).send({
           success: false,
           error: '인증되지 않음'
@@ -255,7 +254,7 @@ export class AuthController {
       }
       
       const userData = await prisma.users.findUnique({
-        where: { id: user.userId },
+        where: { id: parseInt(user.userId) },
         select: {
           id: true,
           email: true,

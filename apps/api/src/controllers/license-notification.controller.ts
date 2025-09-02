@@ -1,11 +1,10 @@
 import {
   Controller,
-  Get,
   Post,
   Schema,
 } from "@/decorators/controller.decorator";
 import { licenseNotificationService } from "@/services";
-import { FastifyRequest, FastifyReply } from "fastify";
+import { FastifyRequest } from "fastify";
 
 @Controller("/license-notifications")
 export class LicenseNotificationController {

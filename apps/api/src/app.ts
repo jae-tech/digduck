@@ -40,7 +40,7 @@ export const build = async (): Promise<FastifyInstance> => {
   });
 
   // 요청 시작 로깅 훅
-  app.addHook("onRequest", async (request, reply) => {
+  app.addHook("onRequest", async (request) => {
     if (request.url === "/favicon.ico") return;
 
     // 요청 시작 시간 기록

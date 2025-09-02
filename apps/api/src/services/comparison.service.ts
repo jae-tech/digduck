@@ -13,12 +13,12 @@ export class ComparisonService {
       ...searchResults.map((item: NaverShoppingItem) => item.lprice)
     );
     // 3. 최저가 - 10원으로 새 가격 계산
-    const newPrice = lowestPrice - 10;
+    const _newPrice = lowestPrice - 10;
     // 4. 수익성 검증
     // 5. 최적 가격 반환
   }
 
-  async updateCompetitivePrice(productId: string) {
+  async updateCompetitivePrice(_productId: string) {
     // 자동으로 경쟁력 있는 가격으로 업데이트
   }
 }
