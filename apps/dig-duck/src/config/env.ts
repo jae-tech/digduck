@@ -23,7 +23,7 @@ const getViteEnv = (): EnvConfig => {
   const meta = import.meta.env;
 
   return {
-    API_URL: meta.VITE_API_URL || "http://localhost:8000",
+    API_URL: meta.VITE_API_URL || "http://localhost:8080",
     NODE_ENV: meta.MODE || "development",
     APP_ENV: (meta.VITE_APP_ENV as EnvConfig["APP_ENV"]) || "development",
     LOG_LEVEL: (meta.VITE_LOG_LEVEL as EnvConfig["LOG_LEVEL"]) || "debug",

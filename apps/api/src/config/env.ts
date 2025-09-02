@@ -31,7 +31,7 @@ const envSchema = z.object({
   PRODUCT_NAME: z.string().default("DigDuck"),
   CLIENT_URL: z.string().url().optional(),
   COMPANY_NAME: z.string().default("DigDuck"),
-  MAIL_PROVIDER: z.enum(["smtp", "gmail", "outlook"]).optional(),
+  MAIL_PROVIDER: z.enum(["smtp", "gmail", "outlook", "zoho"]).optional(),
   MAIL_USER: z.string().email().optional(),
   MAIL_PASS: z.string().optional(),
   MAIL_HOST: z.string().optional(),
@@ -51,3 +51,28 @@ if (!parseResult.success) {
 
 export const env = parseResult.data;
 export type Env = typeof env;
+
+// NODE_ENV=development
+// PORT=8080
+// HOST=0.0.0.0
+// DATABASE_URL=postgresql://cinnamon:matcha@localhost:5432/latte
+// JWT_SECRET=8YEamSE5yO1QgnKLtsNUhVnZPyA5FjXp
+// JWT_EXPIRES_IN=7d
+// LOG_LEVEL=debug
+// CORS_ORIGIN=*
+// RATE_LIMIT_MAX=100
+// BCRYPT_SALT_ROUNDS=12
+// NAVER_LOGIN_ID=bshLwMF4Ckm8I0lO1_OA
+// NAVER_LOGIN_PASSWORD=6z2LQ9nydl
+// LICENSE_SALT=your-license-salt-key-should-be-at-least-16-chars
+
+// MAIL_FROM=hello@digduck.app
+// PRODUCT_NAME=DigDuck
+// CLIENT_URL=https://digduck.app
+// COMPANY_NAME=DigDuck
+// MAIL_PROVIDER=zoho
+// MAIL_USER=hello@digduck.app
+// MAIL_PASS=RHrnak1!
+// MAIL_HOST=smtp.zoho.com
+// MAIL_PORT=587
+// MAIL_SECURE=false
