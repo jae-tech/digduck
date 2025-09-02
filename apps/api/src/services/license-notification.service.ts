@@ -47,7 +47,7 @@ export class LicenseNotificationService {
           isActive: true,
         },
         include: {
-          license_user: true,
+          license_users: true,
         },
       });
 
@@ -58,17 +58,17 @@ export class LicenseNotificationService {
 
     for (const subscription of expiringSubscriptions) {
       try {
-        if (!subscription.license_user) continue;
+        if (!subscription.license_users) continue;
 
         await mailService.sendTemplatedMail(
           "license-expiry-warning",
           {
             userName:
-              subscription.license_user.userName ||
+              subscription.license_users.email ||
               subscription.userEmail.split("@")[0],
             productName: env.PRODUCT_NAME || "DigDuck",
             daysLeft: daysLeft.toString(),
-            licenseKey: subscription.license_user.licenseKey,
+            licenseKey: subscription.license_users.licenseKey,
             expirationDate: subscription.endDate.toLocaleDateString("ko-KR"),
             renewUrl: `${env.CLIENT_URL || "https://app.example.com"}/license/renew`,
             contactUrl: `${env.CLIENT_URL || "https://app.example.com"}/contact`,
@@ -126,7 +126,7 @@ export class LicenseNotificationService {
       await mailService.sendTemplatedMail(
         "license-expiry-warning",
         {
-          userName: licenseUser.userName || userEmail.split("@")[0],
+          userName: licenseUser.email || userEmail.split("@")[0],
           productName: env.PRODUCT_NAME || "DigDuck",
           daysLeft: daysLeft.toString(),
           licenseKey: licenseUser.licenseKey,
@@ -181,11 +181,11 @@ export class LicenseNotificationService {
       await mailService.sendTemplatedMail(
         "license-created", // 갱신도 동일한 템플릿 사용
         {
-          userName: licenseUser.userName || userEmail.split("@")[0],
+          userName: licenseUser.email || userEmail.split("@")[0],
           productName: env.PRODUCT_NAME || "DigDuck",
           licenseKey: licenseUser.licenseKey,
           userEmail: userEmail,
-          issueDate: activeSubscription.updatedAt.toLocaleDateString("ko-KR"),
+          issueDate: activeSubscription.createdAt.toLocaleDateString("ko-KR"),
           expirationDate:
             activeSubscription.endDate.toLocaleDateString("ko-KR"),
           licenseType: this.getSubscriptionTypeName(
