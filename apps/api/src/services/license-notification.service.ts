@@ -38,7 +38,7 @@ export class LicenseNotificationService {
     endOfDay.setHours(23, 59, 59, 999);
 
     const expiringSubscriptions =
-      await this.prisma.license_subscriptions.findMany({
+      await this.prisma.licenseSubscriptions.findMany({
         where: {
           endDate: {
             gte: startOfDay,
@@ -47,7 +47,7 @@ export class LicenseNotificationService {
           isActive: true,
         },
         include: {
-          license_users: true,
+          licenseUsers: true,
         },
       });
 
@@ -58,17 +58,17 @@ export class LicenseNotificationService {
 
     for (const subscription of expiringSubscriptions) {
       try {
-        if (!subscription.license_users) continue;
+        if (!subscription.licenseUsers) continue;
 
         await mailService.sendTemplatedMail(
           "license-expiry-warning",
           {
             userName:
-              subscription.license_users.email ||
+              subscription.licenseUsers.email ||
               subscription.userEmail.split("@")[0],
             productName: env.PRODUCT_NAME || "DigDuck",
             daysLeft: daysLeft.toString(),
-            licenseKey: subscription.license_users.licenseKey,
+            licenseKey: subscription.licenseUsers.licenseKey,
             expirationDate: subscription.endDate.toLocaleDateString("ko-KR"),
             renewUrl: `${env.CLIENT_URL || "https://app.example.com"}/license/renew`,
             contactUrl: `${env.CLIENT_URL || "https://app.example.com"}/contact`,
@@ -105,10 +105,10 @@ export class LicenseNotificationService {
     }
 
     try {
-      const licenseUser = await this.prisma.license_users.findUnique({
+      const licenseUser = await this.prisma.licenseUsers.findUnique({
         where: { email: userEmail },
         include: {
-          license_subscriptions: {
+          licenseSubscriptions: {
             where: { isActive: true },
             orderBy: { endDate: "desc" },
             take: 1,
@@ -116,12 +116,12 @@ export class LicenseNotificationService {
         },
       });
 
-      if (!licenseUser || licenseUser.license_subscriptions.length === 0) {
+      if (!licenseUser || licenseUser.licenseSubscriptions.length === 0) {
         console.log(`활성 라이센스를 찾을 수 없습니다: ${userEmail}`);
         return false;
       }
 
-      const activeSubscription = licenseUser.license_subscriptions[0];
+      const activeSubscription = licenseUser.licenseSubscriptions[0];
 
       await mailService.sendTemplatedMail(
         "license-expiry-warning",
@@ -161,10 +161,10 @@ export class LicenseNotificationService {
     }
 
     try {
-      const licenseUser = await this.prisma.license_users.findUnique({
+      const licenseUser = await this.prisma.licenseUsers.findUnique({
         where: { email: userEmail },
         include: {
-          license_subscriptions: {
+          licenseSubscriptions: {
             where: { isActive: true },
             orderBy: { endDate: "desc" },
             take: 1,
@@ -172,11 +172,11 @@ export class LicenseNotificationService {
         },
       });
 
-      if (!licenseUser || licenseUser.license_subscriptions.length === 0) {
+      if (!licenseUser || licenseUser.licenseSubscriptions.length === 0) {
         return false;
       }
 
-      const activeSubscription = licenseUser.license_subscriptions[0];
+      const activeSubscription = licenseUser.licenseSubscriptions[0];
 
       await mailService.sendTemplatedMail(
         "license-created", // 갱신도 동일한 템플릿 사용

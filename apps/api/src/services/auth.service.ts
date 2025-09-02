@@ -1,8 +1,5 @@
 import bcrypt from "bcryptjs";
 import { FastifyInstance } from "fastify";
-import { env } from "@/config/env";
-// import { UserService } from "./user.service";
-import type { JWTPayload } from "@/types/auth.types";
 
 // shared 타입들을 로컬에서 정의하거나 import
 interface LoginCredentials {
@@ -20,35 +17,35 @@ interface User {
   id: number;
   email: string;
   name: string | null;
-  created_at: Date;
-  updated_at: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class AuthService {
   constructor(private app: FastifyInstance) {}
 
   async login(
-    credentials: LoginCredentials
+    _credentials: LoginCredentials
   ): Promise<{ token: string; user: User }> {
     // TODO: Implement UserService
     throw new Error("UserService not implemented");
   }
 
   async register(
-    userData: RegisterData
+    _userData: RegisterData
   ): Promise<{ token: string; user: User }> {
     // TODO: Implement UserService
     throw new Error("UserService not implemented");
   }
 
-  async getUserProfile(userId: number): Promise<User> {
+  async getUserProfile(_userId: number): Promise<User> {
     // TODO: Implement UserService
     throw new Error("UserService not implemented");
   }
 
   async updateUserProfile(
-    userId: number,
-    updateData: Partial<User>
+    _userId: number,
+    _updateData: Partial<User>
   ): Promise<User> {
     // TODO: Implement UserService
     throw new Error("UserService not implemented");

@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Delete,
 } from "@/decorators/controller.decorator";
 import { prisma } from "@/plugins/prisma";
@@ -19,10 +18,8 @@ interface CreateLicenseUserBody {
 interface CreateSubscriptionBody {
   userEmail: string;
   subscriptionType:
-    | "ONE_MONTH"
-    | "THREE_MONTHS"
-    | "SIX_MONTHS"
-    | "TWELVE_MONTHS";
+    | "ONE_YEAR"
+    | "LIFETIME";
   paymentId: string;
 }
 
@@ -56,12 +53,12 @@ export class LicenseController {
       }
 
       const [users, total] = await Promise.all([
-        prisma.license_users.findMany({
+        prisma.licenseUsers.findMany({
           where,
           skip,
           take: Number(limit),
           include: {
-            license_subscriptions: {
+            licenseSubscriptions: {
               where: { isActive: true },
               take: 1,
               orderBy: { createdAt: "desc" },
@@ -77,7 +74,7 @@ export class LicenseController {
           },
           orderBy: { createdAt: "desc" },
         }),
-        prisma.license_users.count({ where }),
+        prisma.licenseUsers.count({ where }),
       ]);
 
       reply.code(200).send({
@@ -113,7 +110,7 @@ export class LicenseController {
       const licenseKey = this.generateLicenseKey(email);
 
       // 라이센스 사용자 생성
-      const licenseUser = await prisma.license_users.create({
+      const licenseUser = await prisma.licenseUsers.create({
         data: {
           email,
           licenseKey,
@@ -150,22 +147,16 @@ export class LicenseController {
       const endDate = new Date(now);
 
       switch (subscriptionType) {
-        case "ONE_MONTH":
-          endDate.setMonth(endDate.getMonth() + 1);
+        case "ONE_YEAR":
+          endDate.setFullYear(endDate.getFullYear() + 1);
           break;
-        case "THREE_MONTHS":
-          endDate.setMonth(endDate.getMonth() + 3);
-          break;
-        case "SIX_MONTHS":
-          endDate.setMonth(endDate.getMonth() + 6);
-          break;
-        case "TWELVE_MONTHS":
-          endDate.setMonth(endDate.getMonth() + 12);
+        case "LIFETIME":
+          endDate.setFullYear(endDate.getFullYear() + 100); // 100 years from now for lifetime
           break;
       }
 
       // 기존 활성 구독 비활성화
-      await prisma.license_subscriptions.updateMany({
+      await prisma.licenseSubscriptions.updateMany({
         where: {
           userEmail,
           isActive: true,
@@ -174,7 +165,7 @@ export class LicenseController {
       });
 
       // 새 구독 생성
-      const subscription = await prisma.license_subscriptions.create({
+      const subscription = await prisma.licenseSubscriptions.create({
         data: {
           userEmail,
           subscriptionType,
@@ -188,7 +179,7 @@ export class LicenseController {
       // 라이센스 발급 완료 메일 발송
       if (mailService.isConfigured()) {
         try {
-          const licenseUser = await prisma.license_users.findUnique({
+          const licenseUser = await prisma.licenseUsers.findUnique({
             where: { email: userEmail }
           });
 
@@ -196,7 +187,7 @@ export class LicenseController {
             await mailService.sendTemplatedMail(
               'license-created',
               {
-                userName: licenseUser.userName || userEmail.split('@')[0],
+                userName: userEmail.split('@')[0],
                 productName: env.PRODUCT_NAME || 'DigDuck',
                 licenseKey: licenseUser.licenseKey,
                 userEmail: userEmail,
@@ -242,10 +233,10 @@ export class LicenseController {
       const { licenseKey } = request.params;
 
       // 라이센스 조회
-      const licenseUser = await prisma.license_users.findUnique({
+      const licenseUser = await prisma.licenseUsers.findUnique({
         where: { licenseKey },
         include: {
-          license_subscriptions: {
+          licenseSubscriptions: {
             where: { isActive: true },
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -264,7 +255,7 @@ export class LicenseController {
       }
 
       // 활성 구독 확인
-      const activeSubscription = licenseUser.license_subscriptions[0];
+      const activeSubscription = licenseUser.licenseSubscriptions[0];
       if (!activeSubscription || activeSubscription.endDate < new Date()) {
         return reply.code(400).send({
           success: false,
@@ -279,7 +270,7 @@ export class LicenseController {
           user: licenseUser.users,
           subscription: activeSubscription,
           allowedDevices: licenseUser.allowedDevices,
-          activatedDevices: licenseUser.activatedDevices?.length || 0,
+          activatedDevices: Array.isArray(licenseUser.activatedDevices) ? licenseUser.activatedDevices.length : 0,
         },
         message: "라이센스가 유효합니다",
       });
@@ -301,7 +292,7 @@ export class LicenseController {
       const { email } = request.params;
 
       // 라이센스 사용자 삭제 (CASCADE로 구독도 함께 삭제됨)
-      await prisma.license_users.delete({
+      await prisma.licenseUsers.delete({
         where: { email },
       });
 
@@ -321,7 +312,7 @@ export class LicenseController {
   /**
    * 라이센스 키 생성 함수
    */
-  private generateLicenseKey(email: string): string {
+  private generateLicenseKey(_email: string): string {
     // 일반 사용자 라이센스 키 생성 (16자리 영문숫자)
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
@@ -333,14 +324,10 @@ export class LicenseController {
 
   private getSubscriptionTypeName(subscriptionType: string): string {
     switch (subscriptionType) {
-      case "ONE_MONTH":
-        return "1개월";
-      case "THREE_MONTHS":
-        return "3개월";
-      case "SIX_MONTHS":
-        return "6개월";
-      case "TWELVE_MONTHS":
-        return "12개월";
+      case "ONE_YEAR":
+        return "1년";
+      case "LIFETIME":
+        return "평생";
       default:
         return "알 수 없음";
     }

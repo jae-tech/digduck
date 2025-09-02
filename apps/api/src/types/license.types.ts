@@ -2,9 +2,9 @@ import { LicenseSubscriptionType, PlatformType, ItemType } from '@prisma/client'
 
 // 디바이스 정보 타입
 export interface DeviceInfo {
-  device_id: string
+  deviceId: string
   platform: PlatformType
-  activated_at: string
+  activatedAt: string
 }
 
 // 라이센스 사용자 생성 요청
@@ -89,7 +89,7 @@ export interface LicenseStatusResponse {
     id: number
     itemType: ItemType
     quantity: number
-    purchaseDate: Date
+    purchasedAt: Date
   }[]
   deviceTransfers: {
     id: number

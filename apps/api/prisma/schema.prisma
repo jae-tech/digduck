@@ -7,19 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model competitor_offers {
-  id             Int         @id @default(autoincrement())
-  productId      Int         @map("product_id")
-  crawlJobId     Int?        @map("crawl_job_id")
-  competitorName String      @map("competitor_name")
-  competitorUrl  String      @map("competitor_url")
-  price          Decimal     @db.Decimal(10, 2)
-  fetchedAt      DateTime    @default(now()) @map("fetched_at")
-  crawl_jobs     crawl_jobs? @relation(fields: [crawlJobId], references: [id])
-  products       products    @relation(fields: [productId], references: [id])
+model competitorOffers {
+  id             Int       @id @default(autoincrement())
+  productId      Int       @map("product_id")
+  crawlJobId     Int?      @map("crawl_job_id")
+  competitorName String    @map("competitor_name")
+  competitorUrl  String    @map("competitor_url")
+  price          Decimal   @db.Decimal(10, 2)
+  fetchedAt      DateTime  @default(now()) @map("fetched_at")
+  crawlJobs      crawlJobs? @relation(fields: [crawlJobId], references: [id])
+  products       products  @relation(fields: [productId], references: [id])
+
+  @@map("competitor_offers")
 }
 
-model crawl_history {
+model crawlHistory {
   id              Int           @id @default(autoincrement())
   userEmail       String        @map("user_email")
   deviceId        String        @map("device_id")
@@ -43,58 +45,62 @@ model crawl_history {
   priority        Int           @default(1) @map("priority")
   createdAt       DateTime      @default(now()) @map("created_at")
   users           users         @relation(fields: [userEmail], references: [email], onDelete: Cascade)
-  crawl_items     crawl_items[]
+  crawlItems      crawlItems[]
 
   @@index([createdAt])
   @@index([deviceId])
   @@index([sourceSite])
   @@index([status])
   @@index([userEmail])
+  @@map("crawl_history")
 }
 
-model crawl_items {
-  id               Int           @id @default(autoincrement())
-  crawlHistoryId   Int           @map("crawl_history_id")
-  itemId           String?       @map("item_id")
+model crawlItems {
+  id               Int          @id @default(autoincrement())
+  crawlHistoryId   Int          @map("crawl_history_id")
+  itemId           String?      @map("item_id")
   title            String?
   content          String?
   url              String?
-  rating           Decimal?      @db.Decimal(3, 2)
-  reviewDate       DateTime?     @map("review_date") @db.Date
-  reviewerName     String?       @map("reviewer_name")
-  isVerified       Boolean?      @map("is_verified")
-  price            Decimal?      @db.Decimal(10, 2)
-  originalPrice    Decimal?      @db.Decimal(10, 2) @map("original_price")
+  rating           Decimal?     @db.Decimal(3, 2)
+  reviewDate       DateTime?    @map("review_date") @db.Date
+  reviewerName     String?      @map("reviewer_name")
+  isVerified       Boolean?     @map("is_verified")
+  price            Decimal?     @db.Decimal(10, 2)
+  originalPrice    Decimal?     @db.Decimal(10, 2) @map("original_price")
   discount         Int?
   stock            Int?
-  imageUrls        Json?         @map("image_urls")
-  videoUrls        Json?         @map("video_urls")
-  siteSpecificData Json?         @map("site_specific_data")
-  itemOrder        Int?          @map("item_order")
-  pageNumber       Int?          @map("page_number")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  crawl_history    crawl_history @relation(fields: [crawlHistoryId], references: [id], onDelete: Cascade)
+  imageUrls        Json?        @map("image_urls")
+  videoUrls        Json?        @map("video_urls")
+  siteSpecificData Json?        @map("site_specific_data")
+  itemOrder        Int?         @map("item_order")
+  pageNumber       Int?         @map("page_number")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  crawlHistory     crawlHistory @relation(fields: [crawlHistoryId], references: [id], onDelete: Cascade)
 
   @@index([crawlHistoryId])
   @@index([itemId])
   @@index([price])
   @@index([rating])
   @@index([reviewDate])
+  @@map("crawl_items")
 }
 
-model crawl_jobs {
-  id                Int                 @id @default(autoincrement())
-  userId            Int                 @map("user_id")
-  requestedAt       DateTime            @default(now()) @map("requested_at")
-  startedAt         DateTime?           @map("started_at")
-  finishedAt        DateTime?           @map("finished_at")
-  errorMsg          String?             @map("error_msg")
-  status            CrawlStatus         @default(PENDING)
-  competitor_offers competitor_offers[]
-  users             users               @relation(fields: [userId], references: [id])
+model crawlJobs {
+  id               Int                @id @default(autoincrement())
+  userId           Int                @map("user_id")
+  requestedAt      DateTime           @default(now()) @map("requested_at")
+  startedAt        DateTime?          @map("started_at")
+  finishedAt       DateTime?          @map("finished_at")
+  errorMsg         String?            @map("error_msg")
+  status           CrawlStatus        @default(PENDING)
+  competitorOffers competitorOffers[]
+  users            users              @relation(fields: [userId], references: [id])
+
+  @@map("crawl_jobs")
 }
 
-model crawl_templates {
+model crawlTemplates {
   id           Int        @id @default(autoincrement())
   userEmail    String     @map("user_email")
   name         String
@@ -114,28 +120,33 @@ model crawl_templates {
   @@index([isPublic])
   @@index([sourceSite])
   @@index([userEmail])
+  @@map("crawl_templates")
 }
 
-model device_transfers {
-  id            Int           @id @default(autoincrement())
-  userEmail     String        @map("user_email")
-  oldDeviceId   String        @map("old_device_id")
-  newDeviceId   String        @map("new_device_id")
-  platform      PlatformType
-  transferDate  DateTime      @default(now()) @map("transfer_date") @db.Date
-  license_users license_users @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+model deviceTransfers {
+  id           Int           @id @default(autoincrement())
+  userEmail    String        @map("user_email")
+  oldDeviceId  String        @map("old_device_id")
+  newDeviceId  String        @map("new_device_id")
+  platform     PlatformType
+  transferDate DateTime      @default(now()) @map("transfer_date") @db.Date
+  licenseUsers licenseUsers  @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+
+  @@map("device_transfers")
 }
 
-model license_items {
-  id            Int           @id @default(autoincrement())
-  userEmail     String        @map("user_email")
-  itemType      ItemType      @map("item_type")
-  quantity      Int
-  purchasedAt   DateTime      @default(now()) @map("purchased_at")
-  license_users license_users @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+model licenseItems {
+  id           Int          @id @default(autoincrement())
+  userEmail    String       @map("user_email")
+  itemType     ItemType     @map("item_type")
+  quantity     Int
+  purchasedAt  DateTime     @default(now()) @map("purchased_at")
+  licenseUsers licenseUsers @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+
+  @@map("license_items")
 }
 
-model license_subscriptions {
+model licenseSubscriptions {
   id               Int                     @id @default(autoincrement())
   userEmail        String                  @map("user_email")
   subscriptionType LicenseSubscriptionType @map("subscription_type")
@@ -144,20 +155,24 @@ model license_subscriptions {
   isActive         Boolean                 @default(true) @map("is_active")
   paymentId        String?                 @map("payment_id")
   createdAt        DateTime                @default(now()) @map("created_at")
-  license_users    license_users           @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  licenseUsers     licenseUsers            @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+
+  @@map("license_subscriptions")
 }
 
-model license_users {
-  email                 String                  @id
-  licenseKey            String                  @unique @map("license_key")
-  allowedDevices        Int                     @default(3) @map("allowed_devices")
-  maxTransfers          Int                     @default(5) @map("max_transfers")
-  activatedDevices      Json                    @default("[]") @map("activated_devices")
-  createdAt             DateTime                @default(now()) @map("created_at")
-  device_transfers      device_transfers[]
-  license_items         license_items[]
-  license_subscriptions license_subscriptions[]
-  users                 users                   @relation(fields: [email], references: [email], onDelete: Cascade)
+model licenseUsers {
+  email                String                   @id
+  licenseKey           String                   @unique @map("license_key")
+  allowedDevices       Int                      @default(3) @map("allowed_devices")
+  maxTransfers         Int                      @default(5) @map("max_transfers")
+  activatedDevices     Json                     @default("[]") @map("activated_devices")
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  deviceTransfers      deviceTransfers[]
+  licenseItems         licenseItems[]
+  licenseSubscriptions licenseSubscriptions[]
+  users                users                    @relation(fields: [email], references: [email], onDelete: Cascade)
+
+  @@map("license_users")
 }
 
 model plans {
@@ -169,31 +184,37 @@ model plans {
   updatedAt     DateTime        @updatedAt @map("updated_at")
   billingCycle  BillingCycle    @default(ONE_MONTH) @map("billing_cycle")
   subscriptions subscriptions[]
+
+  @@map("plans")
 }
 
-model price_change_logs {
+model priceChangeLogs {
   id        Int      @id @default(autoincrement())
   productId Int      @map("product_id")
   oldPrice  Decimal  @db.Decimal(10, 2) @map("old_price")
   newPrice  Decimal  @db.Decimal(10, 2) @map("new_price")
   changedAt DateTime @default(now()) @map("changed_at")
   products  products @relation(fields: [productId], references: [id])
+
+  @@map("price_change_logs")
 }
 
 model products {
-  id                  Int                 @id @default(autoincrement())
-  userId              Int                 @map("user_id")
-  smartStoreProductId String              @map("smart_store_product_id")
+  id                  Int                  @id @default(autoincrement())
+  userId              Int                  @map("user_id")
+  smartStoreProductId String               @map("smart_store_product_id")
   name                String
   url                 String
-  currentPrice        Decimal             @db.Decimal(10, 2) @map("current_price")
-  targetPrice         Decimal             @db.Decimal(10, 2) @map("target_price")
-  isActive            Boolean             @default(true) @map("is_active")
-  createdAt           DateTime            @default(now()) @map("created_at")
-  updatedAt           DateTime            @updatedAt @map("updated_at")
-  competitor_offers   competitor_offers[]
-  price_change_logs   price_change_logs[]
-  users               users               @relation(fields: [userId], references: [id])
+  currentPrice        Decimal              @db.Decimal(10, 2) @map("current_price")
+  targetPrice         Decimal              @db.Decimal(10, 2) @map("target_price")
+  isActive            Boolean              @default(true) @map("is_active")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  competitorOffers    competitorOffers[]
+  priceChangeLogs     priceChangeLogs[]
+  users               users                @relation(fields: [userId], references: [id])
+
+  @@map("products")
 }
 
 model subscriptions {
@@ -208,22 +229,27 @@ model subscriptions {
   planId    Int                @map("plan_id")
   plans     plans              @relation(fields: [planId], references: [id])
   users     users              @relation(fields: [userId], references: [id])
+
+  @@map("subscriptions")
 }
 
 model users {
   id              Int               @id @default(autoincrement())
   email           String            @unique
   name            String?
+  nickname        String?
   isAdmin         Boolean           @default(false) @map("is_admin")
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
-  crawl_history   crawl_history[]
-  crawl_jobs      crawl_jobs[]
-  crawl_templates crawl_templates[]
-  license_users   license_users?
+  crawlHistory    crawlHistory[]
+  crawlJobs       crawlJobs[]
+  crawlTemplates  crawlTemplates[]
+  licenseUsers    licenseUsers?
   products        products[]
   subscriptions   subscriptions[]
-  mail_history    mail_history[]
+  mailHistory     mailHistory[]
+
+  @@map("users")
 }
 
 enum BillingCycle {
@@ -250,10 +276,8 @@ enum ItemType {
 }
 
 enum LicenseSubscriptionType {
-  ONE_MONTH
-  THREE_MONTHS
-  SIX_MONTHS
-  TWELVE_MONTHS
+  ONE_YEAR
+  LIFETIME
 }
 
 enum PlatformType {
@@ -269,32 +293,33 @@ enum SourceSite {
   ELEVENST
 }
 
-model mail_history {
-  id             Int            @id @default(autoincrement())
-  userEmail      String?        @map("user_email")
-  fromEmail      String         @map("from_email")
-  toEmail        String         @map("to_email")
-  ccEmails       String[]       @default([]) @map("cc_emails")
-  bccEmails      String[]       @default([]) @map("bcc_emails")
-  subject        String
-  templateId     String?        @map("template_id")
-  templateVars   Json?          @map("template_vars")
-  provider       MailProvider
-  messageId      String?        @map("message_id")
-  status         MailStatus     @default(PENDING)
-  errorMessage   String?        @map("error_message")
-  sentAt         DateTime?      @map("sent_at")
-  deliveredAt    DateTime?      @map("delivered_at")
-  openedAt       DateTime?      @map("opened_at")
-  clickedAt      DateTime?      @map("clicked_at")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-  users          users?         @relation(fields: [userEmail], references: [email], onDelete: SetNull)
+model mailHistory {
+  id           Int          @id @default(autoincrement())
+  userEmail    String?      @map("user_email")
+  fromEmail    String       @map("from_email")
+  toEmail      String       @map("to_email")
+  ccEmails     String[]     @default([]) @map("cc_emails")
+  bccEmails    String[]     @default([]) @map("bcc_emails")
+  subject      String
+  templateId   String?      @map("template_id")
+  templateVars Json?        @map("template_vars")
+  provider     MailProvider
+  messageId    String?      @map("message_id")
+  status       MailStatus   @default(PENDING)
+  errorMessage String?      @map("error_message")
+  sentAt       DateTime?    @map("sent_at")
+  deliveredAt  DateTime?    @map("delivered_at")
+  openedAt     DateTime?    @map("opened_at")
+  clickedAt    DateTime?    @map("clicked_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  users        users?       @relation(fields: [userEmail], references: [email], onDelete: SetNull)
 
   @@index([userEmail])
   @@index([status])
   @@index([createdAt])
   @@index([templateId])
+  @@map("mail_history")
 }
 
 enum MailStatus {

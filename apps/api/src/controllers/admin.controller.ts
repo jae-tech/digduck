@@ -30,7 +30,7 @@ export class AdminController {
     reply: FastifyReply
   ) {
     try {
-      const { period = "month", startDate, endDate } = request.query;
+      const { } = request.query;
 
       // 통계 쿼리 실행
       const [
@@ -41,10 +41,10 @@ export class AdminController {
         revokedUsers,
         adminUsers,
       ] = await Promise.all([
-        prisma.license_users.count(),
-        prisma.license_users.count({
+        prisma.licenseUsers.count(),
+        prisma.licenseUsers.count({
           where: {
-            license_subscriptions: {
+            licenseSubscriptions: {
               some: {
                 isActive: true,
                 endDate: { gt: new Date() },
@@ -52,9 +52,9 @@ export class AdminController {
             },
           },
         }),
-        prisma.license_users.count({
+        prisma.licenseUsers.count({
           where: {
-            license_subscriptions: {
+            licenseSubscriptions: {
               some: {
                 isActive: false,
                 endDate: { lt: new Date() },
@@ -62,23 +62,23 @@ export class AdminController {
             },
           },
         }),
-        prisma.license_users.count({
+        prisma.licenseUsers.count({
           where: {
-            license_subscriptions: {
+            licenseSubscriptions: {
               some: {
                 isActive: false,
               },
             },
           },
         }),
-        prisma.license_users.count({
+        prisma.licenseUsers.count({
           where: {
-            license_subscriptions: {
+            licenseSubscriptions: {
               none: {},
             },
           },
         }),
-        prisma.license_users.count({
+        prisma.licenseUsers.count({
           where: {
             licenseKey: { startsWith: "ADMIN" },
           },
@@ -89,9 +89,9 @@ export class AdminController {
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
-      const expiringSoon = await prisma.license_users.count({
+      const expiringSoon = await prisma.licenseUsers.count({
         where: {
-          license_subscriptions: {
+          licenseSubscriptions: {
             some: {
               isActive: true,
               endDate: {
@@ -160,7 +160,7 @@ export class AdminController {
       if (status) {
         switch (status) {
           case "active":
-            where.license_subscriptions = {
+            where.licenseSubscriptions = {
               some: {
                 isActive: true,
                 endDate: { gt: new Date() },
@@ -168,21 +168,21 @@ export class AdminController {
             };
             break;
           case "expired":
-            where.license_subscriptions = {
+            where.licenseSubscriptions = {
               some: {
                 endDate: { lt: new Date() },
               },
             };
             break;
           case "suspended":
-            where.license_subscriptions = {
+            where.licenseSubscriptions = {
               some: {
                 isActive: false,
               },
             };
             break;
           case "revoked":
-            where.license_subscriptions = {
+            where.licenseSubscriptions = {
               none: {},
             };
             break;
@@ -190,17 +190,17 @@ export class AdminController {
       }
 
       const [users, total] = await Promise.all([
-        prisma.license_users.findMany({
+        prisma.licenseUsers.findMany({
           where,
           skip,
           take: Number(limit),
           include: {
-            license_subscriptions: {
+            licenseSubscriptions: {
               where: { isActive: true },
               take: 1,
             },
-            license_items: true,
-            device_transfers: {
+            licenseItems: true,
+            deviceTransfers: {
               take: 5,
               orderBy: { transferDate: "desc" },
             },
@@ -208,7 +208,7 @@ export class AdminController {
           },
           orderBy: { createdAt: "desc" },
         }),
-        prisma.license_users.count({ where }),
+        prisma.licenseUsers.count({ where }),
       ]);
 
       reply.code(200).send({
@@ -241,7 +241,7 @@ export class AdminController {
       const { licenseKey } = request.params;
 
       // 라이센스 사용자 삭제 (CASCADE로 관련 데이터도 함께 삭제됨)
-      await prisma.license_users.delete({
+      await prisma.licenseUsers.delete({
         where: { licenseKey },
       });
 
@@ -272,19 +272,19 @@ export class AdminController {
 
       switch (action) {
         case "activate":
-          await prisma.license_subscriptions.updateMany({
+          await prisma.licenseSubscriptions.updateMany({
             where: { userEmail: licenseKey },
             data: { isActive: true },
           });
           break;
         case "suspend":
-          await prisma.license_subscriptions.updateMany({
+          await prisma.licenseSubscriptions.updateMany({
             where: { userEmail: licenseKey },
             data: { isActive: false },
           });
           break;
         case "revoke":
-          await prisma.license_subscriptions.deleteMany({
+          await prisma.licenseSubscriptions.deleteMany({
             where: { userEmail: licenseKey },
           });
           break;
@@ -318,24 +318,24 @@ export class AdminController {
 
       switch (action) {
         case "activate":
-          await prisma.license_subscriptions.updateMany({
+          await prisma.licenseSubscriptions.updateMany({
             where: { userEmail: { in: licenseIds } },
             data: { isActive: true },
           });
           break;
         case "suspend":
-          await prisma.license_subscriptions.updateMany({
+          await prisma.licenseSubscriptions.updateMany({
             where: { userEmail: { in: licenseIds } },
             data: { isActive: false },
           });
           break;
         case "revoke":
-          await prisma.license_subscriptions.deleteMany({
+          await prisma.licenseSubscriptions.deleteMany({
             where: { userEmail: { in: licenseIds } },
           });
           break;
         case "delete":
-          await prisma.license_users.deleteMany({
+          await prisma.licenseUsers.deleteMany({
             where: { licenseKey: { in: licenseIds } },
           });
           break;
