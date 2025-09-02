@@ -19,7 +19,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
-    "db:seed": "node dist/seed.js",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:dev": "tsx prisma/seed.dev.ts",
     "db:format": "prisma format",
     "clean": "rm -rf dist"
   },

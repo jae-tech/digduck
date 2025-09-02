@@ -7,16 +7,22 @@ import {
   BulkMailResult,
   MailProvider,
   MailProviderConfig,
+  MailStatus,
+  CreateMailHistoryData,
 } from "@/types/mail.types";
 import { MailTemplateService } from "./mail-template.service";
+import { MailHistoryService } from "./mail-history.service";
+import { env } from "@/config/env";
 
 export class MailService {
   private transporter: Transporter | null = null;
   private config: MailConfig | null = null;
   private templateService: MailTemplateService;
+  private historyService: MailHistoryService;
 
   constructor() {
     this.templateService = new MailTemplateService();
+    this.historyService = new MailHistoryService();
   }
 
   private getProviderConfig(provider: MailProvider): Partial<MailConfig> {
@@ -30,6 +36,12 @@ export class MailService {
       case MailProvider.OUTLOOK:
         return {
           host: "smtp-mail.outlook.com",
+          port: 587,
+          secure: false,
+        };
+      case MailProvider.ZOHO:
+        return {
+          host: "smtp.zoho.com",
           port: 587,
           secure: false,
         };
@@ -69,11 +81,31 @@ export class MailService {
     }
   }
 
-  async sendMail(options: MailOptions): Promise<MailSendResult> {
+  async sendMail(options: MailOptions & { userEmail?: string }): Promise<MailSendResult> {
     if (!this.transporter) {
       throw new Error(
         "메일 서비스가 설정되지 않았습니다. configure()를 먼저 호출해주세요."
       );
+    }
+
+    // 메일 히스토리 생성
+    const historyData: CreateMailHistoryData = {
+      userEmail: options.userEmail,
+      fromEmail: options.from,
+      toEmail: Array.isArray(options.to) ? options.to[0] : options.to,
+      ccEmails: Array.isArray(options.cc) ? options.cc : (options.cc ? [options.cc] : []),
+      bccEmails: Array.isArray(options.bcc) ? options.bcc : (options.bcc ? [options.bcc] : []),
+      subject: options.subject,
+      provider: this.getCurrentProvider(),
+    };
+
+    let historyId: number | null = null;
+    
+    try {
+      const history = await this.historyService.createMailHistory(historyData);
+      historyId = history.id;
+    } catch (error) {
+      console.error("메일 히스토리 생성 실패:", error);
     }
 
     try {
@@ -90,6 +122,15 @@ export class MailService {
 
       const result = await this.transporter.sendMail(mailOptions);
 
+      // 성공시 히스토리 업데이트
+      if (historyId) {
+        await this.historyService.updateMailHistory(historyId, {
+          messageId: result.messageId,
+          status: MailStatus.SENT,
+          sentAt: new Date()
+        });
+      }
+
       return {
         success: true,
         messageId: result.messageId,
@@ -97,6 +138,15 @@ export class MailService {
       };
     } catch (error) {
       console.error("메일 발송 실패:", error);
+      
+      // 실패시 히스토리 업데이트
+      if (historyId) {
+        await this.historyService.updateMailHistory(historyId, {
+          status: MailStatus.FAILED,
+          errorMessage: error instanceof Error ? error.message : "알 수 없는 오류"
+        });
+      }
+
       return {
         success: false,
         error: error instanceof Error ? error.message : "알 수 없는 오류",
@@ -107,7 +157,7 @@ export class MailService {
   async sendTemplatedMail(
     templateId: string,
     variables: Record<string, any>,
-    options: Omit<MailOptions, "subject" | "html" | "text">
+    options: Omit<MailOptions, "subject" | "html" | "text"> & { userEmail?: string }
   ): Promise<MailSendResult> {
     const rendered = this.templateService.renderTemplate(templateId, variables);
 
@@ -118,12 +168,37 @@ export class MailService {
       };
     }
 
-    return this.sendMail({
+    // 템플릿 정보 추가
+    const historyData: CreateMailHistoryData = {
+      userEmail: options.userEmail,
+      fromEmail: options.from,
+      toEmail: Array.isArray(options.to) ? options.to[0] : options.to,
+      ccEmails: Array.isArray(options.cc) ? options.cc : (options.cc ? [options.cc] : []),
+      bccEmails: Array.isArray(options.bcc) ? options.bcc : (options.bcc ? [options.bcc] : []),
+      subject: rendered.subject,
+      templateId,
+      templateVars: variables,
+      provider: this.getCurrentProvider(),
+    };
+
+    let historyId: number | null = null;
+    
+    try {
+      const history = await this.historyService.createMailHistory(historyData);
+      historyId = history.id;
+    } catch (error) {
+      console.error("메일 히스토리 생성 실패:", error);
+    }
+
+    const result = await this.sendMail({
       ...options,
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
+      userEmail: options.userEmail,
     });
+
+    return result;
   }
 
   async sendBulkMail(options: BulkMailOptions): Promise<BulkMailResult> {
@@ -189,8 +264,16 @@ export class MailService {
     }
   }
 
-  getTemplateService(): MailTemplateService {
-    return this.templateService;
+
+  private getCurrentProvider(): MailProvider {
+    // 현재 설정된 프로바이더 반환
+    const provider = process.env.MAIL_PROVIDER?.toLowerCase();
+    switch (provider) {
+      case 'gmail': return MailProvider.GMAIL;
+      case 'outlook': return MailProvider.OUTLOOK;
+      case 'zoho': return MailProvider.ZOHO;
+      default: return MailProvider.SMTP;
+    }
   }
 
   isConfigured(): boolean {
@@ -216,6 +299,97 @@ export class MailService {
       this.transporter.close();
       this.transporter = null;
       this.config = null;
+    }
+  }
+
+  // MailInitService 기능 통합
+  async initializeFromEnv(): Promise<boolean> {
+    try {
+      const mailUser = process.env.MAIL_USER;
+      const mailPass = process.env.MAIL_PASS;
+      const mailProvider = process.env.MAIL_PROVIDER as MailProvider || MailProvider.GMAIL;
+
+      if (!mailUser || !mailPass) {
+        console.log('⚠️ 메일 서비스 환경변수가 설정되지 않았습니다 (MAIL_USER, MAIL_PASS)');
+        return false;
+      }
+
+      await this.configure({
+        provider: mailProvider,
+        config: {
+          host: process.env.MAIL_HOST || '',
+          port: parseInt(process.env.MAIL_PORT || '587'),
+          secure: process.env.MAIL_SECURE === 'true',
+          auth: {
+            user: mailUser,
+            pass: mailPass
+          }
+        }
+      });
+
+      console.log('✅ 메일 서비스가 환경변수로부터 초기화되었습니다');
+      console.log(`📧 Provider: ${mailProvider}`);
+      console.log(`👤 User: ${mailUser}`);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ 메일 서비스 초기화 실패:', error);
+      return false;
+    }
+  }
+
+  async testConnection(): Promise<boolean> {
+    if (!this.isConfigured()) {
+      console.log('메일 서비스가 설정되지 않았습니다');
+      return false;
+    }
+
+    try {
+      const isConnected = await this.verifyConnection();
+      if (isConnected) {
+        console.log('✅ 메일 서버 연결 테스트 성공');
+      } else {
+        console.log('❌ 메일 서버 연결 테스트 실패');
+      }
+      return isConnected;
+    } catch (error) {
+      console.error('❌ 메일 서버 연결 테스트 오류:', error);
+      return false;
+    }
+  }
+
+  async sendTestMail(toEmail?: string): Promise<boolean> {
+    if (!this.isConfigured()) {
+      console.log('메일 서비스가 설정되지 않았습니다');
+      return false;
+    }
+
+    try {
+      const result = await this.sendTemplatedMail(
+        'notification',
+        {
+          userName: '테스트 사용자',
+          title: '메일 서비스 테스트',
+          message: '이 메일은 메일 서비스가 정상적으로 작동하는지 확인하기 위한 테스트 메일입니다.',
+          companyName: env.COMPANY_NAME || 'DigDuck'
+        },
+        {
+          from: env.MAIL_FROM || process.env.MAIL_USER || 'test@example.com',
+          to: toEmail || process.env.MAIL_USER || 'test@example.com'
+        }
+      );
+
+      if (result.success) {
+        console.log('✅ 테스트 메일 발송 성공');
+        console.log(`📧 수신자: ${toEmail || process.env.MAIL_USER}`);
+        return true;
+      } else {
+        console.log('❌ 테스트 메일 발송 실패:', result.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ 테스트 메일 발송 오류:', error);
+      return false;
     }
   }
 }

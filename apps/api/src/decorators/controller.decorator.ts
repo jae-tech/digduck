@@ -23,7 +23,9 @@ const CONTROLLER_KEY = Symbol("controller");
 // Controller 데코레이터
 export function Controller(prefix: string = "") {
   return function (target: any) {
-    Reflect.defineMetadata(CONTROLLER_KEY, { prefix }, target);
+    // 앞에 /가 없으면 자동으로 추가
+    const normalizedPrefix = prefix.startsWith('/') ? prefix : `/${prefix}`;
+    Reflect.defineMetadata(CONTROLLER_KEY, { prefix: normalizedPrefix }, target);
   };
 }
 
@@ -48,35 +50,45 @@ export function Get(
   path: string,
   options: Omit<RouteOptions, "method" | "path"> = {}
 ) {
-  return Route({ method: "GET", path, ...options });
+  // 앞에 /가 없으면 자동으로 추가
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return Route({ method: "GET", path: normalizedPath, ...options });
 }
 
 export function Post(
   path: string,
   options: Omit<RouteOptions, "method" | "path"> = {}
 ) {
-  return Route({ method: "POST", path, ...options });
+  // 앞에 /가 없으면 자동으로 추가
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return Route({ method: "POST", path: normalizedPath, ...options });
 }
 
 export function Put(
   path: string,
   options: Omit<RouteOptions, "method" | "path"> = {}
 ) {
-  return Route({ method: "PUT", path, ...options });
+  // 앞에 /가 없으면 자동으로 추가
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return Route({ method: "PUT", path: normalizedPath, ...options });
 }
 
 export function Delete(
   path: string,
   options: Omit<RouteOptions, "method" | "path"> = {}
 ) {
-  return Route({ method: "DELETE", path, ...options });
+  // 앞에 /가 없으면 자동으로 추가
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return Route({ method: "DELETE", path: normalizedPath, ...options });
 }
 
 export function Patch(
   path: string,
   options: Omit<RouteOptions, "method" | "path"> = {}
 ) {
-  return Route({ method: "PATCH", path, ...options });
+  // 앞에 /가 없으면 자동으로 추가
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return Route({ method: "PATCH", path: normalizedPath, ...options });
 }
 
 // Auth 데코레이터
