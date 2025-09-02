@@ -10,6 +10,7 @@ WORKDIR /app
 # Copy workspace configuration files
 COPY pnpm-workspace.yaml ./
 COPY package.json ./
+COPY pnpm-lock.yaml ./
 COPY turbo.json ./
 
 # Copy API package.json for dependency resolution
@@ -55,6 +56,7 @@ RUN corepack enable
 # Copy package files
 COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./
 COPY --from=builder --chown=nodejs:nodejs /app/turbo.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package.json ./apps/api/
 
@@ -62,12 +64,6 @@ COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package.json ./apps/api/
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/prisma ./apps/api/prisma/
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules/
-
-# Install only production dependencies (if needed)
-RUN pnpm install --prod --frozen-lockfile
-
-# Copy startup script
-COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist/
 
 # Switch to nodejs user
 USER nodejs
