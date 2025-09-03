@@ -97,7 +97,16 @@ jobs:
           aws s3 sync apps/dig-duck/dist/ s3://digduck.app --delete --cache-control max-age=31536000 --exclude "*.html"
 
       - name: Invalidate CloudFront Cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+        run: |
+          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            echo "✅ CloudFront Distribution ID 존재, 캐시 무효화 진행"
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+            echo "✅ CloudFront 캐시 무효화 완료"
+          else
+            echo "⚠️ CLOUDFRONT_DISTRIBUTION_ID secret이 설정되지 않음"
+            echo "CloudFront 캐시 무효화를 건너뜁니다."
+            echo "💡 설정 방법: GitHub Repository Settings > Secrets에서 CLOUDFRONT_DISTRIBUTION_ID 추가"
+          fi
 
       - name: Frontend deployment notification
         run: echo "✅ Frontend 배포 완료! S3 + CloudFront 업데이트됨"
