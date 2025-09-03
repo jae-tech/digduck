@@ -127,12 +127,28 @@ jobs:
       - name: Generate Prisma Client
         run: cd apps/api && pnpm prisma generate
 
+      - name: Make Docker Env
+        run: |
+          cd apps/api
+          touch ./.env
+          echo "${{ secrets.DOCKER_ENV }}" > ./.env
+          echo "✅ GitHub Secrets에서 .env 파일 생성 완료"
+          echo "생성된 .env 파일 확인:"
+          ls -la .env
+
       - name: Build API
         run: pnpm turbo run build --filter=api
 
       - name: Build Docker image
         run: |
-          docker build -t dig-duck-api:latest -f apps/api/Dockerfile .
+          # .env 파일이 있는지 확인
+          if [ -f "apps/api/.env" ]; then
+            echo "✅ .env 파일 존재, Docker 빌드 진행"
+            docker build -t dig-duck-api:latest -f apps/api/Dockerfile .
+          else
+            echo "❌ .env 파일 없음, Docker 빌드 진행"
+            docker build -t dig-duck-api:latest -f apps/api/Dockerfile .
+          fi
 
       - name: Login to Docker Registry
         run: |
