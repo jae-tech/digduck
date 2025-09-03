@@ -18,8 +18,10 @@ interface CreateLicenseUserBody {
 interface CreateSubscriptionBody {
   userEmail: string;
   subscriptionType:
-    | "ONE_YEAR"
-    | "LIFETIME";
+    | "ONE_MONTH"
+    | "THREE_MONTHS"
+    | "SIX_MONTHS"
+    | "TWELVE_MONTHS";
   paymentId: string;
 }
 
@@ -47,7 +49,7 @@ export class LicenseController {
       if (search) {
         where.OR = [
           { licenseKey: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
+          { userEmail: { contains: search, mode: "insensitive" } },
           { users: { name: { contains: search, mode: "insensitive" } } },
         ];
       }
@@ -112,7 +114,7 @@ export class LicenseController {
       // 라이센스 사용자 생성
       const licenseUser = await prisma.licenseUsers.create({
         data: {
-          email,
+          userEmail: email,
           licenseKey,
           allowedDevices,
           maxTransfers,
@@ -147,11 +149,17 @@ export class LicenseController {
       const endDate = new Date(now);
 
       switch (subscriptionType) {
-        case "ONE_YEAR":
-          endDate.setFullYear(endDate.getFullYear() + 1);
+        case "ONE_MONTH":
+          endDate.setMonth(endDate.getMonth() + 1);
           break;
-        case "LIFETIME":
-          endDate.setFullYear(endDate.getFullYear() + 100); // 100 years from now for lifetime
+        case "THREE_MONTHS":
+          endDate.setMonth(endDate.getMonth() + 3);
+          break;
+        case "SIX_MONTHS":
+          endDate.setMonth(endDate.getMonth() + 6);
+          break;
+        case "TWELVE_MONTHS":
+          endDate.setFullYear(endDate.getFullYear() + 1);
           break;
       }
 
@@ -172,7 +180,6 @@ export class LicenseController {
           startDate: now,
           endDate,
           isActive: true,
-          paymentId,
         },
       });
 
@@ -180,7 +187,7 @@ export class LicenseController {
       if (mailService.isConfigured()) {
         try {
           const licenseUser = await prisma.licenseUsers.findUnique({
-            where: { email: userEmail }
+            where: { userEmail: userEmail }
           });
 
           if (licenseUser) {
@@ -293,7 +300,7 @@ export class LicenseController {
 
       // 라이센스 사용자 삭제 (CASCADE로 구독도 함께 삭제됨)
       await prisma.licenseUsers.delete({
-        where: { email },
+        where: { userEmail: email },
       });
 
       reply.code(200).send({
@@ -324,10 +331,14 @@ export class LicenseController {
 
   private getSubscriptionTypeName(subscriptionType: string): string {
     switch (subscriptionType) {
-      case "ONE_YEAR":
-        return "1년";
-      case "LIFETIME":
-        return "평생";
+      case "ONE_MONTH":
+        return "1개월";
+      case "THREE_MONTHS":
+        return "3개월";
+      case "SIX_MONTHS":
+        return "6개월";
+      case "TWELVE_MONTHS":
+        return "12개월";
       default:
         return "알 수 없음";
     }

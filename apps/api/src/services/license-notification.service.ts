@@ -64,7 +64,7 @@ export class LicenseNotificationService {
           "license-expiry-warning",
           {
             userName:
-              subscription.licenseUsers.email ||
+              subscription.licenseUsers.userEmail ||
               subscription.userEmail.split("@")[0],
             productName: env.PRODUCT_NAME || "DigDuck",
             daysLeft: daysLeft.toString(),
@@ -106,7 +106,7 @@ export class LicenseNotificationService {
 
     try {
       const licenseUser = await this.prisma.licenseUsers.findUnique({
-        where: { email: userEmail },
+        where: { userEmail: userEmail },
         include: {
           licenseSubscriptions: {
             where: { isActive: true },
@@ -126,7 +126,7 @@ export class LicenseNotificationService {
       await mailService.sendTemplatedMail(
         "license-expiry-warning",
         {
-          userName: licenseUser.email || userEmail.split("@")[0],
+          userName: licenseUser.userEmail || userEmail.split("@")[0],
           productName: env.PRODUCT_NAME || "DigDuck",
           daysLeft: daysLeft.toString(),
           licenseKey: licenseUser.licenseKey,
@@ -162,7 +162,7 @@ export class LicenseNotificationService {
 
     try {
       const licenseUser = await this.prisma.licenseUsers.findUnique({
-        where: { email: userEmail },
+        where: { userEmail: userEmail },
         include: {
           licenseSubscriptions: {
             where: { isActive: true },
@@ -181,7 +181,7 @@ export class LicenseNotificationService {
       await mailService.sendTemplatedMail(
         "license-created", // 갱신도 동일한 템플릿 사용
         {
-          userName: licenseUser.email || userEmail.split("@")[0],
+          userName: licenseUser.userEmail || userEmail.split("@")[0],
           productName: env.PRODUCT_NAME || "DigDuck",
           licenseKey: licenseUser.licenseKey,
           userEmail: userEmail,

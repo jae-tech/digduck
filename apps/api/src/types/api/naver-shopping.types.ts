@@ -43,8 +43,8 @@ export interface ShoppingInsightsParams {
   endDate: string;
   timeUnit: "date" | "week" | "month";
   category?: Array<{ name: string; param: string[] }>;
-  device?: "pc" | "mo" | "";
-  gender?: "m" | "f" | "";
+  device?: "pc" | "mo";
+  gender?: "m" | "f";
   ages?: ("10" | "20" | "30" | "40" | "50" | "60")[];
 }
 
@@ -54,8 +54,8 @@ export interface CategoryKeywordParams {
   timeUnit: "date" | "week" | "month";
   category: string;
   keyword: Array<{ name: string; param: string[] }>;
-  device?: "pc" | "mo" | "";
-  gender?: "m" | "f" | "";
+  device?: "pc" | "mo";
+  gender?: "m" | "f";
   ages?: ("10" | "20" | "30" | "40" | "50" | "60")[];
 }
 
