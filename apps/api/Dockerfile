@@ -26,9 +26,6 @@ RUN pnpm install --frozen-lockfile
 # Copy API source code
 COPY apps/api/ ./apps/api/
 
-# Copy .env file if exists (for build-time environment variables)
-COPY apps/api/.env* ./apps/api/ || true
-
 # Build stage
 FROM base AS builder
 
