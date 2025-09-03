@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -85,13 +85,7 @@ const ShoppingInsightsPage: React.FC = () => {
           </div>
         ),
       },
-      ...(data?.data.some(point => point.title) ? [{
-        accessorKey: "title",
-        header: "분류",
-        cell: ({ row }) => (
-          <span className="text-sm text-gray-700">{row.getValue("title") || "-"}</span>
-        ),
-      }] : []),
+      // title은 InsightsDataPoint에 없으므로 제거
     ],
     [data]
   );
