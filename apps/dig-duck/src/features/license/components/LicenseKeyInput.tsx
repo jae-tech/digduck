@@ -77,6 +77,7 @@ const MobileInputOTP: React.FC<MobileInputOTPProps> = ({
           value={value.slice(0, 8)}
           onChange={handleFirstRowChange}
           disabled={disabled}
+          pattern={`[A-Za-z0-9]*`}
         >
           <InputOTPGroup className="flex-shrink-0">
             <InputOTPSlot
@@ -118,6 +119,7 @@ const MobileInputOTP: React.FC<MobileInputOTPProps> = ({
             onChange={handleSecondRowChange}
             disabled={disabled}
             onKeyDown={handleFirstRowKeyDown}
+            pattern={`[A-Za-z0-9]*`}
           >
             <InputOTPGroup className="flex-shrink-0">
               <InputOTPSlot index={0} className="w-6 h-8 text-sm" />
@@ -166,6 +168,7 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
               value={value}
               onChange={onChange}
               disabled={disabled}
+              pattern={`[A-Za-z0-9]*`}
             >
               <InputOTPGroup className="flex-shrink-0">
                 <InputOTPSlot

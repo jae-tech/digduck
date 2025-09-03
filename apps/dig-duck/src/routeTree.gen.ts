@@ -11,7 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LicenseRouteImport } from './routes/license'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedCrawlerRouteImport } from './routes/_authenticated/crawler'
+import { Route as AuthenticatedCrawlerReviewRouteImport } from './routes/_authenticated/crawler/review'
+import { Route as AuthenticatedCrawlerInsightsRouteImport } from './routes/_authenticated/crawler/insights'
 import { Route as AuthenticatedAdminLicenseManagerRouteImport } from './routes/_authenticated/admin/license-manager'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 
@@ -25,11 +26,18 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedCrawlerRoute = AuthenticatedCrawlerRouteImport.update({
-  id: '/_authenticated/crawler',
-  path: '/crawler',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedCrawlerReviewRoute =
+  AuthenticatedCrawlerReviewRouteImport.update({
+    id: '/_authenticated/crawler/review',
+    path: '/crawler/review',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedCrawlerInsightsRoute =
+  AuthenticatedCrawlerInsightsRouteImport.update({
+    id: '/_authenticated/crawler/insights',
+    path: '/crawler/insights',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminLicenseManagerRoute =
   AuthenticatedAdminLicenseManagerRouteImport.update({
     id: '/_authenticated/admin/license-manager',
@@ -46,55 +54,62 @@ const AuthenticatedAdminDashboardRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/license': typeof LicenseRoute
-  '/crawler': typeof AuthenticatedCrawlerRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
+  '/crawler/insights': typeof AuthenticatedCrawlerInsightsRoute
+  '/crawler/review': typeof AuthenticatedCrawlerReviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/license': typeof LicenseRoute
-  '/crawler': typeof AuthenticatedCrawlerRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
+  '/crawler/insights': typeof AuthenticatedCrawlerInsightsRoute
+  '/crawler/review': typeof AuthenticatedCrawlerReviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/license': typeof LicenseRoute
-  '/_authenticated/crawler': typeof AuthenticatedCrawlerRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
+  '/_authenticated/crawler/insights': typeof AuthenticatedCrawlerInsightsRoute
+  '/_authenticated/crawler/review': typeof AuthenticatedCrawlerReviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/license'
-    | '/crawler'
     | '/admin/dashboard'
     | '/admin/license-manager'
+    | '/crawler/insights'
+    | '/crawler/review'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/license'
-    | '/crawler'
     | '/admin/dashboard'
     | '/admin/license-manager'
+    | '/crawler/insights'
+    | '/crawler/review'
   id:
     | '__root__'
     | '/'
     | '/license'
-    | '/_authenticated/crawler'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/license-manager'
+    | '/_authenticated/crawler/insights'
+    | '/_authenticated/crawler/review'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LicenseRoute: typeof LicenseRoute
-  AuthenticatedCrawlerRoute: typeof AuthenticatedCrawlerRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminLicenseManagerRoute: typeof AuthenticatedAdminLicenseManagerRoute
+  AuthenticatedCrawlerInsightsRoute: typeof AuthenticatedCrawlerInsightsRoute
+  AuthenticatedCrawlerReviewRoute: typeof AuthenticatedCrawlerReviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -113,11 +128,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/crawler': {
-      id: '/_authenticated/crawler'
-      path: '/crawler'
-      fullPath: '/crawler'
-      preLoaderRoute: typeof AuthenticatedCrawlerRouteImport
+    '/_authenticated/crawler/review': {
+      id: '/_authenticated/crawler/review'
+      path: '/crawler/review'
+      fullPath: '/crawler/review'
+      preLoaderRoute: typeof AuthenticatedCrawlerReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/crawler/insights': {
+      id: '/_authenticated/crawler/insights'
+      path: '/crawler/insights'
+      fullPath: '/crawler/insights'
+      preLoaderRoute: typeof AuthenticatedCrawlerInsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/license-manager': {
@@ -140,9 +162,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LicenseRoute: LicenseRoute,
-  AuthenticatedCrawlerRoute: AuthenticatedCrawlerRoute,
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminLicenseManagerRoute: AuthenticatedAdminLicenseManagerRoute,
+  AuthenticatedCrawlerInsightsRoute: AuthenticatedCrawlerInsightsRoute,
+  AuthenticatedCrawlerReviewRoute: AuthenticatedCrawlerReviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

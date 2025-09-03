@@ -68,3 +68,30 @@ export interface CrawlStats {
   duration: number;
   progressPercentage: number;
 }
+
+// 네이버 쇼핑인사이트 관련 타입
+export type TimeUnit = "date" | "week" | "month";
+export type DeviceType = "pc" | "mo";
+export type GenderType = "m" | "f";
+export type AgeGroup = "10" | "20" | "30" | "40" | "50" | "60";
+
+export interface ShoppingInsightsParams {
+  startDate: string;
+  endDate: string;
+  timeUnit: TimeUnit;
+  category?: string;
+  device?: DeviceType;
+  gender?: GenderType;
+  ages?: AgeGroup[];
+}
+
+export interface InsightsDataPoint {
+  period: string;
+  ratio: number;
+}
+
+export interface ShoppingInsightsResult {
+  title: string;
+  keywords: string[];
+  data: InsightsDataPoint[];
+}
