@@ -59,11 +59,14 @@ COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./
 COPY --from=builder --chown=nodejs:nodejs /app/turbo.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package.json ./apps/api/
+COPY --from=builder --chown=nodejs:nodejs /app/packages ./packages/
 
 # Copy built application
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/prisma ./apps/api/prisma/
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules/
+
+# Install only production dependencies
+RUN pnpm install --prod --frozen-lockfile
 
 # Switch to nodejs user
 USER nodejs
@@ -73,12 +76,13 @@ ENV NODE_ENV=production
 ENV PORT=8000
 ENV HOST=0.0.0.0
 
-# Expose port
+# Expose port (동적으로 설정 가능)
 EXPOSE 8000
+EXPOSE 8001
 
-# Health check
+# Health check (환경 변수 PORT 사용)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:8000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"
+  CMD node -e "const port=process.env.PORT||8000; require('http').get(\`http://localhost:\${port}/health\`, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"
 
 # Start the application
 WORKDIR /app/apps/api

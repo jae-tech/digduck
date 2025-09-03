@@ -193,6 +193,17 @@ export const build = async (): Promise<FastifyInstance> => {
   // Error handler
   app.setErrorHandler(errorHandler);
 
+  // Health check endpoint
+  app.get("/health", async (request, reply) => {
+    return {
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+      environment: env.NODE_ENV,
+      port: env.PORT
+    };
+  });
+
   // Auto-register controllers
   const controllersPath = path.join(__dirname, "controllers");
   await autoRegisterControllers(app, controllersPath);
