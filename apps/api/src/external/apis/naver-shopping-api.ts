@@ -48,8 +48,8 @@ export class NaverShoppingAPI {
         endDate: params.endDate,
         timeUnit: params.timeUnit,
         category: params.category || [],
-        ...(params.device && params.device !== "" && { device: params.device }),
-        ...(params.gender && params.gender !== "" && { gender: params.gender }),
+        ...(params.device && { device: params.device }),
+        ...(params.gender && { gender: params.gender }),
         ...(params.ages && params.ages.length > 0 && { ages: params.ages }),
       };
 
@@ -85,8 +85,8 @@ export class NaverShoppingAPI {
         timeUnit: params.timeUnit,
         category: params.category,
         keyword: params.keyword,
-        ...(params.device && params.device !== "" && { device: params.device }),
-        ...(params.gender && params.gender !== "" && { gender: params.gender }),
+        ...(params.device && { device: params.device }),
+        ...(params.gender && { gender: params.gender }),
         ...(params.ages && params.ages.length > 0 && { ages: params.ages }),
       };
 
@@ -121,7 +121,7 @@ export class NaverShoppingAPI {
         endDate: params.endDate,
         timeUnit: params.timeUnit,
         category: params.category,
-        ...(params.gender && params.gender !== "" && { gender: params.gender }),
+        ...(params.gender && { gender: params.gender }),
         ...(params.ages && params.ages.length > 0 && { ages: params.ages }),
       };
 
@@ -156,7 +156,7 @@ export class NaverShoppingAPI {
         endDate: params.endDate,
         timeUnit: params.timeUnit,
         category: params.category,
-        ...(params.device && params.device !== "" && { device: params.device }),
+        ...(params.device && { device: params.device }),
         ...(params.ages && params.ages.length > 0 && { ages: params.ages }),
       };
 
@@ -191,8 +191,8 @@ export class NaverShoppingAPI {
         endDate: params.endDate,
         timeUnit: params.timeUnit,
         category: params.category,
-        ...(params.device && params.device !== "" && { device: params.device }),
-        ...(params.gender && params.gender !== "" && { gender: params.gender }),
+        ...(params.device && { device: params.device }),
+        ...(params.gender && { gender: params.gender }),
       };
 
       const { data } = await httpClient.post(
@@ -227,7 +227,7 @@ export class NaverShoppingAPI {
         timeUnit: params.timeUnit,
         category: params.category,
         keyword: params.keyword,
-        ...(params.gender && params.gender !== "" && { gender: params.gender }),
+        ...(params.gender && { gender: params.gender }),
         ...(params.ages && params.ages.length > 0 && { ages: params.ages }),
       };
 
@@ -263,7 +263,7 @@ export class NaverShoppingAPI {
         timeUnit: params.timeUnit,
         category: params.category,
         keyword: params.keyword,
-        ...(params.device && params.device !== "" && { device: params.device }),
+        ...(params.device && { device: params.device }),
         ...(params.ages && params.ages.length > 0 && { ages: params.ages }),
       };
 
@@ -299,8 +299,8 @@ export class NaverShoppingAPI {
         timeUnit: params.timeUnit,
         category: params.category,
         keyword: params.keyword,
-        ...(params.device && params.device !== "" && { device: params.device }),
-        ...(params.gender && params.gender !== "" && { gender: params.gender }),
+        ...(params.device && { device: params.device }),
+        ...(params.gender && { gender: params.gender }),
       };
 
       const { data } = await httpClient.post(

@@ -466,7 +466,7 @@ export class CrawlHistoryService {
    */
   private async validateUserLicense(userEmail: string, deviceId: string) {
     const licenseUser = await this.prisma.licenseUsers.findUnique({
-      where: { email: userEmail },
+      where: { userEmail: userEmail },
       include: {
         licenseSubscriptions: {
           where: { isActive: true },
