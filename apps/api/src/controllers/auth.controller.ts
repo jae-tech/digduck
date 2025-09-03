@@ -1,14 +1,15 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { Controller, Post, Get, Schema } from '../decorators/controller.decorator';
-import { env } from '../config/env';
 import type { JWTPayload } from '@repo/shared';
-import { prisma } from '../plugins/prisma';
+import { AuthService } from '../services/auth.service';
 
 // 의존성 주입을 위한 전역 변수 (임시)
 let appInstance: FastifyInstance;
+let authService: AuthService;
 
 export const setAppInstance = (app: FastifyInstance) => {
   appInstance = app;
+  authService = new AuthService(app);
 };
 
 @Controller('/auth')
@@ -52,6 +53,18 @@ export class AuthController {
                   activatedDevices: { type: 'array' },
                   isActive: { type: 'boolean' }
                 }
+              },
+              purchasedItems: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'number' },
+                    itemType: { type: 'string' },
+                    quantity: { type: 'number' },
+                    purchasedAt: { type: 'string' }
+                  }
+                }
               }
             }
           }
@@ -63,112 +76,30 @@ export class AuthController {
     try {
       const { licenseKey, deviceId, platform = 'WEB' } = request.body;
 
-      // 라이센스 검증
-      const licenseData = await prisma.licenseUsers.findUnique({
-        where: { licenseKey },
-        include: {
-          users: {
-            select: {
-              id: true,
-              email: true,
-              name: true
-            }
-          }
-        }
+      const result = await authService.loginWithLicense({
+        licenseKey,
+        deviceId,
+        platform: platform as "WEB" | "DESKTOP"
       });
-
-      if (!licenseData) {
-        return reply.status(401).send({
-          success: false,
-          error: '잘못된 라이센스 키'
-        });
-      }
-
-      // 구독 확인
-      const activeSubscription = await prisma.licenseSubscriptions.findFirst({
-        where: {
-          userEmail: licenseData.email,
-          isActive: true,
-          endDate: {
-            gt: new Date()
-          }
-        }
-      });
-
-      if (!activeSubscription) {
-        return reply.status(402).send({
-          success: false,
-          error: '라이센스가 만료되었거나 비활성 상태입니다'
-        });
-      }
-
-      // 디바이스 활성화 확인 및 처리
-      const activatedDevices = licenseData.activatedDevices as any[] || [];
-      const isDeviceActivated = activatedDevices.some((device: any) => device.deviceId === deviceId);
-      
-      if (!isDeviceActivated) {
-        // 디바이스 한도 확인
-        if (activatedDevices.length >= licenseData.allowedDevices) {
-          return reply.status(400).send({
-            success: false,
-            error: '디바이스 한도 초과'
-          });
-        }
-
-        // 새 디바이스 추가
-        const newDevice = {
-          deviceId: deviceId,
-          platform: platform,
-          activatedAt: new Date().toISOString()
-        };
-        const updatedDevices = [...activatedDevices, newDevice];
-
-        // 디바이스 정보 업데이트
-        await prisma.licenseUsers.update({
-          where: { licenseKey },
-          data: { 
-            activatedDevices: updatedDevices 
-          }
-        });
-        
-        // 업데이트된 디바이스 정보로 갱신
-        activatedDevices.push(newDevice);
-      }
-
-      // JWT 토큰 생성
-      const token = appInstance.jwt.sign(
-        { 
-          userId: licenseData.users.id.toString(), 
-          email: licenseData.users.email, 
-          licenseKey: licenseKey,
-          deviceId: deviceId
-        },
-        { expiresIn: env.JWT_EXPIRES_IN }
-      );
-
-      const user = {
-        id: licenseData.users.id,
-        email: licenseData.users.email,
-        name: licenseData.users.name
-      };
 
       return reply.send({
         success: true,
-        data: {
-          token,
-          user,
-          licenseInfo: {
-            allowedDevices: licenseData.allowedDevices,
-            activatedDevices: activatedDevices,
-            isActive: true
-          }
-        }
+        data: result
       });
     } catch (error) {
       request.log.error('Login error:', error);
-      return reply.status(500).send({
+      
+      const errorMessage = error instanceof Error ? error.message : '서버 내부 오류';
+      
+      // 에러 타입에 따른 상태 코드 설정
+      let statusCode = 500;
+      if (errorMessage.includes('잘못된 라이센스')) statusCode = 401;
+      if (errorMessage.includes('만료되었거나')) statusCode = 402;
+      if (errorMessage.includes('디바이스 한도')) statusCode = 400;
+      
+      return reply.status(statusCode).send({
         success: false,
-        error: '서버 내부 오류'
+        error: errorMessage
       });
     }
   }
@@ -190,31 +121,7 @@ export class AuthController {
     try {
       const { email, name } = request.body;
 
-      // 이메일 중복 확인
-      const existingUser = await prisma.users.findUnique({
-        where: { email }
-      });
-      
-      if (existingUser) {
-        return reply.status(409).send({
-          success: false,
-          error: '이메일이 이미 존재합니다'
-        });
-      }
-
-      // 사용자 생성
-      const user = await prisma.users.create({
-        data: {
-          email,
-          name
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          createdAt: true
-        }
-      });
+      const user = await authService.register({ email, name });
 
       return reply.status(201).send({
         success: true,
@@ -224,12 +131,15 @@ export class AuthController {
         }
       });
     } catch (error) {
-      console.error('등록 오류:', error);
       request.log.error('Register error:', error);
-      return reply.status(500).send({
+      
+      const errorMessage = error instanceof Error ? error.message : '서버 내부 오류';
+      const statusCode = errorMessage.includes('이메일이 이미 존재') ? 409 : 500;
+      
+      return reply.status(statusCode).send({
         success: false,
-        error: '서버 내부 오류',
-        debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: errorMessage,
+        debug: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       });
     }
   }
@@ -253,23 +163,7 @@ export class AuthController {
         });
       }
       
-      const userData = await prisma.users.findUnique({
-        where: { id: parseInt(user.userId) },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      });
-
-      if (!userData) {
-        return reply.status(404).send({
-          success: false,
-          error: '사용자를 찾을 수 없습니다'
-        });
-      }
+      const userData = await authService.getUserProfile(parseInt(user.userId));
 
       return reply.send({
         success: true,
@@ -277,9 +171,13 @@ export class AuthController {
       });
     } catch (error) {
       request.log.error('Get profile error:', error);
-      return reply.status(500).send({
+      
+      const errorMessage = error instanceof Error ? error.message : '서버 내부 오류';
+      const statusCode = errorMessage.includes('사용자를 찾을 수 없습니다') ? 404 : 500;
+      
+      return reply.status(statusCode).send({
         success: false,
-        error: '서버 내부 오류'
+        error: errorMessage
       });
     }
   }

@@ -36,3 +36,49 @@ export interface NaverShoppingSearchParams {
   filter?: string; // 필터링 조건
   exclude?: string; // 제외할 조건
 }
+
+// 네이버 데이터랩 쇼핑 인사이트 관련 타입
+export interface ShoppingInsightsParams {
+  startDate: string;
+  endDate: string;
+  timeUnit: "date" | "week" | "month";
+  category?: Array<{ name: string; param: string[] }>;
+  device?: "pc" | "mo" | "";
+  gender?: "m" | "f" | "";
+  ages?: ("10" | "20" | "30" | "40" | "50" | "60")[];
+}
+
+export interface CategoryKeywordParams {
+  startDate: string;
+  endDate: string;
+  timeUnit: "date" | "week" | "month";
+  category: string;
+  keyword: Array<{ name: string; param: string[] }>;
+  device?: "pc" | "mo" | "";
+  gender?: "m" | "f" | "";
+  ages?: ("10" | "20" | "30" | "40" | "50" | "60")[];
+}
+
+export interface InsightsDataPoint {
+  period: string;
+  ratio: number;
+  title?: string; // 각 결과의 제목
+}
+
+export interface ShoppingInsightsResult {
+  title: string;
+  keywords: string[];
+  data: InsightsDataPoint[];
+}
+
+export interface NaverInsightsApiResponse {
+  title: string;
+  keywords?: string[];
+  results: Array<{
+    title: string;
+    data: Array<{
+      period: string;
+      ratio: number;
+    }>;
+  }>;
+}
