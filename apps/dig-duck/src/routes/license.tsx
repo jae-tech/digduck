@@ -17,7 +17,7 @@ export const Route = createFileRoute("/license")({
       if (isAdmin) {
         throw redirect({ to: "/admin/dashboard" });
       } else {
-        throw redirect({ to: "/crawler" });
+        throw redirect({ to: "/crawler/review" });
       }
     }
   },
@@ -28,10 +28,10 @@ function LicenseRoute() {
   const navigate = useNavigate();
   const { isLicenseValid, setLicenseData } = useLicenseStore();
 
-  // 이미 라이센스가 유효하다면 대시보드로 리다이렉트
+  // 이미 라이센스가 유효하다면 크롤러 페이지로 리다이렉트
   useEffect(() => {
     if (isLicenseValid) {
-      navigate({ to: "/crawler" });
+      navigate({ to: "/crawler/review" });
     }
   }, [isLicenseValid, navigate]);
 
@@ -46,7 +46,7 @@ function LicenseRoute() {
       if (result.userType === "admin") {
         navigate({ to: "/admin/dashboard" });
       } else {
-        navigate({ to: "/crawler" });
+        navigate({ to: "/crawler/review" });
       }
     }, 1500);
   };
