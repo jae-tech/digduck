@@ -16,17 +16,19 @@ async function main() {
   // 기본 시드 데이터가 있는지 확인
   const plansCount = await prisma.plans.count();
   if (plansCount === 0) {
-    console.log("⚠️ 기본 요금제가 없습니다. 먼저 'pnpm db:seed'를 실행해주세요.");
+    console.log(
+      "⚠️ 기본 요금제가 없습니다. 먼저 'pnpm db:seed'를 실행해주세요."
+    );
     return;
   }
 
   // 요금제 조회
   const oneMonthPlan = await prisma.plans.findFirst({
-    where: { name: "1개월 구독" }
+    where: { name: "1개월 구독" },
   });
 
   const twelveMonthsPlan = await prisma.plans.findFirst({
-    where: { name: "12개월 구독" }
+    where: { name: "12개월 구독" },
   });
 
   // 1. 테스트 사용자 생성
@@ -51,24 +53,24 @@ async function main() {
   });
 
   // 2. 테스트 사용자 라이센스 생성
-  await prisma.license_users.upsert({
-    where: { email: testUser1.email },
+  await prisma.licenseUsers.upsert({
+    where: { userEmail: testUser1.email },
     update: {},
     create: {
-      email: testUser1.email,
-      licenseKey: "TEST-LICENSE-001",
+      userEmail: testUser1.email,
+      licenseKey: "TESTLICENSE001",
       allowedDevices: 3,
       maxTransfers: 5,
       activatedDevices: [],
     },
   });
 
-  await prisma.license_users.upsert({
-    where: { email: testUser2.email },
+  await prisma.licenseUsers.upsert({
+    where: { userEmail: testUser2.email },
     update: {},
     create: {
-      email: testUser2.email,
-      licenseKey: "DEV-LICENSE-002",
+      userEmail: testUser2.email,
+      licenseKey: "DEVLICENSE002",
       allowedDevices: 5,
       maxTransfers: 10,
       activatedDevices: [],
@@ -107,7 +109,7 @@ async function main() {
   }
 
   // 4. 테스트 라이센스 아이템 추가
-  await prisma.license_items.create({
+  await prisma.licenseItems.create({
     data: {
       userEmail: testUser1.email,
       itemType: ItemType.SMARTSTORE_CRAWLER,
@@ -115,7 +117,7 @@ async function main() {
     },
   });
 
-  await prisma.license_items.create({
+  await prisma.licenseItems.create({
     data: {
       userEmail: testUser2.email,
       itemType: ItemType.SMARTSTORE_CRAWLER,
@@ -124,7 +126,7 @@ async function main() {
   });
 
   // 5. 샘플 크롤링 템플릿 생성
-  await prisma.crawl_templates.create({
+  await prisma.crawlTemplates.create({
     data: {
       userEmail: testUser1.email,
       name: "스마트스토어 기본 템플릿",
@@ -147,7 +149,7 @@ async function main() {
     },
   });
 
-  await prisma.crawl_templates.create({
+  await prisma.crawlTemplates.create({
     data: {
       userEmail: testUser2.email,
       name: "쿠팡 상품 템플릿",
@@ -170,7 +172,7 @@ async function main() {
   });
 
   // 6. 샘플 메일 히스토리 생성
-  await prisma.mail_history.create({
+  await prisma.mailHistory.create({
     data: {
       userEmail: testUser1.email,
       fromEmail: "hello@digduck.app",
@@ -188,7 +190,7 @@ async function main() {
     },
   });
 
-  await prisma.mail_history.create({
+  await prisma.mailHistory.create({
     data: {
       userEmail: testUser2.email,
       fromEmail: "hello@digduck.app",
@@ -208,7 +210,7 @@ async function main() {
     },
   });
 
-  await prisma.mail_history.create({
+  await prisma.mailHistory.create({
     data: {
       fromEmail: "hello@digduck.app",
       toEmail: "invalid-email@nonexistent.com",
@@ -229,8 +231,8 @@ async function main() {
   console.log(`   - 메일 히스토리: 3개`);
   console.log("");
   console.log("🔑 테스트 계정 정보:");
-  console.log(`   사용자1: test@example.com (라이센스: TEST-LICENSE-001)`);
-  console.log(`   사용자2: dev@digduck.app (라이센스: DEV-LICENSE-002)`);
+  console.log(`   사용자1: test@example.com (라이센스: TESTLICENSE001)`);
+  console.log(`   사용자2: dev@digduck.app (라이센스: DEVLICENSE002)`);
 }
 
 main()

@@ -130,7 +130,7 @@ model deviceTransfers {
   newDeviceId  String        @map("new_device_id")
   platform     PlatformType
   transferDate DateTime      @default(now()) @map("transfer_date") @db.Date
-  licenseUsers licenseUsers  @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  licenseUsers licenseUsers  @relation(fields: [userEmail], references: [userEmail], onDelete: Cascade)
 
   @@map("device_transfers")
 }
@@ -141,7 +141,7 @@ model licenseItems {
   itemType     ItemType     @map("item_type")
   quantity     Int
   purchasedAt  DateTime     @default(now()) @map("purchased_at")
-  licenseUsers licenseUsers @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  licenseUsers licenseUsers @relation(fields: [userEmail], references: [userEmail], onDelete: Cascade)
 
   @@map("license_items")
 }
@@ -153,15 +153,14 @@ model licenseSubscriptions {
   startDate        DateTime                @default(now()) @map("start_date") @db.Date
   endDate          DateTime                @map("end_date") @db.Date
   isActive         Boolean                 @default(true) @map("is_active")
-  paymentId        String?                 @map("payment_id")
   createdAt        DateTime                @default(now()) @map("created_at")
-  licenseUsers     licenseUsers            @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  licenseUsers     licenseUsers            @relation(fields: [userEmail], references: [userEmail], onDelete: Cascade)
 
   @@map("license_subscriptions")
 }
 
 model licenseUsers {
-  email                String                   @id
+  userEmail            String                   @id @map("user_email")
   licenseKey           String                   @unique @map("license_key")
   allowedDevices       Int                      @default(3) @map("allowed_devices")
   maxTransfers         Int                      @default(5) @map("max_transfers")
@@ -170,7 +169,7 @@ model licenseUsers {
   deviceTransfers      deviceTransfers[]
   licenseItems         licenseItems[]
   licenseSubscriptions licenseSubscriptions[]
-  users                users                    @relation(fields: [email], references: [email], onDelete: Cascade)
+  users                users                    @relation(fields: [userEmail], references: [email], onDelete: Cascade)
 
   @@map("license_users")
 }
@@ -276,8 +275,10 @@ enum ItemType {
 }
 
 enum LicenseSubscriptionType {
-  ONE_YEAR
-  LIFETIME
+  ONE_MONTH
+  THREE_MONTHS
+  SIX_MONTHS
+  TWELVE_MONTHS
 }
 
 enum PlatformType {
