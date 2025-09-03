@@ -87,17 +87,33 @@ async function main() {
   });
 
   // 3. 관리자 라이센스 생성
-  await prisma.license_users.upsert({
-    where: { email: adminUser.email },
+  await prisma.licenseUsers.upsert({
+    where: { userEmail: adminUser.email },
     update: {},
     create: {
-      email: adminUser.email,
+      userEmail: adminUser.email,
       licenseKey: "ADMIN01096666339",
       allowedDevices: 9999,
       maxTransfers: 9999,
       activatedDevices: [],
     },
   });
+
+  // 기존 구독이 있는지 확인 후 생성
+  const existingSubscription = await prisma.licenseSubscriptions.findFirst({
+    where: { userEmail: adminUser.email },
+  });
+
+  if (!existingSubscription) {
+    await prisma.licenseSubscriptions.create({
+      data: {
+        userEmail: adminUser.email,
+        subscriptionType: "TWELVE_MONTHS",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1년 후
+      },
+    });
+  }
 
   console.log("✅ 프로덕션 시드 데이터 생성 완료!");
   console.log("📊 생성된 데이터:");
