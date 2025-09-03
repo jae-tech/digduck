@@ -1,5 +1,6 @@
 // Components
 export { CrawlerPage } from './components/CrawlerPage';
+export { default as ShoppingInsightsPage } from './components/ShoppingInsightsPage';
 
 // Hooks
 export { 
@@ -7,6 +8,7 @@ export {
   useReviewsCrawlQuery,
   useReviewsCrawlMutation 
 } from './hooks/useCrawler';
+export { useShoppingInsights } from './hooks/useShoppingInsights';
 
 // Types
 export type {
@@ -17,5 +19,12 @@ export type {
   CrawlProgress,
   CrawlResult,
   SortOption,
-  CrawlStats
+  CrawlStats,
+  TimeUnit,
+  DeviceType,
+  GenderType,
+  AgeGroup,
+  ShoppingInsightsParams,
+  InsightsDataPoint,
+  ShoppingInsightsResult
 } from './types/crawler.types';

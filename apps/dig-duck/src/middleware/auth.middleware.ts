@@ -30,7 +30,7 @@ export function createAuthGuard(options: AuthGuardOptions = {}) {
         throw redirect({ to: "/license" });
       }
       if (!isAdmin) {
-        throw redirect({ to: redirectTo || "/crawler" });
+        throw redirect({ to: redirectTo || "/crawler/review" });
       }
     }
   };

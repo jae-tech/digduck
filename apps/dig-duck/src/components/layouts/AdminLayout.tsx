@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
   Globe,
+  TrendingUp,
 } from "lucide-react";
 import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
 import { useLicenseStore } from "@/features/license/store/license.store";
@@ -79,9 +80,14 @@ export default function AdminLayout({
       hasSubmenu: true,
       submenu: [
         {
-          to: "/crawler",
+          to: "/crawler/review",
           icon: <Search className="w-4 h-4" />,
           label: "크롤링 서비스",
+        },
+        {
+          to: "/crawler/insights",
+          icon: <TrendingUp className="w-4 h-4" />,
+          label: "쇼핑 인사이트",
         },
       ],
     },
