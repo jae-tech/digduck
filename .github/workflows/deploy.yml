@@ -210,14 +210,14 @@ jobs:
             fi
 
             # PostgreSQL 17 컨테이너 실행 (없으면)
-            if ! docker ps -q -f name=postgres17 > /dev/null 2>&1; then
+            if ! docker ps -q -f name=dig-duck-db > /dev/null 2>&1; then
               echo "🐘 PostgreSQL 17 컨테이너 시작 중..."
               
               # PostgreSQL 데이터 디렉토리 생성
               mkdir -p ~/postgres-data
               
               docker run -d \
-                --name postgres17 \
+                --name dig-duck-db \
                 --restart unless-stopped \
                 -e POSTGRES_DB=digduck \
                 -e POSTGRES_USER=${{ secrets.DB_USER }} \
@@ -232,7 +232,7 @@ jobs:
               
               # DB 연결 확인
               for i in {1..20}; do
-                if docker exec postgres17 pg_isready -U ${{ secrets.DB_USER }} -d digduck > /dev/null 2>&1; then
+                if docker exec dig-duck-db pg_isready -U ${{ secrets.DB_USER }} -d digduck > /dev/null 2>&1; then
                   echo "✅ PostgreSQL 17 준비 완료!"
                   break
                 fi
@@ -264,7 +264,7 @@ jobs:
             docker run -d \
               --name dig-duck-api-$NEW_COLOR \
               --restart unless-stopped \
-              --link postgres17:postgres \
+              --link dig-duck-db:postgres \
               -p $NEW_PORT:8000 \
               -e NODE_ENV=${{ secrets.NODE_ENV || 'production' }} \
               -e PORT=${{ secrets.PORT || '8000' }} \
@@ -341,7 +341,7 @@ jobs:
                 
                 # 최종 상태 확인
                 echo "📋 최종 컨테이너 상태:"
-                docker ps | grep -E "(dig-duck-api|postgres17)"
+                docker ps | grep -E "(dig-duck-api|dig-duck-db)"
                 echo "📋 새 버전 로그 (최근 5줄):"
                 docker logs --tail 5 dig-duck-api-$NEW_COLOR
                 
