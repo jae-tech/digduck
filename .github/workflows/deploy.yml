@@ -145,13 +145,6 @@ jobs:
       - name: Generate Prisma Client
         run: cd apps/api && pnpm db:generate
 
-      - name: Run Database Migrations
-        run: cd apps/api && pnpm db:migrate:deploy
-
-      - name: Seed Database
-        run: cd apps/api && pnpm db:seed
-
-
       - name: Build API
         run: pnpm build --filter=api
 
@@ -248,6 +241,14 @@ jobs:
             else
               echo "✅ PostgreSQL 17 이미 실행 중"
             fi
+
+            # 📊 데이터베이스 마이그레이션 및 시드
+            echo "🗄️ 데이터베이스 마이그레이션 실행 중..."
+            docker run --rm \
+              --link dig-duck-db:postgres \
+              -e DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@dig-duck-db:5432/${{ secrets.DB_NAME || 'digduck' }} \
+              ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest \
+              sh -c "cd /app && pnpm db:migrate:deploy && pnpm db:seed"
 
             # 🔄 블루그린 배포 시작
             echo "🚀 블루그린 배포 시작..."
