@@ -133,6 +133,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Make Docker Env
+        run: |
+          cd apps/api
+          touch ./.env
+          echo "${{ secrets.DOCKER_ENV }}" > ./.env
+          echo "✅ GitHub Secrets에서 .env 파일 생성 완료"
+          echo "생성된 .env 파일 확인:"
+          ls -la .env
+
       - name: Generate Prisma Client
         run: cd apps/api && pnpm db:generate
 
@@ -142,14 +151,6 @@ jobs:
       - name: Seed Database
         run: cd apps/api && pnpm db:seed
 
-      - name: Make Docker Env
-        run: |
-          cd apps/api
-          touch ./.env
-          echo "${{ secrets.DOCKER_ENV }}" > ./.env
-          echo "✅ GitHub Secrets에서 .env 파일 생성 완료"
-          echo "생성된 .env 파일 확인:"
-          ls -la .env
 
       - name: Build API
         run: pnpm build --filter=api
