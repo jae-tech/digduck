@@ -201,11 +201,14 @@ jobs:
             echo "📥 최신 이미지 다운로드 중..."
             docker pull ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
 
-            # 기존 컨테이너 정리 (블루그린 배포용)
-            if docker ps -q -f name=dig-duck-api- > /dev/null 2>&1; then
-              echo "📦 기존 블루그린 컨테이너들 정리 중..."
-              docker ps -q -f name=dig-duck-api- | xargs -r docker stop
-              docker ps -aq -f name=dig-duck-api- | xargs -r docker rm
+            # 블루그린 배포 - 기존 컨테이너 확인
+            EXISTING_CONTAINERS=$(docker ps -q -f name=dig-duck-api-)
+            if [ -z "$EXISTING_CONTAINERS" ]; then
+              echo "🎯 첫 배포: 기존 컨테이너가 없으므로 Blue 컨테이너로 시작"
+              FORCE_BLUE_FIRST=true
+            else
+              echo "🔄 블루그린 배포: 기존 컨테이너 유지하며 새 컨테이너 시작"
+              FORCE_BLUE_FIRST=false
             fi
 
             # PostgreSQL 17 컨테이너 실행 (없으면)
@@ -259,15 +262,25 @@ jobs:
             echo "🚀 블루그린 배포 시작..."
 
             # 현재 활성 색상 확인
-            CURRENT_COLOR=$(cat /etc/nginx/current_color 2>/dev/null || echo "blue")
-            if [ "$CURRENT_COLOR" = "blue" ]; then
-              NEW_COLOR="green"
-              NEW_PORT="8001"
-              CURRENT_PORT="8000"
+            if [ "$FORCE_BLUE_FIRST" = "true" ]; then
+              # 첫 배포시 강제로 Blue로 시작
+              NEW_COLOR="blue"
+              NEW_PORT="8000" 
+              CURRENT_COLOR=""
+              CURRENT_PORT=""
+              echo "$NEW_COLOR" > /etc/nginx/current_color
             else
-              NEW_COLOR="blue" 
-              NEW_PORT="8000"
-              CURRENT_PORT="8001"
+              # 기존 로직: 색상 전환
+              CURRENT_COLOR=$(cat /etc/nginx/current_color 2>/dev/null || echo "blue")
+              if [ "$CURRENT_COLOR" = "blue" ]; then
+                NEW_COLOR="green"
+                NEW_PORT="8001"
+                CURRENT_PORT="8000"
+              else
+                NEW_COLOR="blue" 
+                NEW_PORT="8000"
+                CURRENT_PORT="8001"
+              fi
             fi
 
             echo "색상 전환: $CURRENT_COLOR (포트:$CURRENT_PORT) -> $NEW_COLOR (포트:$NEW_PORT)"
