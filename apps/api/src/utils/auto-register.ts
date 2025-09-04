@@ -5,7 +5,6 @@ import {
   getControllerMetadata,
   getRouteMetadata,
 } from "@/decorators/controller.decorator";
-import { pathToFileURL } from "url";
 
 /**
  * Fastify 인스턴스에 컨트롤러를 자동으로 등록합니다.
@@ -19,10 +18,8 @@ export async function autoRegisterControllers(
   const controllerFiles = getControllerFiles(controllersPath);
 
   for (const filePath of controllerFiles) {
-    // 파일 경로를 URL로 변환
-    // Node.js 14 이상에서 import()를 사용하기 위해 URL 형식이 필요
-    const fileURL = pathToFileURL(filePath).href;
-    const module = await import(fileURL);
+    // CommonJS 환경에서 require 사용
+    const module = require(filePath);
 
     // 모듈에서 클래스들 찾기
     for (const exportedItem of Object.values(module)) {
