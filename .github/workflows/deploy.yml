@@ -256,7 +256,7 @@ jobs:
               --network dig-duck-net \
               -e DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dig-duck-db):5432/${{ secrets.DB_NAME || 'digduck' }} \
               ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest \
-              sh -c "pnpm db:migrate:deploy && pnpm db:seed"
+              sh -c "cd /app && pnpm install --prod=false && pnpm db:migrate:deploy && pnpm db:seed"
 
             # 🔄 블루그린 배포 시작
             echo "🚀 블루그린 배포 시작..."
@@ -268,7 +268,7 @@ jobs:
               NEW_PORT="8000" 
               CURRENT_COLOR=""
               CURRENT_PORT=""
-              echo "$NEW_COLOR" > /etc/nginx/current_color
+              echo "$NEW_COLOR" | sudo tee /etc/nginx/current_color > /dev/null
             else
               # 기존 로직: 색상 전환
               CURRENT_COLOR=$(cat /etc/nginx/current_color 2>/dev/null || echo "blue")
@@ -348,7 +348,7 @@ jobs:
               # Nginx 설정 테스트 및 리로드
               if sudo nginx -t; then
                 sudo nginx -s reload
-                echo "$NEW_COLOR" > /etc/nginx/current_color
+                echo "$NEW_COLOR" | sudo tee /etc/nginx/current_color > /dev/null
                 
                 echo "✅ 트래픽 전환 완료!"
                 echo "📋 현재 상태:"
