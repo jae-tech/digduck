@@ -47,14 +47,14 @@ export class NaverController {
         sort: {
           type: "string",
           enum: ["ranking", "latest", "high-rating", "low-rating"],
-          default: "latest"
+          default: "latest",
         },
         maxPages: {
           type: "number",
           minimum: 1,
           maximum: 100,
-          default: 5
-        }
+          default: 5,
+        },
       },
     },
   })
@@ -71,11 +71,11 @@ export class NaverController {
     const { url, sort = "latest", maxPages = 5 } = request.body;
 
     // SSE 헤더 설정
-    reply.raw.setHeader('Content-Type', 'text/event-stream');
-    reply.raw.setHeader('Cache-Control', 'no-cache');
-    reply.raw.setHeader('Connection', 'keep-alive');
-    reply.raw.setHeader('Access-Control-Allow-Origin', '*');
-    reply.raw.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+    reply.raw.setHeader("Content-Type", "text/event-stream");
+    reply.raw.setHeader("Cache-Control", "no-cache");
+    reply.raw.setHeader("Connection", "keep-alive");
+    reply.raw.setHeader("Access-Control-Allow-Origin", "*");
+    reply.raw.setHeader("Access-Control-Allow-Headers", "Cache-Control");
 
     // 초기 연결 메시지 즉시 전송
     const initialData = JSON.stringify({
@@ -85,7 +85,7 @@ export class NaverController {
       estimatedTotalPages: maxPages,
       elapsedTime: 0,
       status: "initializing",
-      message: "크롤링을 시작합니다..."
+      message: "크롤링을 시작합니다...",
     });
     reply.raw.write(`data: ${initialData}\n\n`);
 
@@ -101,25 +101,29 @@ export class NaverController {
       status?: string;
       message?: string;
     }) => {
-      console.log('📊 SSE 진행 상황 전송:', progress);
+      console.log("📊 SSE 진행 상황 전송:", progress);
       const data = JSON.stringify(progress);
       reply.raw.write(`data: ${data}\n\n`);
     };
 
     try {
-      const result = await crawlService.crawlReviewsWithProgress(url, sort, maxPages, onProgress);
-      
+      const result = await crawlService.crawlReviewsWithProgress(
+        url,
+        sort,
+        maxPages,
+        onProgress
+      );
+
       // 최종 완료 메시지
       const finalData = JSON.stringify({
         ...result,
-        isComplete: true
+        isComplete: true,
       });
       reply.raw.write(`data: ${finalData}\n\n`);
-      
     } catch (error) {
       const errorData = JSON.stringify({
-        error: error instanceof Error ? error.message : 'Unknown error',
-        isComplete: true
+        error: error instanceof Error ? error.message : "Unknown error",
+        isComplete: true,
       });
       reply.raw.write(`data: ${errorData}\n\n`);
     } finally {
@@ -141,9 +145,9 @@ export class NaverController {
         category: { type: "string" },
         device: { type: "string", enum: ["pc", "mo"] },
         gender: { type: "string", enum: ["m", "f"] },
-        ages: { 
-          type: "array", 
-          items: { type: "string", enum: ["10", "20", "30", "40", "50", "60"] }
+        ages: {
+          type: "array",
+          items: { type: "string", enum: ["10", "20", "30", "40", "50", "60"] },
         },
       },
       required: ["startDate", "endDate", "timeUnit"],
@@ -154,7 +158,8 @@ export class NaverController {
     reply: FastifyReply
   ) {
     try {
-      const { startDate, endDate, timeUnit, category, device, gender, ages } = request.body;
+      const { startDate, endDate, timeUnit, category, device, gender, ages } =
+        request.body;
 
       // 날짜 형식 검증
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -171,31 +176,20 @@ export class NaverController {
         });
       }
 
-      // 네이버 API 키가 설정되지 않은 경우 목업 데이터 사용
-      const result = this.naverAPI.isConfigured() 
-        ? await this.naverAPI.getShoppingCategories({
-            startDate,
-            endDate,
-            timeUnit,
-            category,
-            device,
-            gender,
-            ages,
-          })
-        : await this.naverAPI.getMockInsights({
-            startDate,
-            endDate,
-            timeUnit,
-            category,
-            device,
-            gender,
-            ages,
-          });
+      const result = await this.naverAPI.getShoppingCategories({
+        startDate,
+        endDate,
+        timeUnit,
+        category,
+        device,
+        gender,
+        ages,
+      });
 
       return reply.send(result);
     } catch (error) {
       request.log.error("Shopping insights error:", error);
-      
+
       // 네이버 API 오류 처리
       if (error instanceof Error) {
         if (error.message.includes("401")) {
