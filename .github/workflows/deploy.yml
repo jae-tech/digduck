@@ -242,13 +242,18 @@ jobs:
               echo "✅ PostgreSQL 17 이미 실행 중"
             fi
 
+            # 🧹 디스크 공간 정리
+            echo "🧹 디스크 공간 정리 중..."
+            docker system prune -f
+            docker image prune -f
+
             # 📊 데이터베이스 마이그레이션 및 시드
             echo "🗄️ 데이터베이스 마이그레이션 실행 중..."
             docker run --rm \
-              --link dig-duck-db:postgres \
-              -e DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@dig-duck-db:5432/${{ secrets.DB_NAME || 'digduck' }} \
+              --network dig-duck-network \
+              -e DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dig-duck-db):5432/${{ secrets.DB_NAME || 'digduck' }} \
               ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest \
-              sh -c "cd /app && pnpm db:migrate:deploy && pnpm db:seed"
+              sh -c "pnpm db:migrate:deploy && pnpm db:seed"
 
             # 🔄 블루그린 배포 시작
             echo "🚀 블루그린 배포 시작..."
@@ -272,7 +277,7 @@ jobs:
             docker run -d \
               --name dig-duck-api-$NEW_COLOR \
               --restart unless-stopped \
-              --link dig-duck-db:postgres \
+              --network dig-duck-network \
               -p $NEW_PORT:8000 \
               -e NODE_ENV=${{ secrets.NODE_ENV || 'production' }} \
               -e PORT=${{ secrets.PORT || '8000' }} \
