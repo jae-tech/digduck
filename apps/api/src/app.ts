@@ -158,7 +158,7 @@ export const build = async (): Promise<FastifyInstance> => {
   await app.register(helmet);
   await app.register(cors, {
     origin: env.CORS_ORIGIN,
-    credentials: false,
+    credentials: true,
   });
 
   // JWT plugin
@@ -171,7 +171,6 @@ export const build = async (): Promise<FastifyInstance> => {
 
   // Prisma 플러그인 등록
   await app.register(prismaPlugin);
-
 
   // Crawl history 플러그인 등록
   await app.register(crawlHistoryPlugin);
@@ -200,7 +199,7 @@ export const build = async (): Promise<FastifyInstance> => {
       timestamp: new Date().toISOString(),
       version: "1.0.0",
       environment: env.NODE_ENV,
-      port: env.PORT
+      port: env.PORT,
     };
   });
 
