@@ -43,10 +43,6 @@ export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
-    "X-Requested-With": "XMLHttpRequest",
-    // Vite 앱 정보 헤더
-    "X-App-Version": import.meta.env.VITE_APP_VERSION || "1.0.0",
-    "X-Build-Mode": import.meta.env.MODE,
   },
   withCredentials: false,
 });
@@ -67,11 +63,6 @@ apiClient.interceptors.request.use(
       });
     }
 
-    // API 키 추가 (Vite 환경변수에서)
-    const apiKey = import.meta.env.VITE_API_KEY;
-    if (apiKey) {
-      config.headers["X-API-Key"] = apiKey;
-    }
 
     // 인증 토큰 추가
     const token = getAuthToken();
