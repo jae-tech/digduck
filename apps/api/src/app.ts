@@ -158,7 +158,7 @@ export const build = async (): Promise<FastifyInstance> => {
   await app.register(helmet);
   await app.register(cors, {
     origin: env.CORS_ORIGIN,
-    credentials: true,
+    credentials: false,
   });
 
   // JWT plugin
