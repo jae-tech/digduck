@@ -76,10 +76,10 @@ jobs:
         run: pnpm install
 
       - name: Build Dig-Duck app
-        run: pnpm turbo run build --filter=dig-duck
+        run: pnpm build --filter=dig-duck
         env:
           NODE_ENV: production
-          VITE_API_URL: ${{ secrets.PROD_API_URL }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_APP_ENV: production
           VITE_LOG_LEVEL: error
           VITE_ENABLE_DEVTOOLS: false
@@ -134,7 +134,7 @@ jobs:
         run: pnpm install
 
       - name: Generate Prisma Client
-        run: cd apps/api && pnpm prisma generate
+        run: cd apps/api && pnpm db:generate
 
       - name: Make Docker Env
         run: |
@@ -146,7 +146,7 @@ jobs:
           ls -la .env
 
       - name: Build API
-        run: pnpm turbo run build --filter=api
+        run: pnpm build --filter=api
 
       - name: Build Docker image
         run: |
