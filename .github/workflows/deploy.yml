@@ -16,6 +16,10 @@ on:
           - backend
           - both
 
+env:
+  DOCKER_IMAGE: cinnamatcha/dig-duck-api
+  APP_DIR: /home/cinnamon/dig-duck
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
@@ -111,7 +115,7 @@ jobs:
       - name: Frontend deployment notification
         run: echo "✅ Frontend 배포 완료! S3 + CloudFront 업데이트됨"
 
-  deploy-backend:
+  build-and-deploy:
     needs: detect-changes
     if: |
       (needs.detect-changes.outputs.backend == 'true') ||
@@ -165,235 +169,172 @@ jobs:
 
       - name: Tag and push Docker image
         run: |
-          docker tag dig-duck-api:latest ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
-          docker tag dig-duck-api:latest ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:${{ github.sha }}
-          docker push ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
-          docker push ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:${{ github.sha }}
+          docker tag dig-duck-api:latest ${{ env.DOCKER_IMAGE }}:latest
+          docker tag dig-duck-api:latest ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.DOCKER_IMAGE }}:latest
+          docker push ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.5
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          username: github-actions
           password: ${{ secrets.EC2_PASSWORD }}
+          port: 22
           timeout: 300s
           script: |
-            # Docker 설치 확인 및 자동 설치
-            if ! command -v docker &> /dev/null; then
-              echo "🐳 Docker 설치 중..."
-              curl -fsSL https://get.docker.com -o get-docker.sh
-              sudo sh get-docker.sh
-              sudo usermod -aG docker ubuntu
-              sudo systemctl start docker
-              sudo systemctl enable docker
-              echo "Docker 설치 완료"
-            fi
+            set -e
 
-            # Docker 서비스 확인
-            if ! sudo systemctl is-active --quiet docker; then
-              sudo systemctl start docker
-            fi
+            # 디렉토리로 이동
+            cd ${{ env.APP_DIR }}
 
-            # Docker 로그인
-            echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+            echo "=== Blue-Green 배포 시작 ==="
+            echo "현재 시간: $(date)"
 
-            # 최신 이미지 다운로드
-            echo "📥 최신 이미지 다운로드 중..."
-            docker pull ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
+            # 현재 활성 환경 확인
+            CURRENT_ENV=$(grep -o "dig-duck-api-[blue|green]" nginx.conf | head -1 | sed 's/dig-duck-api-//')
+            echo "현재 활성 환경: $CURRENT_ENV"
 
-            # 블루그린 배포 - 기존 컨테이너 확인
-            EXISTING_CONTAINERS=$(docker ps -q -f name=dig-duck-api-)
-            if [ -z "$EXISTING_CONTAINERS" ]; then
-              echo "🎯 첫 배포: 기존 컨테이너가 없으므로 Blue 컨테이너로 시작"
-              FORCE_BLUE_FIRST=true
+            # 새로운 환경 결정 (현재가 blue면 green으로, green이면 blue로)
+            if [ "$CURRENT_ENV" = "blue" ]; then
+              NEW_ENV="green"
+              OLD_ENV="blue"
+              NEW_PORT="8082"
             else
-              echo "🔄 블루그린 배포: 기존 컨테이너 유지하며 새 컨테이너 시작"
-              FORCE_BLUE_FIRST=false
+              NEW_ENV="blue"
+              OLD_ENV="green"
+              NEW_PORT="8081"
             fi
 
-            # PostgreSQL 17 컨테이너 실행 (없으면)
-            if ! docker ps -q -f name=dig-duck-db > /dev/null 2>&1; then
-              echo "🐘 PostgreSQL 17 컨테이너 시작 중..."
+            echo "새로운 환경: $NEW_ENV"
+            echo "포트: $NEW_PORT"
+
+            # Docker 이미지 풀
+            echo "=== Docker 이미지 풀링 ==="
+            docker pull ${{ env.DOCKER_IMAGE }}:latest
+
+            # 환경변수 파일 업데이트 (새로운 이미지 태그로)
+            sed -i "s|DOCKER_IMAGE=.*|DOCKER_IMAGE=${{ env.DOCKER_IMAGE }}:${{ github.sha }}|" .env
+
+            # 새로운 환경의 컨테이너 중지 및 재시작
+            echo "=== $NEW_ENV 환경 업데이트 ==="
+            docker-compose stop dig-duck-api-$NEW_ENV || true
+            docker-compose rm -f dig-duck-api-$NEW_ENV || true
+
+            # 새로운 환경 시작
+            docker-compose up -d dig-duck-api-$NEW_ENV
+
+            echo "=== $NEW_ENV 환경 헬스체크 대기 ==="
+            sleep 30
+
+            # 헬스체크 함수
+            health_check() {
+              local env=$1
+              local max_attempts=30
+              local attempt=1
               
-              # PostgreSQL 데이터 디렉토리 생성
-              mkdir -p ~/postgres-data
+              echo "$env 환경 헬스체크 시작..."
               
-              docker run -d \
-                --name dig-duck-db \
-                --restart unless-stopped \
-                --network dig-duck-net \
-                -e POSTGRES_DB=digduck \
-                -e POSTGRES_USER=${{ secrets.DB_USER }} \
-                -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} \
-                -p 5432:5432 \
-                -v ~/postgres-data:/var/lib/postgresql/data \
-                postgres:17-alpine
-              
-              # PostgreSQL 시작 대기
-              echo "⏳ PostgreSQL 시작 대기 중..."
-              sleep 15
-              
-              # DB 연결 확인
-              for i in {1..20}; do
-                if docker exec dig-duck-db pg_isready -U ${{ secrets.DB_USER }} -d digduck > /dev/null 2>&1; then
-                  echo "✅ PostgreSQL 17 준비 완료!"
-                  break
+              while [ $attempt -le $max_attempts ]; do
+                echo "헬스체크 시도 $attempt/$max_attempts"
+                
+                # API 직접 헬스체크
+                if curl -f -s --max-time 10 http://localhost:$NEW_PORT/health > /dev/null 2>&1; then
+                  echo "✅ $env 환경 헬스체크 성공!"
+                  return 0
                 fi
-                sleep 2
+                
+                echo "❌ 헬스체크 실패, 5초 후 재시도..."
+                sleep 5
+                attempt=$((attempt + 1))
               done
-            else
-              echo "✅ PostgreSQL 17 이미 실행 중"
-            fi
+              
+              echo "❌ $env 환경 헬스체크 최종 실패"
+              return 1
+            }
 
-            # 🧹 디스크 공간 정리
-            echo "🧹 디스크 공간 정리 중..."
-            docker system prune -f
-            docker image prune -f
-
-            # 📊 데이터베이스 마이그레이션 및 시드
-            echo "🗄️ 데이터베이스 마이그레이션 실행 중..."
-            docker run --rm \
-              --user github-actions \
-              --network dig-duck-net \
-              -e DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dig-duck-db):5432/${{ secrets.DB_NAME || 'digduck' }} \
-              ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest \
-              sh -c "cd /app && pnpm install --prod=false && pnpm db:migrate:deploy && pnpm db:seed"
-
-            # 🔄 블루그린 배포 시작
-            echo "🚀 블루그린 배포 시작..."
-
-            # 현재 활성 색상 확인
-            if [ "$FORCE_BLUE_FIRST" = "true" ]; then
-              # 첫 배포시 강제로 Blue로 시작
-              NEW_COLOR="blue"
-              NEW_PORT="8000" 
-              CURRENT_COLOR=""
-              CURRENT_PORT=""
-              echo "$NEW_COLOR" | sudo tee /etc/nginx/current_color > /dev/null
-            else
-              # 기존 로직: 색상 전환
-              CURRENT_COLOR=$(cat /etc/nginx/current_color 2>/dev/null || echo "blue")
-              if [ "$CURRENT_COLOR" = "blue" ]; then
-                NEW_COLOR="green"
-                NEW_PORT="8001"
-                CURRENT_PORT="8000"
+            # 새로운 환경 헬스체크
+            if health_check $NEW_ENV; then
+              echo "=== 트래픽 스위칭 ==="
+              
+              # nginx.conf 백업
+              cp nginx.conf nginx.conf.backup
+              
+              # nginx.conf에서 upstream 변경
+              sed -i "s/server dig-duck-api-$OLD_ENV:3000/# server dig-duck-api-$OLD_ENV:3000/" nginx.conf
+              sed -i "s/# server dig-duck-api-$NEW_ENV:3000/server dig-duck-api-$NEW_ENV:3000/" nginx.conf
+              
+              # Docker Nginx 재시작
+              docker-compose restart nginx-lb
+              
+              echo "=== 스위칭 후 최종 헬스체크 ==="
+              sleep 10
+              
+              # 최종 헬스체크
+              if curl -f -s --max-time 10 http://localhost:8080/health > /dev/null 2>&1; then
+                echo "✅ 배포 성공! $NEW_ENV 환경으로 트래픽 전환 완료"
+                
+                # 이전 환경 정리 (선택사항)
+                echo "=== 이전 환경 정리 ==="
+                docker-compose stop dig-duck-api-$OLD_ENV
+                
+                # 사용하지 않는 이미지 정리
+                docker image prune -f
+                
+                echo "=== 배포 완료 ==="
+                echo "활성 환경: $NEW_ENV"
+                echo "완료 시간: $(date)"
+                
               else
-                NEW_COLOR="blue" 
-                NEW_PORT="8000"
-                CURRENT_PORT="8001"
-              fi
-            fi
-
-            echo "색상 전환: $CURRENT_COLOR (포트:$CURRENT_PORT) -> $NEW_COLOR (포트:$NEW_PORT)"
-
-            # 새 컨테이너 실행 (DOCKER_ENV 사용)
-            echo "🚀 새 컨테이너($NEW_COLOR) 시작 중..."
-            
-            # DOCKER_ENV를 .env 파일로 생성하고 컨테이너에 마운트
-            echo "${{ secrets.DOCKER_ENV }}" > /tmp/dig-duck-$NEW_COLOR.env
-            
-            docker run -d \
-              --name dig-duck-api-$NEW_COLOR \
-              --restart unless-stopped \
-              --network dig-duck-net \
-              -p $NEW_PORT:8000 \
-              -v /tmp/dig-duck-$NEW_COLOR.env:/app/.env:ro \
-              -e PORT=8000 \
-              -e HOST=0.0.0.0 \
-              ${{ secrets.DOCKER_REGISTRY }}/dig-duck-api:latest
-
-            # Health check 및 트래픽 전환
-            echo "🔍 새 버전($NEW_COLOR) Health check 중..."
-            sleep 15
-
-            # Health check 시도
-            HEALTH_SUCCESS=false
-            for i in {1..30}; do
-              if curl -f -s http://localhost:$NEW_PORT/health >/dev/null 2>&1; then
-                echo "✅ 새 버전 Health check 성공! (시도 $i/30)"
-                HEALTH_SUCCESS=true
-                break
+                echo "❌ 스위칭 후 헬스체크 실패! 롤백 수행"
+                
+                # nginx.conf 복원
+                cp nginx.conf.backup nginx.conf
+                docker-compose restart nginx-lb
+                
+                # 새로운 환경 중지
+                docker-compose stop dig-duck-api-$NEW_ENV
+                
+                echo "❌ 롤백 완료. $OLD_ENV 환경으로 복원됨"
+                exit 1
               fi
               
-              if [ $i -eq 15 ]; then
-                echo "⏳ Health check 진행 중... ($i/30)"
-              fi
-              sleep 2
-            done
-
-            if [ "$HEALTH_SUCCESS" = "true" ]; then
-              echo "🔄 트래픽을 새 버전($NEW_COLOR)으로 전환 중..."
-              
-              # Nginx 설정 백업
-              sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S)
-              
-              # Nginx upstream 포트 변경
-              sudo sed -i "s/server 127\.0\.0\.1:[0-9]* max_fails/server 127.0.0.1:$NEW_PORT max_fails/" /etc/nginx/nginx.conf
-              
-              # Nginx 설정 테스트 및 리로드
-              if sudo nginx -t; then
-                sudo nginx -s reload
-                echo "$NEW_COLOR" | sudo tee /etc/nginx/current_color > /dev/null
-                
-                echo "✅ 트래픽 전환 완료!"
-                echo "📋 현재 상태:"
-                docker ps --filter name=dig-duck-api --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-                
-                # 30초 대기 후 이전 컨테이너 정리
-                echo "⏳ 30초 대기 후 이전 컨테이너($CURRENT_COLOR) 정리..."
-                sleep 30
-                
-                # 이전 컨테이너 중지 및 제거
-                docker stop dig-duck-api-$CURRENT_COLOR 2>/dev/null || true
-                docker rm dig-duck-api-$CURRENT_COLOR 2>/dev/null || true
-                
-                echo "🧹 이전 컨테이너 정리 완료"
-                echo "🎉 블루그린 배포 성공!"
-                
-                # 최종 상태 확인
-                echo "📋 최종 컨테이너 상태:"
-                docker ps | grep -E "(dig-duck-api|dig-duck-db)"
-                echo "📋 새 버전 로그 (최근 5줄):"
-                docker logs --tail 5 dig-duck-api-$NEW_COLOR
-                
-                exit 0
-              else
-                echo "❌ Nginx 설정 에러! 설정 복원 중..."
-                sudo cp /etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S) /etc/nginx/nginx.conf
-                HEALTH_SUCCESS=false
-              fi
-            fi
-
-            # Health check 실패 또는 Nginx 설정 실패시 롤백
-            echo "💥 배포 실패! 롤백 시작..."
-
-            # 실패한 새 컨테이너 로그 확인
-            echo "📋 실패한 컨테이너($NEW_COLOR) 로그:"
-            docker logs --tail 20 dig-duck-api-$NEW_COLOR 2>/dev/null || echo "로그를 가져올 수 없습니다."
-
-            # 새 컨테이너 정리
-            docker stop dig-duck-api-$NEW_COLOR 2>/dev/null || true
-            docker rm dig-duck-api-$NEW_COLOR 2>/dev/null || true
-
-            # 이전 컨테이너가 여전히 실행 중인지 확인
-            if docker ps | grep -q dig-duck-api-$CURRENT_COLOR; then
-              echo "✅ 이전 버전($CURRENT_COLOR)이 여전히 실행 중입니다."
-              
-              # 이전 버전 Health check
-              if curl -f -s http://localhost:$CURRENT_PORT/health >/dev/null 2>&1; then
-                echo "✅ 이전 버전이 정상 동작 중입니다. 서비스 영향 없음."
-              else
-                echo "⚠️  이전 버전도 비정상적입니다. 수동 확인 필요!"
-              fi
             else
-              echo "❌ 심각: 이전 버전도 실행되지 않고 있습니다!"
+              echo "❌ $NEW_ENV 환경 헬스체크 실패! 롤백 수행"
+              
+              # 새로운 환경 중지
+              docker-compose stop dig-duck-api-$NEW_ENV
+              
+              # 이전 환경이 실행 중인지 확인하고 필요시 시작
+              if ! docker-compose ps dig-duck-api-$OLD_ENV | grep -q "Up"; then
+                echo "이전 환경 재시작..."
+                docker-compose up -d dig-duck-api-$OLD_ENV
+              fi
+              
+              echo "❌ 배포 실패. $OLD_ENV 환경 유지"
+              exit 1
             fi
 
-            echo "💥 블루그린 배포 실패!"
-            exit 1
+      - name: Notify Slack on Success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: "🚀 배포 성공! 새로운 버전이 배포되었습니다."
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: "❌ 배포 실패! 이전 환경으로 롤백되었습니다."
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   deployment-summary:
-    needs: [detect-changes, deploy-frontend, deploy-backend]
+    needs: [detect-changes, deploy-frontend, build-and-deploy]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -407,17 +348,17 @@ jobs:
           echo ""
           echo "## 배포 결과"
           echo "- 🎨 Frontend 배포: ${{ needs.deploy-frontend.result }}"
-          echo "- 🔧 Backend 배포: ${{ needs.deploy-backend.result }}"
+          echo "- 🔧 Backend 배포: ${{ needs.build-and-deploy.result }}"
           echo ""
 
           # 배포 실패 체크
-          if [ "${{ needs.deploy-frontend.result }}" = "failure" ] || [ "${{ needs.deploy-backend.result }}" = "failure" ]; then
+          if [ "${{ needs.deploy-frontend.result }}" = "failure" ] || [ "${{ needs.build-and-deploy.result }}" = "failure" ]; then
             echo "❌ 일부 배포가 실패했습니다!"
             echo ""
             if [ "${{ needs.deploy-frontend.result }}" = "failure" ]; then
               echo "🎨 Frontend 배포 실패: S3/CloudFront 배포를 확인하세요."
             fi
-            if [ "${{ needs.deploy-backend.result }}" = "failure" ]; then
+            if [ "${{ needs.build-and-deploy.result }}" = "failure" ]; then
               echo "🔧 Backend 배포 실패: EC2/Docker 상태를 확인하세요."
             fi
             exit 1
@@ -425,6 +366,6 @@ jobs:
             echo "✅ 모든 배포가 성공적으로 완료되었습니다!"
             echo ""
             echo "🌐 Frontend: https://digduck.app"
-            echo "🔧 Backend: http://your-ec2-ip:8000"
+            echo "🔧 Backend: http://${{ secrets.EC2_HOST }}:8080"
             echo "🐘 Database: PostgreSQL 17"
           fi
