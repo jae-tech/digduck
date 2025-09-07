@@ -1,5 +1,6 @@
 // Components
 export { CrawlerPage } from './components/CrawlerPage';
+export { NaverBlogCrawlerPage } from './components/NaverBlogCrawlerPage';
 export { default as ShoppingInsightsPage } from './components/ShoppingInsightsPage';
 
 // Hooks

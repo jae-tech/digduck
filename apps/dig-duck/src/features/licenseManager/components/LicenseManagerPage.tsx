@@ -14,6 +14,7 @@ import { Key, Plus, Search } from "lucide-react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { LicenseGeneratorDialog } from "../../licenseGenerator/components/LicenseGeneratorDialog";
 import { DataTable } from "@/components/DataTable";
+import { apiHelpers } from "@/lib/apiClient";
 
 interface LicenseData {
   id: string;
@@ -48,8 +49,7 @@ export const LicenseManagerPage: React.FC = () => {
 
   const loadLicenseData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/license/admin/users');
-      const result = await response.json();
+      const result = await apiHelpers.get('/license/admin/users');
       
       if (result.success) {
         const licenses: LicenseData[] = result.data.users.map((user: any) => ({
@@ -74,8 +74,7 @@ export const LicenseManagerPage: React.FC = () => {
 
   const loadStats = async () => {
     try {
-      const response = await fetch('http://localhost:8000/admin/licenses/stats');
-      const result = await response.json();
+      const result = await apiHelpers.get('/admin/licenses/stats');
       
       if (result.success) {
         setStats({
