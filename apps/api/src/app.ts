@@ -8,7 +8,6 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import path from "path";
 import prismaPlugin from "./plugins/prisma";
-import crawlHistoryPlugin from "./plugins/crawl-history.plugin";
 
 import { env } from "@/config/env";
 import { autoRegisterControllers } from "@/utils/auto-register";
@@ -171,9 +170,6 @@ export const build = async (): Promise<FastifyInstance> => {
 
   // Prisma 플러그인 등록
   await app.register(prismaPlugin);
-
-  // Crawl history 플러그인 등록
-  await app.register(crawlHistoryPlugin);
 
   // Database plugin
   await app.register(postgres, {
