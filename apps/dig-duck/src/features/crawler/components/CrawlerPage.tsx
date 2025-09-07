@@ -1,5 +1,5 @@
 import { useState } from "react";
-import FluidLayout from "@/components/layouts/FluidLayout";
+import UserLayout from "@/components/layouts/UserLayout";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { useReviewsCrawlWithProgress } from "../hooks/useCrawler";
 import { useLicenseStore } from "@/features/license/store/license.store";
@@ -172,8 +172,8 @@ export function CrawlerPage() {
       <CrawlerContent />
     </AdminLayout>
   ) : (
-    <FluidLayout>
+    <UserLayout>
       <CrawlerContent />
-    </FluidLayout>
+    </UserLayout>
   );
 }
