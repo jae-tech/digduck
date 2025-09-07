@@ -234,17 +234,8 @@ export class LicenseGeneratorService {
   // 라이센스 삭제
   static async deleteLicense(licenseKey: string): Promise<boolean> {
     try {
-      const response = await fetch(
-        `${this.API_BASE_URL}/api/admin/license/${licenseKey}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-          },
-        }
-      );
-
-      return response.ok;
+      await apiHelpers.delete(`/api/admin/license/${licenseKey}`);
+      return true;
     } catch (error) {
       console.error("Failed to delete license:", error);
       return false;
