@@ -79,7 +79,7 @@ export interface ShoppingInsightsParams {
   startDate: string;
   endDate: string;
   timeUnit: TimeUnit;
-  category?: string;
+  category?: Array<{ name: string; param: string[] }>;
   device?: DeviceType;
   gender?: GenderType;
   ages?: AgeGroup[];
