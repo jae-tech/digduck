@@ -4,16 +4,17 @@ import type {
   CategoryKeywordParams,
   InsightsDataPoint,
   ShoppingInsightsResult,
-  NaverInsightsApiResponse
+  NaverInsightsApiResponse,
 } from "@/types/api/naver-shopping.types";
+import { env } from "process";
 
 export class NaverShoppingAPI {
   private clientId: string;
   private clientSecret: string;
 
   constructor() {
-    this.clientId = process.env.NAVER_CLIENT_ID || "";
-    this.clientSecret = process.env.NAVER_CLIENT_SECRET || "";
+    this.clientId = env.NAVER_CLIENT_ID || "";
+    this.clientSecret = env.NAVER_CLIENT_SECRET || "";
   }
 
   async searchProducts(query: string) {
@@ -42,6 +43,15 @@ export class NaverShoppingAPI {
   async getShoppingCategories(
     params: ShoppingInsightsParams
   ): Promise<ShoppingInsightsResult> {
+    console.log("📊 네이버 쇼핑 인사이트 요청:", params);
+
+    if (!this.isConfigured()) {
+      console.error("❌ 네이버 API 키가 설정되지 않았습니다");
+      throw new Error(
+        "네이버 API 키가 설정되지 않았습니다. NAVER_CLIENT_ID, NAVER_CLIENT_SECRET를 확인해주세요."
+      );
+    }
+
     try {
       const requestData = {
         startDate: params.startDate,
@@ -52,6 +62,8 @@ export class NaverShoppingAPI {
         ...(params.gender && { gender: params.gender }),
         ...(params.ages && params.ages.length > 0 && { ages: params.ages }),
       };
+
+      console.log("🚀 네이버 API 요청 데이터:", requestData);
 
       const { data } = await httpClient.post(
         "https://openapi.naver.com/v1/datalab/shopping/categories",
@@ -65,6 +77,8 @@ export class NaverShoppingAPI {
           timeout: 30000,
         }
       );
+
+      console.log("✅ 네이버 API 응답:", data);
 
       return this.transformApiResponse(data);
     } catch (error: any) {
@@ -113,7 +127,7 @@ export class NaverShoppingAPI {
    * 특정 쇼핑 분야의 기기별 검색 클릭 추이 조회
    */
   async getCategoryByDevice(
-    params: Omit<ShoppingInsightsParams, 'device'> & { category: string }
+    params: Omit<ShoppingInsightsParams, "device"> & { category: string }
   ): Promise<ShoppingInsightsResult> {
     try {
       const requestData = {
@@ -148,7 +162,7 @@ export class NaverShoppingAPI {
    * 특정 쇼핑 분야의 성별 검색 클릭 추이 조회
    */
   async getCategoryByGender(
-    params: Omit<ShoppingInsightsParams, 'gender'> & { category: string }
+    params: Omit<ShoppingInsightsParams, "gender"> & { category: string }
   ): Promise<ShoppingInsightsResult> {
     try {
       const requestData = {
@@ -183,7 +197,7 @@ export class NaverShoppingAPI {
    * 특정 쇼핑 분야의 연령별 검색 클릭 추이 조회
    */
   async getCategoryByAge(
-    params: Omit<ShoppingInsightsParams, 'ages'> & { category: string }
+    params: Omit<ShoppingInsightsParams, "ages"> & { category: string }
   ): Promise<ShoppingInsightsResult> {
     try {
       const requestData = {
@@ -218,7 +232,7 @@ export class NaverShoppingAPI {
    * 키워드의 기기별 검색 클릭 추이 조회
    */
   async getKeywordByDevice(
-    params: Omit<CategoryKeywordParams, 'device'> & { keyword: string }
+    params: Omit<CategoryKeywordParams, "device"> & { keyword: string }
   ): Promise<ShoppingInsightsResult> {
     try {
       const requestData = {
@@ -254,7 +268,7 @@ export class NaverShoppingAPI {
    * 키워드의 성별 검색 클릭 추이 조회
    */
   async getKeywordByGender(
-    params: Omit<CategoryKeywordParams, 'gender'> & { keyword: string }
+    params: Omit<CategoryKeywordParams, "gender"> & { keyword: string }
   ): Promise<ShoppingInsightsResult> {
     try {
       const requestData = {
@@ -290,7 +304,7 @@ export class NaverShoppingAPI {
    * 키워드의 연령별 검색 클릭 추이 조회
    */
   async getKeywordByAge(
-    params: Omit<CategoryKeywordParams, 'ages'> & { keyword: string }
+    params: Omit<CategoryKeywordParams, "ages"> & { keyword: string }
   ): Promise<ShoppingInsightsResult> {
     try {
       const requestData = {
@@ -325,11 +339,13 @@ export class NaverShoppingAPI {
   /**
    * API 응답 데이터 변환
    */
-  private transformApiResponse(data: NaverInsightsApiResponse): ShoppingInsightsResult {
+  private transformApiResponse(
+    data: NaverInsightsApiResponse
+  ): ShoppingInsightsResult {
     const result: ShoppingInsightsResult = {
       title: data.title || "쇼핑 인사이트 데이터",
       keywords: data.keywords || [],
-      data: []
+      data: [],
     };
 
     // results 배열에서 모든 데이터를 합치기
@@ -339,7 +355,7 @@ export class NaverShoppingAPI {
           const transformedData = resultItem.data.map((item: any) => ({
             period: item.period,
             ratio: item.ratio,
-            title: resultItem.title // 각 결과의 제목 추가
+            title: resultItem.title, // 각 결과의 제목 추가
           }));
           result.data = result.data.concat(transformedData);
         }
@@ -360,20 +376,27 @@ export class NaverShoppingAPI {
 
     switch (status) {
       case 401:
-        return new Error("네이버 API 인증에 실패했습니다. API 키를 확인해주세요.");
+        return new Error(
+          "네이버 API 인증에 실패했습니다. API 키를 확인해주세요."
+        );
       case 403:
-        return new Error("네이버 API 접근이 거부되었습니다. API 권한을 확인해주세요.");
+        return new Error(
+          "네이버 API 접근이 거부되었습니다. API 권한을 확인해주세요."
+        );
       case 429:
-        return new Error("API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.");
+        return new Error(
+          "API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요."
+        );
       case 400:
         return new Error(`잘못된 요청입니다: ${message}`);
       case 500:
-        return new Error("네이버 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        return new Error(
+          "네이버 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+        );
       default:
         return new Error(`네이버 API 호출 실패: ${message}`);
     }
   }
-
 
   // API 키 설정 확인
   isConfigured(): boolean {
@@ -404,7 +427,9 @@ export class NaverShoppingAPI {
     }
 
     // 카테고리에서 키워드 추출
-    const categoryNames = params.category?.map(cat => cat.name) || ["테스트 카테고리"];
+    const categoryNames = params.category?.map((cat) => cat.name) || [
+      "테스트 카테고리",
+    ];
 
     return {
       title: "쇼핑 인사이트 데이터 (테스트)",
