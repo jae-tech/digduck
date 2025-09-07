@@ -31,13 +31,7 @@ export class LicenseManagerService {
       params.append("limit", limit.toString());
 
       // 실제 서버가 켜져있으면 실제 API 사용
-      const response = await fetch(`http://localhost:8000/license/admin/users?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch licenses');
-      }
-      
-      const result = await response.json();
+      const result = await apiHelpers.get(`/license/admin/users`, Object.fromEntries(params));
       
       if (result.success) {
         // API 응답을 프론트엔드 형식으로 변환
@@ -78,20 +72,7 @@ export class LicenseManagerService {
     licenseId: string
   ): Promise<LicenseRecord | null> {
     try {
-      const response = await fetch(
-        `${this.API_BASE_URL}/api/admin/licenses/${licenseId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
+      return await apiHelpers.get(`/api/admin/licenses/${licenseId}`);
     } catch (error) {
       console.error("Failed to get license detail:", error);
       return null;
@@ -141,14 +122,8 @@ export class LicenseManagerService {
   static async getLicenseStats(): Promise<LicenseStats> {
     try {
       // 실제 서버가 켜져있으면 실제 API 사용
-      const response = await fetch(`http://localhost:8000/admin/licenses/stats`);
-      
-      if (response.ok) {
-        const result = await response.json();
-        return result.data;
-      }
-      
-      throw new Error('Failed to fetch stats');
+      const result = await apiHelpers.get(`/admin/licenses/stats`);
+      return result.data;
     } catch (error) {
       console.error('Failed to get license stats:', error);
       // 개발용 시뮬레이션

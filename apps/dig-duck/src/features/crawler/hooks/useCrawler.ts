@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiHelpers } from "@/lib/apiClient";
 import type { 
   CrawlParams, 
   CrawlProgress, 
@@ -124,28 +125,15 @@ export const useReviewsCrawlWithProgress = () => {
   };
 };
 
-// 기존 방식 유지 (하위 호환성)
+// 기존 방식 유지 (하위 호환성) - axios로 변경
 const fetchReviews = async (params: CrawlParams): Promise<CrawlResult> => {
   try {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-    const response = await fetch(`${API_BASE_URL}/naver/crawl/reviews`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: params.url,
-        sort: params.sort,
-        maxPages: params.maxPages,
-        useUserIp: params.useUserIp || false,
-      }),
+    return await apiHelpers.post('/naver/crawl/reviews', {
+      url: params.url,
+      sort: params.sort,
+      maxPages: params.maxPages,
+      useUserIp: params.useUserIp || false,
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
   } catch (error) {
     throw error;
   }

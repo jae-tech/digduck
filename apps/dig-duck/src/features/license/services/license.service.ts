@@ -178,15 +178,8 @@ export class LicenseService {
 
   static async revokeLicense(licenseKey: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.API_BASE_URL}/api/license/revoke`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ licenseKey }),
-      });
-
-      return response.ok;
+      await apiHelpers.post('/api/license/revoke', { licenseKey });
+      return true;
     } catch (error) {
       console.error("Failed to revoke license:", error);
       return false;
