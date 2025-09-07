@@ -288,6 +288,7 @@ enum PlatformType {
 
 enum SourceSite {
   SMARTSTORE
+  NAVER_BLOG
   COUPANG
   GMARKET
   AUCTION

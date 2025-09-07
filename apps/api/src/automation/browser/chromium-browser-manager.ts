@@ -1,4 +1,5 @@
 import { chromium, Browser, BrowserContext } from "playwright";
+import axios from "axios";
 import {
   ChromiumLaunchOptions,
   ViewportConfiguration,
@@ -48,19 +49,13 @@ export class ChromiumBrowserManager {
 
     // API 호출 시도
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(
+      const response = await axios.get<ChromeVersionResponse[]>(
         "https://chromiumdash.appspot.com/fetch_releases?channel=Stable&platform=Windows&num=1",
-        { signal: controller.signal }
+        { timeout: 5000 }
       );
 
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data: ChromeVersionResponse[] = await response.json();
-        return data[0]?.previous_version || this.DEFAULT_CHROME_VERSION;
+      if (response.status === 200) {
+        return response.data[0]?.previous_version || this.DEFAULT_CHROME_VERSION;
       }
     } catch {
       // API 실패시 기본값 사용
