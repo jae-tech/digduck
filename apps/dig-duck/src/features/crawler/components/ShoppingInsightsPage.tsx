@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,10 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  TrendingUp,
   Search,
   Calendar,
-  Filter,
   Info,
   Smartphone,
   Users,
@@ -25,14 +22,13 @@ import { useShoppingInsights } from "../hooks/useShoppingInsights";
 import { InsightsDashboard } from "@/features/dashboard/components/InsightsDashboard";
 import { useDataExport } from "@/features/dashboard/hooks/useDataExport";
 import { useGoogleSheets } from "@/features/dashboard/hooks/useGoogleSheets";
-import { useReportGenerator } from "@/features/dashboard/hooks/useReportGenerator";
+// import { useReportGenerator } from "@/features/dashboard/hooks/useReportGenerator";
 import { CompactRadio } from "@/components/ui/compact-radio";
 import type {
   TimeUnit,
   DeviceType,
   GenderType,
   AgeGroup,
-  InsightsDataPoint,
 } from "../types/crawler.types";
 
 const ShoppingInsightsPage: React.FC = () => {
@@ -133,7 +129,7 @@ const ShoppingInsightsPage: React.FC = () => {
   const { fetchInsights, isLoading, data, error } = useShoppingInsights();
   const { exportToExcel, exportToCSV, exportToPDF } = useDataExport();
   const { createSpreadsheet } = useGoogleSheets();
-  const { generateReport } = useReportGenerator();
+  // const { generateReport } = useReportGenerator();
 
   const handleAgeChange = (age: AgeGroup, checked: boolean) => {
     if (checked) {
@@ -168,8 +164,8 @@ const ShoppingInsightsPage: React.FC = () => {
       endDate,
       timeUnit,
       categoryName: selectedCategory?.label || category,
-      device: device === "all" ? undefined : device,
-      gender: gender === "all" ? undefined : gender,
+      device: device === "all" || device === "" ? undefined : (device as DeviceType),
+      gender: gender === "all" || gender === "" ? undefined : (gender as GenderType),
       ages:
         selectedAges.length > 0 && selectedAges.length < ageGroups.length
           ? selectedAges

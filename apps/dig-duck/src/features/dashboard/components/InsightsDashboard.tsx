@@ -10,7 +10,6 @@ import {
   Share2,
   BarChart3,
   TrendingUp,
-  Users,
   Calendar,
   Target,
   Crown,
@@ -19,7 +18,6 @@ import {
 import { InsightsChart } from "./InsightsChart";
 import type {
   ShoppingInsightsResult,
-  InsightsDataPoint,
 } from "@/features/crawler/types/crawler.types";
 
 interface InsightsDashboardProps {

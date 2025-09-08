@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from "react";
+import React, { useMemo, useRef } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,8 +11,8 @@ import {
   Tooltip,
   Legend,
   Filler,
-  ChartOptions,
-  ChartData,
+  type ChartOptions,
+  type ChartData,
 } from "chart.js";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import { motion } from "framer-motion";
@@ -268,7 +268,7 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
       case "line":
         return (
           <Line 
-            ref={chartRef}
+            ref={chartRef as any}
             data={chartData} 
             options={chartOptions} 
           />
@@ -277,7 +277,7 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
       case "area":
         return (
           <Line 
-            ref={chartRef}
+            ref={chartRef as any}
             data={chartData} 
             options={chartOptions} 
           />
@@ -286,7 +286,7 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
       case "bar":
         return (
           <Bar 
-            ref={chartRef}
+            ref={chartRef as any}
             data={chartData} 
             options={chartOptions} 
           />
@@ -295,7 +295,7 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
       case "doughnut":
         return (
           <Doughnut 
-            ref={chartRef}
+            ref={chartRef as any}
             data={chartData} 
             options={chartOptions} 
           />

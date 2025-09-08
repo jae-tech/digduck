@@ -29,21 +29,21 @@ export const useGoogleSheets = () => {
 
   // Google API 초기화
   const initializeGapi = async () => {
-    if (typeof window === "undefined" || !window.gapi) {
+    if (typeof window === "undefined" || !(window as any).gapi) {
       throw new Error("Google API를 로드할 수 없습니다.");
     }
 
-    await window.gapi.load("client:auth2", async () => {
-      await window.gapi.client.init({
+    await (window as any).gapi.load("client:auth2", async () => {
+      await (window as any).gapi.client.init({
         apiKey: GOOGLE_SHEETS_CONFIG.API_KEY,
         clientId: GOOGLE_SHEETS_CONFIG.CLIENT_ID,
         discoveryDocs: [GOOGLE_SHEETS_CONFIG.DISCOVERY_DOC],
         scope: GOOGLE_SHEETS_CONFIG.SCOPES,
       });
 
-      setGapi(window.gapi);
+      setGapi((window as any).gapi);
       
-      const authInstance = window.gapi.auth2.getAuthInstance();
+      const authInstance = (window as any).gapi.auth2.getAuthInstance();
       setIsSignedIn(authInstance.isSignedIn.get());
       
       // 로그인 상태 변경 리스너
@@ -231,7 +231,7 @@ export const useGoogleSheets = () => {
   };
 
   // 기존 스프레드시트에 데이터 추가
-  const appendToSpreadsheet = async (spreadsheetId: string, { data, searchParams }: GoogleSheetsData) => {
+  const appendToSpreadsheet = async (spreadsheetId: string, { }: GoogleSheetsData) => {
     setIsLoading(true);
     try {
       if (!isSignedIn) {

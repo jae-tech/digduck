@@ -6,7 +6,7 @@ import {
 import { apiHelpers } from "@/lib/apiClient";
 
 export class LicenseGeneratorService {
-  private static readonly API_BASE_URL = import.meta.env.VITE_API_URL || "";
+  // private static readonly API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
   // 라이센스 키 생성 함수
   static generateLicenseKey(

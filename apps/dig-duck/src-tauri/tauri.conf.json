@@ -3,9 +3,7 @@
   "version": "0.0.0",
   "identifier": "com.digduck.app",
   "build": {
-    "beforeDevCommand": "",
-    "beforeBuildCommand": "",
-    "frontendDist": "../",
+    "frontendDist": "../src",
     "devUrl": "http://localhost:5173"
   },
   "app": {

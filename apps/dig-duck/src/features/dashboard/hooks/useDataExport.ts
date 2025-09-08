@@ -1,9 +1,9 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import { format } from "date-fns";
-import { ko } from "date-fns/locale";
+// import html2canvas from "html2canvas";
+// import { format } from "date-fns";
+// import { ko } from "date-fns/locale";
 import type { ShoppingInsightsResult } from "@/features/crawler/types/crawler.types";
 
 interface ExportData {

@@ -12,6 +12,7 @@ export interface LicenseVerificationResult {
     expiryDate: string;
     userEmail: string;
     productName: string;
+    type?: string;
     phoneNumber?: string;
     userName?: string;
     allowedDevices?: number;

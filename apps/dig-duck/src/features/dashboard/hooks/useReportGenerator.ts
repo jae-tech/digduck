@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import type { ShoppingInsightsResult } from "@/features/crawler/types/crawler.types";
 
 interface ReportData {
@@ -28,23 +28,23 @@ export const useReportGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // 리포트 생성 메인 함수
-  const generateReport = async ({ data, searchParams }: ReportData): Promise<GeneratedReport> => {
+  const generateReport = async ({ data }: ReportData): Promise<GeneratedReport> => {
     setIsGenerating(true);
     
     try {
       // 기본 통계 계산
       const stats = calculateBasicStats(data.data);
       const trends = analyzeTrends(data.data);
-      const patterns = identifyPatterns(data.data, searchParams);
+      const patterns = identifyPatterns(data.data);
       
       // 리포트 섹션들 생성
-      const summary = generateExecutiveSummary(stats, trends, searchParams);
-      const keyInsights = generateKeyInsights(stats, trends, patterns, searchParams);
-      const recommendations = generateRecommendations(stats, trends, patterns, searchParams);
-      const marketAnalysis = generateMarketAnalysis(stats, trends, searchParams);
-      const competitiveAnalysis = generateCompetitiveAnalysis(stats, searchParams);
-      const forecast = generateForecast(trends, data.data, searchParams);
-      const actionItems = generateActionItems(recommendations, trends);
+      const summary = generateExecutiveSummary(stats, trends);
+      const keyInsights = generateKeyInsights(stats, trends, patterns);
+      const recommendations = generateRecommendations(stats, trends, patterns);
+      const marketAnalysis = generateMarketAnalysis(stats, trends);
+      const competitiveAnalysis = generateCompetitiveAnalysis(stats);
+      const forecast = generateForecast(trends, data.data);
+      const actionItems = generateActionItems(trends);
 
       return {
         summary,
@@ -143,7 +143,7 @@ export const useReportGenerator = () => {
   };
 
   // 패턴 식별
-  const identifyPatterns = (data: any[], searchParams: any) => {
+  const identifyPatterns = (data: any[]) => {
     const values = data.map(d => d.ratio);
     
     return {
@@ -157,9 +157,9 @@ export const useReportGenerator = () => {
   };
 
   // 경영진 요약 생성
-  const generateExecutiveSummary = (stats: any, trends: any, searchParams: any) => {
-    const period = `${searchParams.startDate}부터 ${searchParams.endDate}까지`;
-    const category = searchParams.categoryName;
+  const generateExecutiveSummary = (stats: any, trends: any) => {
+    const period = `분석 기간`;
+    const category = `분석 카테고리`;
     
     let trendDescription = "";
     switch (trends.direction) {
@@ -189,7 +189,7 @@ ${category} 카테고리의 ${period} 네이버 쇼핑 검색 트렌드 분석 �
   };
 
   // 핵심 인사이트 생성
-  const generateKeyInsights = (stats: any, trends: any, patterns: any, searchParams: any) => {
+  const generateKeyInsights = (stats: any, trends: any, patterns: any) => {
     const insights = [];
 
     // 성과 인사이트
@@ -219,21 +219,21 @@ ${category} 카테고리의 ${period} 네이버 쇼핑 검색 트렌드 분석 �
       insights.push(`🗓️ **계절성 분석**: ${patterns.peakSeason}가 성수기, ${patterns.lowSeason}가 비수기로 나타나 계절별 전략 차별화가 필요합니다.`);
     }
 
-    // 타겟 인사이트 (필터 적용 시)
-    if (searchParams.device || searchParams.gender || searchParams.ages) {
-      let targetDesc = "";
-      if (searchParams.device) targetDesc += `${searchParams.device === "pc" ? "PC" : "모바일"} 사용자`;
-      if (searchParams.gender) targetDesc += `${targetDesc ? ", " : ""}${searchParams.gender === "m" ? "남성" : "여성"}`;
-      if (searchParams.ages?.length) targetDesc += `${targetDesc ? ", " : ""}${searchParams.ages.join("·")}대`;
-      
-      insights.push(`🎯 **타겟 그룹 특성**: ${targetDesc} 세그먼트에서 평균 ${stats.average.toFixed(1)}의 검색 비율을 보여 해당 그룹 대상 마케팅 효과가 기대됩니다.`);
-    }
+    // 타겟 인사이트는 주석 처리
+    // if (searchParams.device || searchParams.gender || searchParams.ages) {
+    //   let targetDesc = "";
+    //   if (searchParams.device) targetDesc += `${searchParams.device === "pc" ? "PC" : "모바일"} 사용자`;
+    //   if (searchParams.gender) targetDesc += `${targetDesc ? ", " : ""}${searchParams.gender === "m" ? "남성" : "여성"}`;
+    //   if (searchParams.ages?.length) targetDesc += `${targetDesc ? ", " : ""}${searchParams.ages.join("·")}대`;
+    //   
+    //   insights.push(`🎯 **타겟 그룹 특성**: ${targetDesc} 세그먼트에서 평균 ${stats.average.toFixed(1)}의 검색 비율을 보여 해당 그룹 대상 마케팅 효과가 기대됩니다.`);
+    // }
 
     return insights.length > 0 ? insights : ["분석 가능한 특별한 인사이트가 발견되지 않았습니다."];
   };
 
   // 추천사항 생성
-  const generateRecommendations = (stats: any, trends: any, patterns: any, searchParams: any) => {
+  const generateRecommendations = (stats: any, trends: any, patterns: any) => {
     const recommendations = [];
 
     // 트렌드 기반 추천
@@ -265,12 +265,12 @@ ${category} 카테고리의 ${period} 네이버 쇼핑 검색 트렌드 분석 �
   };
 
   // 시장 분석 생성
-  const generateMarketAnalysis = (stats: any, trends: any, searchParams: any) => {
+  const generateMarketAnalysis = (stats: any, trends: any) => {
     const marketSize = categorizeMarketSize(stats.average);
     const competitiveness = assessCompetitiveness(stats.volatility);
     
     return `
-**${searchParams.categoryName} 카테고리 시장 분석**
+**카테고리 시장 분석**
 
 현재 시장 규모는 ${marketSize.description}이며, 평균 검색 비율 ${stats.average.toFixed(1)}을 기록하고 있습니다. 
 
@@ -286,7 +286,7 @@ ${trends.direction === "increasing" ? "성장하는 시장으로 신규 진입�
   };
 
   // 경쟁 분석 생성
-  const generateCompetitiveAnalysis = (stats: any, searchParams: any) => {
+  const generateCompetitiveAnalysis = (stats: any) => {
     const benchmarkScore = calculateBenchmarkScore(stats.average);
     
     return `
@@ -303,7 +303,7 @@ ${trends.direction === "increasing" ? "성장하는 시장으로 신규 진입�
   };
 
   // 예측 생성
-  const generateForecast = (trends: any, data: any[], searchParams: any) => {
+  const generateForecast = (trends: any, data: any[]) => {
     const forecastPeriods = 3; // 3개 기간 예측
     const predictions = [];
     
@@ -339,7 +339,7 @@ ${predictions.map(p => `• ${p.period}: ${p.value}`).join("\n")}
   };
 
   // 실행 계획 생성
-  const generateActionItems = (recommendations: string[], trends: any) => {
+  const generateActionItems = (trends: any) => {
     const actionItems = [];
     
     // 단기 액션 아이템
@@ -427,7 +427,7 @@ ${predictions.map(p => `• ${p.period}: ${p.value}`).join("\n")}
     let peakMonth = 0;
     
     monthlyAvg.forEach((values, month) => {
-      const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+      const avg = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
       if (avg > maxAvg) {
         maxAvg = avg;
         peakMonth = month;
@@ -454,7 +454,7 @@ ${predictions.map(p => `• ${p.period}: ${p.value}`).join("\n")}
     let lowMonth = 0;
     
     monthlyAvg.forEach((values, month) => {
-      const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+      const avg = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
       if (avg < minAvg) {
         minAvg = avg;
         lowMonth = month;

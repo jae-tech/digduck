@@ -1,4 +1,3 @@
-import React from "react";
 import UserLayout from "@/components/layouts/UserLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,6 @@ import {
   TrendingUp,
   Search,
   Globe,
-  FileText,
   Download,
   BarChart3,
   Clock,

@@ -2,7 +2,7 @@ import { type LicenseVerificationResult } from "../types/license.types";
 import { apiHelpers } from "@/lib/apiClient";
 
 export class LicenseService {
-  private static readonly API_BASE_URL = import.meta.env.VITE_API_URL || "";
+  // private static readonly API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
   static validateFormat(licenseKey: string): boolean {
     // 일반 라이센스: 16자리 영문숫자 조합
