@@ -44,7 +44,7 @@ export class AuthService {
     const { licenseKey, deviceId, platform = "WEB" } = credentials;
 
     // 라이센스 검증
-    const licenseData = await prisma.licenseUsers.findUnique({
+    const licenseData = await prisma.licenses.findUnique({
       where: { licenseKey },
       include: {
         users: {
@@ -99,7 +99,7 @@ export class AuthService {
       const updatedDevices = [...activatedDevices, newDevice];
 
       // 디바이스 정보 업데이트
-      await prisma.licenseUsers.update({
+      await prisma.licenses.update({
         where: { licenseKey },
         data: {
           activatedDevices: updatedDevices,

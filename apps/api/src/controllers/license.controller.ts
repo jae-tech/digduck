@@ -55,12 +55,12 @@ export class LicenseController {
       }
 
       const [users, total] = await Promise.all([
-        prisma.licenseUsers.findMany({
+        prisma.licenses.findMany({
           where,
           skip,
           take: Number(limit),
           include: {
-            licenseSubscriptions: {
+            licenses: {
               where: { isActive: true },
               take: 1,
               orderBy: { createdAt: "desc" },
@@ -76,7 +76,7 @@ export class LicenseController {
           },
           orderBy: { createdAt: "desc" },
         }),
-        prisma.licenseUsers.count({ where }),
+        prisma.licenses.count({ where }),
       ]);
 
       reply.code(200).send({
@@ -112,7 +112,7 @@ export class LicenseController {
       const licenseKey = this.generateLicenseKey(email);
 
       // 라이센스 사용자 생성
-      const licenseUser = await prisma.licenseUsers.create({
+      const licenseUser = await prisma.licenses.create({
         data: {
           userEmail: email,
           licenseKey,
@@ -164,7 +164,7 @@ export class LicenseController {
       }
 
       // 기존 활성 구독 비활성화
-      await prisma.licenseSubscriptions.updateMany({
+      await prisma.licenses.updateMany({
         where: {
           userEmail,
           isActive: true,
@@ -173,7 +173,7 @@ export class LicenseController {
       });
 
       // 새 구독 생성
-      const subscription = await prisma.licenseSubscriptions.create({
+      const subscription = await prisma.licenses.create({
         data: {
           userEmail,
           subscriptionType,
@@ -186,7 +186,7 @@ export class LicenseController {
       // 라이센스 발급 완료 메일 발송
       if (mailService.isConfigured()) {
         try {
-          const licenseUser = await prisma.licenseUsers.findUnique({
+          const licenseUser = await prisma.licenses.findUnique({
             where: { userEmail: userEmail }
           });
 
@@ -240,10 +240,10 @@ export class LicenseController {
       const { licenseKey } = request.params;
 
       // 라이센스 조회
-      const licenseUser = await prisma.licenseUsers.findUnique({
+      const licenseUser = await prisma.licenses.findUnique({
         where: { licenseKey },
         include: {
-          licenseSubscriptions: {
+          licenses: {
             where: { isActive: true },
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -262,7 +262,7 @@ export class LicenseController {
       }
 
       // 활성 구독 확인
-      const activeSubscription = licenseUser.licenseSubscriptions[0];
+      const activeSubscription = licenseUser.licenses[0];
       if (!activeSubscription || activeSubscription.endDate < new Date()) {
         return reply.code(400).send({
           success: false,
@@ -299,7 +299,7 @@ export class LicenseController {
       const { email } = request.params;
 
       // 라이센스 사용자 삭제 (CASCADE로 구독도 함께 삭제됨)
-      await prisma.licenseUsers.delete({
+      await prisma.licenses.delete({
         where: { userEmail: email },
       });
 

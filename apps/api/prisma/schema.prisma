@@ -7,342 +7,356 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model competitorOffers {
-  id             Int       @id @default(autoincrement())
-  productId      Int       @map("product_id")
-  crawlJobId     Int?      @map("crawl_job_id")
-  competitorName String    @map("competitor_name")
-  competitorUrl  String    @map("competitor_url")
-  price          Decimal   @db.Decimal(10, 2)
-  fetchedAt      DateTime  @default(now()) @map("fetched_at")
-  crawlJobs      crawlJobs? @relation(fields: [crawlJobId], references: [id])
-  products       products  @relation(fields: [productId], references: [id])
+// =================
+// ENUMS
+// =================
 
-  @@map("competitor_offers")
+enum LicenseStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
 }
 
-model crawlHistory {
-  id              Int           @id @default(autoincrement())
-  userEmail       String        @map("user_email")
-  deviceId        String        @map("device_id")
-  sourceSite      SourceSite    @default(SMARTSTORE) @map("source_site")
-  searchUrl       String        @map("search_url")
-  searchKeywords  String?       @map("search_keywords")
-  status          CrawlStatus   @default(PENDING)
-  itemsFound      Int           @default(0) @map("items_found")
-  itemsCrawled    Int           @default(0) @map("items_crawled")
-  pagesProcessed  Int           @default(0) @map("pages_processed")
-  startedAt       DateTime?     @map("started_at")
-  completedAt     DateTime?     @map("completed_at")
-  durationMs      Int?          @map("duration_ms")
-  errorMessage    String?       @map("error_message")
-  errorDetails    Json?         @map("error_details")
-  userAgent       String?       @map("user_agent")
-  proxyUsed       String?       @map("proxy_used")
-  requestInterval Int?          @map("request_interval")
-  crawlSettings   Json?         @map("crawl_settings")
-  metadata        Json?
-  priority        Int           @default(1) @map("priority")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  users           users         @relation(fields: [userEmail], references: [email], onDelete: Cascade)
-  crawlItems      crawlItems[]
-
-  @@index([createdAt])
-  @@index([deviceId])
-  @@index([sourceSite])
-  @@index([status])
-  @@index([userEmail])
-  @@map("crawl_history")
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
 }
 
-model crawlItems {
-  id               Int          @id @default(autoincrement())
-  crawlHistoryId   Int          @map("crawl_history_id")
-  itemId           String?      @map("item_id")
-  title            String?
-  content          String?
-  url              String?
-  rating           Decimal?     @db.Decimal(3, 2)
-  reviewDate       DateTime?    @map("review_date") @db.Date
-  reviewerName     String?      @map("reviewer_name")
-  isVerified       Boolean?     @map("is_verified")
-  price            Decimal?     @db.Decimal(10, 2)
-  originalPrice    Decimal?     @db.Decimal(10, 2) @map("original_price")
-  discount         Int?
-  stock            Int?
-  imageUrls        Json?        @map("image_urls")
-  videoUrls        Json?        @map("video_urls")
-  siteSpecificData Json?        @map("site_specific_data")
-  itemOrder        Int?         @map("item_order")
-  pageNumber       Int?         @map("page_number")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  crawlHistory     crawlHistory @relation(fields: [crawlHistoryId], references: [id], onDelete: Cascade)
-
-  @@index([crawlHistoryId])
-  @@index([itemId])
-  @@index([price])
-  @@index([rating])
-  @@index([reviewDate])
-  @@map("crawl_items")
+enum JobType {
+  FULL_CRAWL
+  UPDATE_CRAWL
+  TARGETED_CRAWL
 }
 
-model crawlJobs {
-  id               Int                @id @default(autoincrement())
-  userId           Int                @map("user_id")
-  requestedAt      DateTime           @default(now()) @map("requested_at")
-  startedAt        DateTime?          @map("started_at")
-  finishedAt       DateTime?          @map("finished_at")
-  errorMsg         String?            @map("error_msg")
-  status           CrawlStatus        @default(PENDING)
-  competitorOffers competitorOffers[]
-  users            users              @relation(fields: [userId], references: [id])
-
-  @@map("crawl_jobs")
+enum TargetType {
+  URL
+  KEYWORD
+  CATEGORY
+  STORE_ID
 }
 
-model crawlTemplates {
-  id           Int        @id @default(autoincrement())
-  userEmail    String     @map("user_email")
-  name         String
-  description  String?
-  sourceSite   SourceSite @map("source_site")
-  maxPages     Int        @default(10) @map("max_pages")
-  maxItems     Int        @default(2000) @map("max_items")
-  requestDelay Int        @default(1000) @map("request_delay")
-  filters      Json?
-  selectors    Json?
-  isPublic     Boolean    @default(false) @map("is_public")
-  usageCount   Int        @default(0) @map("usage_count")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  users        users      @relation(fields: [userEmail], references: [email], onDelete: Cascade)
-
-  @@index([isPublic])
-  @@index([sourceSite])
-  @@index([userEmail])
-  @@map("crawl_templates")
+enum UsageType {
+  CRAWL_COUNT
+  DATA_POINTS
+  API_CALLS
 }
 
-model deviceTransfers {
-  id           Int           @id @default(autoincrement())
-  userEmail    String        @map("user_email")
-  oldDeviceId  String        @map("old_device_id")
-  newDeviceId  String        @map("new_device_id")
-  platform     PlatformType
-  transferDate DateTime      @default(now()) @map("transfer_date") @db.Date
-  licenseUsers licenseUsers  @relation(fields: [userEmail], references: [userEmail], onDelete: Cascade)
-
-  @@map("device_transfers")
+enum Period {
+  DAILY
+  MONTHLY
+  YEARLY
 }
 
-model licenseItems {
-  id           Int          @id @default(autoincrement())
-  userEmail    String       @map("user_email")
-  itemType     ItemType     @map("item_type")
-  quantity     Int
-  purchasedAt  DateTime     @default(now()) @map("purchased_at")
-  licenseUsers licenseUsers @relation(fields: [userEmail], references: [userEmail], onDelete: Cascade)
-
-  @@map("license_items")
+enum NotificationType {
+  JOB_COMPLETED
+  QUOTA_WARNING
+  LICENSE_EXPIRING
+  SYSTEM_MAINTENANCE
 }
 
-model licenseSubscriptions {
-  id               Int                     @id @default(autoincrement())
-  userEmail        String                  @map("user_email")
-  subscriptionType LicenseSubscriptionType @map("subscription_type")
-  startDate        DateTime                @default(now()) @map("start_date") @db.Date
-  endDate          DateTime                @map("end_date") @db.Date
-  isActive         Boolean                 @default(true) @map("is_active")
-  createdAt        DateTime                @default(now()) @map("created_at")
-  licenseUsers     licenseUsers            @relation(fields: [userEmail], references: [userEmail], onDelete: Cascade)
-
-  @@map("license_subscriptions")
-}
-
-model licenseUsers {
-  userEmail            String                   @id @map("user_email")
-  licenseKey           String                   @unique @map("license_key")
-  allowedDevices       Int                      @default(3) @map("allowed_devices")
-  maxTransfers         Int                      @default(5) @map("max_transfers")
-  activatedDevices     Json                     @default("[]") @map("activated_devices")
-  createdAt            DateTime                 @default(now()) @map("created_at")
-  deviceTransfers      deviceTransfers[]
-  licenseItems         licenseItems[]
-  licenseSubscriptions licenseSubscriptions[]
-  users                users                    @relation(fields: [userEmail], references: [email], onDelete: Cascade)
-
-  @@map("license_users")
-}
-
-model plans {
-  id            Int             @id @default(autoincrement())
-  name          String          @unique
-  price         Decimal         @db.Decimal(10, 2)
-  features      Json
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-  billingCycle  BillingCycle    @default(ONE_MONTH) @map("billing_cycle")
-  subscriptions subscriptions[]
-
-  @@map("plans")
-}
-
-model priceChangeLogs {
-  id        Int      @id @default(autoincrement())
-  productId Int      @map("product_id")
-  oldPrice  Decimal  @db.Decimal(10, 2) @map("old_price")
-  newPrice  Decimal  @db.Decimal(10, 2) @map("new_price")
-  changedAt DateTime @default(now()) @map("changed_at")
-  products  products @relation(fields: [productId], references: [id])
-
-  @@map("price_change_logs")
-}
-
-model products {
-  id                  Int                  @id @default(autoincrement())
-  userId              Int                  @map("user_id")
-  smartStoreProductId String               @map("smart_store_product_id")
-  name                String
-  url                 String
-  currentPrice        Decimal              @db.Decimal(10, 2) @map("current_price")
-  targetPrice         Decimal              @db.Decimal(10, 2) @map("target_price")
-  isActive            Boolean              @default(true) @map("is_active")
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  competitorOffers    competitorOffers[]
-  priceChangeLogs     priceChangeLogs[]
-  users               users                @relation(fields: [userId], references: [id])
-
-  @@map("products")
-}
-
-model subscriptions {
-  id        Int                @id @default(autoincrement())
-  status    SubscriptionStatus @default(ACTIVE)
-  startDate DateTime           @default(now()) @map("start_date") @db.Date
-  endDate   DateTime?          @map("end_date") @db.Date
-  autoRenew Boolean            @default(true) @map("auto_renew")
-  createdAt DateTime           @default(now()) @map("created_at")
-  updatedAt DateTime           @updatedAt @map("updated_at")
-  userId    Int                @map("user_id")
-  planId    Int                @map("plan_id")
-  plans     plans              @relation(fields: [planId], references: [id])
-  users     users              @relation(fields: [userId], references: [id])
-
-  @@map("subscriptions")
-}
-
+// =================
+// 사용자 & 인증
+// =================
 model users {
-  id              Int               @id @default(autoincrement())
-  email           String            @unique
-  name            String?
-  nickname        String?
-  isAdmin         Boolean           @default(false) @map("is_admin")
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @updatedAt @map("updated_at")
-  crawlHistory    crawlHistory[]
-  crawlJobs       crawlJobs[]
-  crawlTemplates  crawlTemplates[]
-  licenseUsers    licenseUsers?
-  products        products[]
-  subscriptions   subscriptions[]
-  mailHistory     mailHistory[]
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  nickname  String?
+  avatar    String?
+  isAdmin   Boolean  @default(false) @map("is_admin")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  licenses      licenses[]
+  crawlProjects crawlProjects[]
+  crawlJobs     crawlJobs[]
+  notifications notifications[]
+  usageStats    usageStats[]
 
   @@map("users")
 }
 
-enum BillingCycle {
-  ONE_MONTH
-  THREE_MONTHS
-  SIX_MONTHS
-  TWELVE_MONTHS
+// =================
+// 서비스 & 상품 관리
+// =================
+
+// 서비스 상품 (크롤링 서비스)
+model services {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // "NAVER_BLOG_CRAWLING"
+  name        String // "네이버 블로그 크롤링"
+  description String?
+  category    String   @default("crawling") // "crawling", "monitoring", "analytics"
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  licenses      licenses[]
+  crawlProjects crawlProjects[]
+  crawlJobs     crawlJobs[]
+  usageStats    usageStats[]
+
+  @@map("services")
 }
 
-enum CrawlStatus {
-  PENDING
-  RUNNING
-  SUCCESS
-  FAILED
-  COMPLETED
-  CANCELLED
+// 구독 플랜
+model subscriptionPlans {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique // "ONE_MONTH", "THREE_MONTHS"
+  name      String // "1개월 구독", "3개월 구독"
+  duration  Int? // 30, 90, null(평생)
+  price     Decimal  @db.Decimal(10, 2)
+  discount  Float? // 할인율 (0.12 = 12%)
+  features  Json // 플랜별 기능 목록
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  licenses licenses[]
+
+  @@map("subscription_plans")
 }
 
-enum ItemType {
-  SMARTSTORE_CRAWLER
-  SUBSCRIPTION_EXTENSION
-  EXTRA_DEVICE
-  ADMIN_ACCESS
+// 애드온 상품
+model addonProducts {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // "EXTRA_DEVICE", "SUBSCRIPTION_EXTENSION"
+  name        String // "추가 디바이스", "구독 연장"
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  licenseAddons licenseAddons[]
+
+  @@map("addon_products")
 }
 
-enum LicenseSubscriptionType {
-  ONE_MONTH
-  THREE_MONTHS
-  SIX_MONTHS
-  TWELVE_MONTHS
+// 라이센스 (통합 구조)
+model licenses {
+  id                 Int       @id @default(autoincrement())
+  userEmail          String    @map("user_email")
+  licenseKey         String    @unique @map("license_key")
+  serviceId          Int       @map("service_id")
+  subscriptionPlanId Int       @map("subscription_plan_id")
+  startDate          DateTime  @map("start_date")
+  endDate            DateTime? @map("end_date")
+
+  // 디바이스 관리
+  maxDevices            Int  @default(3) @map("max_devices")
+  activatedDevices      Json @default("[]") @map("activated_devices")
+  maxTransfers          Int  @default(5) @map("max_transfers")
+  extraDevicesPurchased Int  @default(0) @map("extra_devices_purchased")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user             users             @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  service          services          @relation(fields: [serviceId], references: [id])
+  subscriptionPlan subscriptionPlans @relation(fields: [subscriptionPlanId], references: [id])
+  usageStats       usageStats[]
+  addons           licenseAddons[]
+
+  @@index([userEmail])
+  @@index([serviceId])
+  @@index([subscriptionPlanId])
+  @@map("licenses")
 }
 
-enum PlatformType {
-  WEB
-  DESKTOP
+// 라이센스 애드온 구매 내역
+model licenseAddons {
+  id             Int      @id @default(autoincrement())
+  licenseKey     String   @map("license_key")
+  addonProductId Int      @map("addon_product_id")
+  quantity       Int      @default(1)
+  purchaseDate   DateTime @default(now()) @map("purchase_date")
+
+  // Relations
+  license      licenses      @relation(fields: [licenseKey], references: [licenseKey], onDelete: Cascade)
+  addonProduct addonProducts @relation(fields: [addonProductId], references: [id])
+
+  @@index([licenseKey])
+  @@index([addonProductId])
+  @@map("license_addons")
 }
 
-enum SourceSite {
-  SMARTSTORE
-  NAVER_BLOG
-  COUPANG
-  GMARKET
-  AUCTION
-  ELEVENST
+// =================
+// 크롤링 프로젝트 & 작업
+// =================
+model crawlProjects {
+  id          Int      @id @default(autoincrement())
+  userEmail   String   @map("user_email")
+  projectName String
+  serviceId   Int      @map("service_id")
+  description String?
+  config      Json // 프로젝트별 설정
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user      users     @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  service   services  @relation(fields: [serviceId], references: [id])
+  crawlJobs crawlJobs[]
+  targets   crawlTargets[]
+
+  @@index([userEmail])
+  @@index([serviceId])
+  @@map("crawl_projects")
 }
 
-model mailHistory {
-  id           Int          @id @default(autoincrement())
-  userEmail    String?      @map("user_email")
-  fromEmail    String       @map("from_email")
-  toEmail      String       @map("to_email")
-  ccEmails     String[]     @default([]) @map("cc_emails")
-  bccEmails    String[]     @default([]) @map("bcc_emails")
-  subject      String
-  templateId   String?      @map("template_id")
-  templateVars Json?        @map("template_vars")
-  provider     MailProvider
-  messageId    String?      @map("message_id")
-  status       MailStatus   @default(PENDING)
-  errorMessage String?      @map("error_message")
-  sentAt       DateTime?    @map("sent_at")
-  deliveredAt  DateTime?    @map("delivered_at")
-  openedAt     DateTime?    @map("opened_at")
-  clickedAt    DateTime?    @map("clicked_at")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
-  users        users?       @relation(fields: [userEmail], references: [email], onDelete: SetNull)
+model crawlTargets {
+  id           Int        @id @default(autoincrement())
+  projectId    Int        @map("project_id")
+  targetType   TargetType @map("target_type")
+  targetValue  String     @map("target_value")
+  targetConfig Json?      @map("target_config") // 타겟별 세부 설정
+  schedule     Json? // 스케줄 설정
+  isActive     Boolean    @default(true) @map("is_active")
+  lastCrawled  DateTime?  @map("last_crawled")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  project   crawlProjects @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  crawlJobs crawlJobs[]
+
+  @@index([projectId])
+  @@index([targetType])
+  @@map("crawl_targets")
+}
+
+model crawlJobs {
+  id        Int       @id @default(autoincrement())
+  userEmail String    @map("user_email")
+  projectId Int?      @map("project_id")
+  targetId  Int?      @map("target_id")
+  serviceId Int       @map("service_id")
+  jobType   JobType   @map("job_type")
+  config    Json // 작업별 설정
+  status    JobStatus @default(PENDING)
+  priority  Int       @default(5) @map("priority") // 1(highest) ~ 10(lowest)
+
+  // 진행 상황
+  totalItems     Int @default(0) @map("total_items")
+  processedItems Int @default(0) @map("processed_items")
+  successItems   Int @default(0) @map("success_items")
+  failedItems    Int @default(0) @map("failed_items")
+
+  // 시간 정보
+  scheduledAt   DateTime? @map("scheduled_at")
+  startedAt     DateTime? @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  estimatedTime Int?      @map("estimated_time") // 예상 소요시간(초)
+
+  // 오류 정보
+  errorCode    String? @map("error_code")
+  errorMessage String? @map("error_message")
+  errorDetails Json?   @map("error_details")
+
+  // 메타데이터
+  userAgent String?  @map("user_agent")
+  proxyUsed String?  @map("proxy_used")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user    users          @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  service services       @relation(fields: [serviceId], references: [id])
+  project crawlProjects? @relation(fields: [projectId], references: [id])
+  target  crawlTargets?  @relation(fields: [targetId], references: [id])
+  results crawlResults[]
 
   @@index([userEmail])
   @@index([status])
+  @@index([serviceId])
   @@index([createdAt])
-  @@index([templateId])
-  @@map("mail_history")
+  @@map("crawl_jobs")
 }
 
-enum MailStatus {
-  PENDING
-  SENT
-  DELIVERED
-  FAILED
-  BOUNCED
-  OPENED
-  CLICKED
+// =================
+// 크롤링 결과 데이터
+// =================
+model crawlResults {
+  id         Int      @id @default(autoincrement())
+  jobId      Int      @map("job_id")
+  itemId     String?  @map("item_id") // 외부 시스템 ID
+  itemType   String   @map("item_type") // "product", "review", "blog_post", "place"
+  data       Json // 실제 크롤링된 데이터
+  metadata   Json? // 추가 메타데이터
+  quality    Float? // 데이터 품질 점수 (0-1)
+  itemOrder  Int?     @map("item_order") // 결과 내 순서
+  pageNumber Int?     @map("page_number")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  job crawlJobs @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([itemType])
+  @@index([itemId])
+  @@map("crawl_results")
 }
 
-enum MailProvider {
-  SMTP
-  GMAIL
-  OUTLOOK
-  ZOHO
+// =================
+// 사용량 통계 & 모니터링
+// =================
+model usageStats {
+  id          Int       @id @default(autoincrement())
+  userEmail   String    @map("user_email")
+  licenseKey  String    @map("license_key")
+  serviceId   Int       @map("service_id")
+  usageType   UsageType @map("usage_type")
+  amount      Int
+  period      Period
+  periodStart DateTime  @map("period_start") @db.Date
+  periodEnd   DateTime  @map("period_end") @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user    users    @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  service services @relation(fields: [serviceId], references: [id])
+  license licenses @relation(fields: [licenseKey], references: [licenseKey], onDelete: Cascade)
+
+  @@unique([userEmail, licenseKey, serviceId, usageType, periodStart])
+  @@index([userEmail])
+  @@index([serviceId])
+  @@index([periodStart])
+  @@map("usage_stats")
 }
 
-enum SubscriptionStatus {
-  ACTIVE
-  PAST_DUE
-  CANCELED
+// =================
+// 알림 & 커뮤니케이션
+// =================
+model notifications {
+  id        Int              @id @default(autoincrement())
+  userEmail String           @map("user_email")
+  type      NotificationType
+  title     String
+  message   String
+  data      Json? // 알림 관련 추가 데이터
+  isRead    Boolean          @default(false) @map("is_read")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  user users @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+
+  @@index([userEmail])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }
