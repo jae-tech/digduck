@@ -11,9 +11,11 @@ import {
   Globe,
   TrendingUp,
   User,
+  ChevronDown,
 } from "lucide-react";
 import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
 import { useLicenseStore } from "@/features/license/store/license.store";
+import { usePlatform } from "@/hooks/usePlatform";
 
 interface MenuItemProps {
   to: string;
@@ -61,6 +63,7 @@ export default function UserLayout({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const location = useLocation();
   const { licenseInfo, clearLicense } = useLicenseStore();
+  const { isDesktop } = usePlatform();
 
   const menuItems = [
     {
@@ -102,6 +105,119 @@ export default function UserLayout({
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  // 데스크톱에서 라이센스에 맞는 서비스로 리다이렉트
+  React.useEffect(() => {
+    if (isDesktop && licenseInfo) {
+      // 라이센스 타입에 따라 허용된 경로인지 확인
+      const currentPath = location.pathname;
+      const allowedPaths = {
+        basic: ['/dashboard', '/crawler/naver-blog'],
+        premium: ['/dashboard', '/crawler/naver-blog', '/crawler/review', '/crawler/insights'],
+      };
+      
+      const userAllowedPaths = allowedPaths[licenseInfo.type as keyof typeof allowedPaths] || allowedPaths.basic;
+      
+      // 현재 경로가 허용되지 않은 경우 첫 번째 허용된 경로로 리다이렉트
+      if (!userAllowedPaths.includes(currentPath)) {
+        window.location.href = userAllowedPaths[0];
+      }
+    }
+  }, [isDesktop, location.pathname, licenseInfo]);
+
+  // 데스크톱 전용 레이아웃 렌더링
+  if (isDesktop) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* 데스크톱 헤더 - 라이센스 정보 포함 */}
+        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <DigDuckIcon className="text-blue-600" size={32} />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Dig Duck</h1>
+                <p className="text-sm text-gray-600">
+                  {(() => {
+                    const found = menuItems.find(item => item.to === location.pathname);
+                    return found ? found.label : "대시보드";
+                  })()}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-6">
+              {/* 라이센스 만료일 정보 */}
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">
+                  {licenseInfo?.userEmail || "user@example.com"}
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Badge
+                    variant="outline"
+                    className="text-xs text-green-600 border-green-300"
+                  >
+                    {licenseInfo?.type?.toUpperCase() || "BASIC"}
+                  </Badge>
+                  <span className="text-xs text-gray-500">
+                    만료: {licenseInfo?.expiryDate || "확인 중..."}
+                  </span>
+                </div>
+              </div>
+
+              {/* 사용자 메뉴 */}
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-2 hover:bg-gray-100"
+                >
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                    isUserMenuOpen ? 'rotate-180' : ''
+                  }`} />
+                </Button>
+
+                {/* 드롭다운 메뉴 */}
+                {isUserMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="p-2">
+                        <Button
+                          onClick={() => {
+                            handleLogout();
+                            setIsUserMenuOpen(false);
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          로그아웃
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* 메인 컨텐츠 - 사이드바 없음 */}
+        <main className="px-6 py-6">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  // 웹 버전은 기존 레이아웃 유지
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* 사이드바 - 데스크톱 */}
@@ -115,7 +231,6 @@ export default function UserLayout({
             {!isSidebarCollapsed && (
               <div className="ml-3">
                 <h1 className="text-lg font-bold text-gray-900">Dig Duck</h1>
-                <p className="text-xs text-gray-500">크롤링 서비스</p>
               </div>
             )}
           </div>
@@ -150,7 +265,6 @@ export default function UserLayout({
               </Link>
             ))}
           </nav>
-
         </div>
       </aside>
 
@@ -189,6 +303,9 @@ export default function UserLayout({
                     {licenseInfo?.userEmail || "user@example.com"}
                   </p>
                 </div>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                  isUserMenuOpen ? 'rotate-180' : ''
+                }`} />
               </Button>
 
               {/* 드롭다운 메뉴 - 모바일 */}
@@ -199,7 +316,7 @@ export default function UserLayout({
                     className="fixed inset-0 z-10"
                     onClick={() => setIsUserMenuOpen(false)}
                   />
-                  
+
                   {/* 드롭다운 컨텐츠 */}
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                     <div className="p-4">
@@ -219,16 +336,20 @@ export default function UserLayout({
                       {/* 라이센스 정보 */}
                       <div className="mb-3 pb-3 border-b border-gray-100">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-gray-600">라이센스 상태</span>
-                          <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                          <span className="text-xs text-gray-600">
+                            라이센스 상태
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-green-600 border-green-300"
+                          >
                             활성
                           </Badge>
                         </div>
                         <div className="text-xs text-gray-500">
-                          {licenseInfo?.expiryDate ? 
-                            `만료일: ${licenseInfo.expiryDate}` : 
-                            "만료일 확인 중..."
-                          }
+                          {licenseInfo?.expiryDate
+                            ? `만료일: ${licenseInfo.expiryDate}`
+                            : "만료일 확인 중..."}
                         </div>
                       </div>
 
@@ -317,15 +438,6 @@ export default function UserLayout({
                 </h2>
               </div>
               <div className="flex items-center space-x-4">
-                <Badge
-                  variant="outline"
-                  className="text-green-600 border-green-200"
-                >
-                  온라인
-                </Badge>
-                <div className="text-sm text-gray-600">
-                  {new Date().toLocaleDateString("ko-KR")}
-                </div>
                 {/* 사용자 메뉴 드롭다운 */}
                 <div className="relative">
                   <Button
@@ -343,6 +455,9 @@ export default function UserLayout({
                       </p>
                       <p className="text-xs text-gray-500">사용자</p>
                     </div>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                      isUserMenuOpen ? 'rotate-180' : ''
+                    }`} />
                   </Button>
 
                   {/* 드롭다운 메뉴 */}
@@ -353,7 +468,7 @@ export default function UserLayout({
                         className="fixed inset-0 z-10"
                         onClick={() => setIsUserMenuOpen(false)}
                       />
-                      
+
                       {/* 드롭다운 컨텐츠 */}
                       <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                         <div className="p-4">
@@ -373,16 +488,20 @@ export default function UserLayout({
                           {/* 라이센스 정보 */}
                           <div className="mb-3 pb-3 border-b border-gray-100">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs text-gray-600">라이센스 상태</span>
-                              <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                              <span className="text-xs text-gray-600">
+                                라이센스 상태
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="text-xs text-green-600 border-green-300"
+                              >
                                 활성
                               </Badge>
                             </div>
                             <div className="text-xs text-gray-500">
-                              {licenseInfo?.expiryDate ? 
-                                `만료일: ${licenseInfo.expiryDate}` : 
-                                "만료일 확인 중..."
-                              }
+                              {licenseInfo?.expiryDate
+                                ? `만료일: ${licenseInfo.expiryDate}`
+                                : "만료일 확인 중..."}
                             </div>
                           </div>
 
