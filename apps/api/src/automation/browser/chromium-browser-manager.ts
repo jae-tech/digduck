@@ -23,16 +23,15 @@ export class ChromiumBrowserManager {
 
   private readonly SUPPORTED_VIEWPORTS: ViewportConfiguration[] = [
     { width: 1920, height: 1080 },
-    { width: 1366, height: 768 },
-    { width: 1536, height: 864 },
   ];
 
   // 기본 Chrome 버전
-  private readonly DEFAULT_CHROME_VERSION = "140.0.0.0";
+  private readonly DEFAULT_CHROME_VERSION = "139.0.0.0";
 
   constructor(options: ChromiumLaunchOptions = {}) {
     this.launchConfiguration = {
-      headless: process.env.NODE_ENV === "production",
+      //   headless: process.env.NODE_ENV === "production",
+      headless: true,
       slowMotionDelay: Math.random() * 300 + 100,
       navigationTimeout: 60000,
       maxConcurrentPages: 3,
@@ -55,7 +54,9 @@ export class ChromiumBrowserManager {
       );
 
       if (response.status === 200) {
-        return response.data[0]?.previous_version || this.DEFAULT_CHROME_VERSION;
+        return (
+          response.data[0]?.previous_version || this.DEFAULT_CHROME_VERSION
+        );
       }
     } catch {
       // API 실패시 기본값 사용
