@@ -129,7 +129,7 @@ export class NaverController {
         estimatedTotalPages: maxPages,
         elapsedTime: Date.now(),
         isComplete: true,
-        reviews: result.slice(0, 100), // 처음 100개만 전송
+        reviews: result.slice(0, 100),
         message: `크롤링 완료! 총 ${result.length}개의 리뷰를 수집했습니다.`,
       });
       reply.raw.write(`data: ${finalData}\\n\\n`);
@@ -190,23 +190,10 @@ export class NaverController {
     body: {
       type: "object",
       properties: {
-        url: { type: "string", format: "uri" },
         mode: {
           type: "string",
-          enum: ["single", "category", "blog"],
-          default: "single",
-        },
-        maxPages: {
-          type: "number",
-          minimum: 1,
-          maximum: 50,
-          default: 5,
-        },
-        maxItems: {
-          type: "number",
-          minimum: 1,
-          maximum: 1000,
-          default: 100,
+          enum: ["all", "category"],
+          default: "all",
         },
         blogId: { type: "string" },
         selectedCategories: {
@@ -214,27 +201,25 @@ export class NaverController {
           items: { type: "number" },
         },
       },
-      required: ["url"],
+      required: ["blogId"],
     },
   })
   async crawlBlog(
     request: FastifyRequest<{
       Body: {
-        url: string;
-        mode?: "single" | "category" | "blog";
+        mode?: "all" | "category";
         maxPages?: number;
         maxItems?: number;
-        blogId?: string;
+        blogId: string;
         selectedCategories?: number[];
       };
     }>,
     reply: FastifyReply
   ) {
     const {
-      url,
-      mode = "single",
-      maxPages = 5,
-      maxItems = 100,
+      mode = "all",
+      maxPages = 9999,
+      maxItems = 9999,
       blogId,
       selectedCategories,
     } = request.body;
@@ -245,19 +230,6 @@ export class NaverController {
     reply.raw.setHeader("Connection", "keep-alive");
     reply.raw.setHeader("Access-Control-Allow-Origin", "*");
     reply.raw.setHeader("Access-Control-Allow-Headers", "Cache-Control");
-
-    // 초기 연결 메시지
-    const initialData = JSON.stringify({
-      type: "progress",
-      progress: {
-        currentPage: 0,
-        totalPages: mode === "single" ? 1 : maxPages,
-        itemsFound: 0,
-        itemsCrawled: 0,
-        message: "네이버 블로그 크롤링을 시작합니다...",
-      },
-    });
-    reply.raw.write(`data: ${initialData}\n\n`);
 
     try {
       const crawlService = new CrawlService();
@@ -339,6 +311,8 @@ export class NaverController {
         reply.raw.write(`data: ${finalData}\n\n`);
       } else {
         // 단일 URL 크롤링
+        const url = `https://blog.naver.com/PostList.naver?blogId=${blogId}`;
+
         const results = await crawlService.crawlNaverBlog(
           url,
           { maxPages, maxItems },
