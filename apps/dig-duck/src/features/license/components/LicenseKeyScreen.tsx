@@ -108,20 +108,6 @@ export const LicenseKeyScreen: React.FC<LicenseVerificationProps> = ({
               )}
             </Button>
           </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-100">
-            <div className="text-center space-y-2">
-              <p className="text-xs text-gray-500">
-                라이센스 코드가 없으신가요?
-              </p>
-              <Button
-                variant="link"
-                className="text-xs p-0 h-auto text-blue-600"
-              >
-                구매하기
-              </Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

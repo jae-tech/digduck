@@ -28,7 +28,9 @@ import {
   Clock,
   ChevronLeft,
 } from "lucide-react";
-import { apiHelpers, type ApiError } from "@/lib/apiClient";
+import { apiHelpers, apiClient, type ApiError } from "@/lib/apiClient";
+import { DataTable } from "@/components/DataTable";
+import { type ColumnDef } from "@tanstack/react-table";
 
 interface NaverBlogPost {
   title: string;
@@ -59,13 +61,64 @@ interface CrawlProgress {
   message?: string;
 }
 
-type CrawlMode = "single" | "category" | "blog";
-type SearchStep = "blogId" | "mode" | "category" | "crawl";
+type CrawlMode = "all" | "category";
+type SearchStep = "blogId" | "mode" | "category" | "settings" | "crawl";
 
 export function NaverBlogCrawlerPage() {
   const [currentStep, setCurrentStep] = useState<SearchStep>("blogId");
   const [blogId, setBlogId] = useState("");
-  const [mode, setMode] = useState<CrawlMode>("blog");
+  const [mode, setMode] = useState<CrawlMode>("all");
+
+  // DataTable 컬럼 정의
+  const columns: ColumnDef<NaverBlogPost>[] = [
+    {
+      accessorKey: "title",
+      header: "제목",
+      cell: ({ row }) => (
+        <div className="max-w-lg">
+          <div className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
+            {row.getValue("title")}
+          </div>
+          {row.original.url && (
+            <a
+              href={row.original.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mt-1 inline-flex items-center gap-1"
+            >
+              <Link className="w-3 h-3" />
+              원본 보기
+            </a>
+          )}
+        </div>
+      ),
+      size: 400,
+    },
+    {
+      accessorKey: "publishDate",
+      header: "작성일",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-full w-fit">
+          <Calendar className="w-3 h-3" />
+          <span className="text-sm">{row.getValue("publishDate")}</span>
+        </div>
+      ),
+      size: 150,
+    },
+    {
+      accessorKey: "commentCount",
+      header: "댓글 수",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/30 px-3 py-2 rounded-full w-fit">
+          <MessageCircle className="w-4 h-4 text-purple-600" />
+          <span className="text-sm font-medium">
+            {row.original.commentCount || 0}
+          </span>
+        </div>
+      ),
+      size: 120,
+    },
+  ];
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [maxPages, setMaxPages] = useState(5);
@@ -81,13 +134,56 @@ export function NaverBlogCrawlerPage() {
   const [results, setResults] = useState<NaverBlogPost[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // 엑셀 다운로드 함수
+  const handleExportToExcel = () => {
+    if (results.length === 0) {
+      alert("다운로드할 데이터가 없습니다.");
+      return;
+    }
+
+    // 데이터를 CSV 형태로 변환
+    const csvHeaders = ["제목", "작성일", "댓글 수", "URL"];
+    const csvData = results.map(post => [
+      post.title,
+      post.publishDate,
+      post.commentCount || 0,
+      post.url
+    ]);
+
+    // CSV 문자열 생성
+    const csvContent = [
+      csvHeaders.join(","),
+      ...csvData.map(row => 
+        row.map(field => 
+          typeof field === 'string' && field.includes(',') 
+            ? `"${field.replace(/"/g, '""')}"` 
+            : field
+        ).join(",")
+      )
+    ].join("\n");
+
+    // BOM 추가 (한글 깨짐 방지)
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+    
+    // 파일 다운로드
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `네이버블로그_크롤링결과_${blogId}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const { isAdminUser } = useLicenseStore();
   const isAdmin = isAdminUser();
 
   const modeOptions = [
     {
-      value: "blog",
-      label: "전체 블로그",
+      value: "all",
+      label: "전체 포스팅",
       description: "블로그의 모든 카테고리",
       icon: <BookOpen className="w-4 h-4" />,
     },
@@ -137,9 +233,9 @@ export function NaverBlogCrawlerPage() {
 
   // 모드 선택 완료
   const handleModeSelect = () => {
-    if (mode === "blog") {
-      // 전체 블로그 크롤링은 바로 시작
-      setCurrentStep("crawl");
+    if (mode === "all") {
+      // 전체 블로그 크롤링은 설정 단계로
+      setCurrentStep("settings");
     } else if (mode === "category") {
       // 카테고리 선택 모드는 카테고리 가져오기
       handleFetchCategories();
@@ -148,31 +244,41 @@ export function NaverBlogCrawlerPage() {
 
   // 카테고리 선택 토글
   const toggleCategory = (categoryNo: number) => {
-    const category = categories.find(cat => cat.categoryNo === categoryNo);
+    const category = categories.find((cat) => cat.categoryNo === categoryNo);
     if (!category) return;
 
     setSelectedCategories((prev) => {
       const isSelected = prev.includes(categoryNo);
-      
+
       if (category.depth === 1) {
         // 1뎁스 카테고리 클릭 시
         if (isSelected) {
           // 1뎁스 카테고리 해제 - 해당 1뎁스와 그 하위 2뎁스들도 모두 해제
           const childCategories = categories
-            .filter(cat => cat.depth === 2 && cat.parentCategoryNo === categoryNo)
-            .map(cat => cat.categoryNo);
-          return prev.filter(no => no !== categoryNo && !childCategories.includes(no));
+            .filter(
+              (cat) => cat.depth === 2 && cat.parentCategoryNo === categoryNo
+            )
+            .map((cat) => cat.categoryNo);
+          return prev.filter(
+            (no) => no !== categoryNo && !childCategories.includes(no)
+          );
         } else {
           // 1뎁스 카테고리 선택 - 해당 1뎁스와 그 하위 2뎁스들도 모두 선택
           const childCategories = categories
-            .filter(cat => cat.depth === 2 && cat.parentCategoryNo === categoryNo)
-            .map(cat => cat.categoryNo);
-          return [...prev, categoryNo, ...childCategories.filter(no => !prev.includes(no))];
+            .filter(
+              (cat) => cat.depth === 2 && cat.parentCategoryNo === categoryNo
+            )
+            .map((cat) => cat.categoryNo);
+          return [
+            ...prev,
+            categoryNo,
+            ...childCategories.filter((no) => !prev.includes(no)),
+          ];
         }
       } else {
         // 2뎁스 카테고리 클릭 시 - 해당 카테고리만 토글
         return isSelected
-          ? prev.filter(no => no !== categoryNo)
+          ? prev.filter((no) => no !== categoryNo)
           : [...prev, categoryNo];
       }
     });
@@ -193,15 +299,20 @@ export function NaverBlogCrawlerPage() {
       setError("최소 하나의 카테고리를 선택해주세요.");
       return;
     }
-    setCurrentStep("crawl");
+    setCurrentStep("settings");
     setError(null);
+  };
+
+  // 설정 완료
+  const handleSettingsComplete = () => {
+    setCurrentStep("crawl");
   };
 
   // 크롤링 시작
   const handleStartCrawling = async () => {
     let finalUrl = "";
 
-    if (mode === "blog") {
+    if (mode === "all") {
       finalUrl = `https://blog.naver.com/${blogId}`;
     } else if (mode === "category" && selectedCategories.length > 0) {
       // 첫 번째 선택된 카테고리로 URL 생성 (여러 카테고리는 백엔드에서 처리)
@@ -220,25 +331,25 @@ export function NaverBlogCrawlerPage() {
 
     try {
       // POST 요청으로 SSE 스트림 시작
-      const API_BASE_URL =
-        import.meta.env.VITE_API_URL || "http://localhost:8000";
-
-      const response = await fetch(`${API_BASE_URL}/naver/crawl/blog`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: finalUrl,
-          mode,
-          maxPages,
-          maxItems,
-          blogId,
-          ...(mode === "category" && {
-            selectedCategories,
+      const response = await fetch(
+        `${apiClient.defaults.baseURL}/naver/crawl/blog`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url: finalUrl,
+            mode,
+            maxPages,
+            maxItems,
+            blogId,
+            ...(mode === "category" && {
+              selectedCategories,
+            }),
           }),
-        }),
-      });
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -311,12 +422,14 @@ export function NaverBlogCrawlerPage() {
       setCurrentStep("blogId");
     } else if (currentStep === "category") {
       setCurrentStep("mode");
-    } else if (currentStep === "crawl") {
+    } else if (currentStep === "settings") {
       if (mode === "category") {
         setCurrentStep("category");
       } else {
         setCurrentStep("mode");
       }
+    } else if (currentStep === "crawl") {
+      setCurrentStep("settings");
     }
     setError(null);
   };
@@ -436,57 +549,6 @@ export function NaverBlogCrawlerPage() {
                 />
               </div>
 
-              {/* Options - Desktop Grid */}
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border">
-                <Label className="text-base font-medium mb-4 block">
-                  크롤링 설정
-                </Label>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="maxPages"
-                      className="text-sm font-medium flex items-center gap-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      최대 페이지 수
-                    </Label>
-                    <Input
-                      id="maxPages"
-                      type="number"
-                      value={maxPages}
-                      onChange={(e) => setMaxPages(Number(e.target.value))}
-                      min={1}
-                      max={50}
-                      className="h-11"
-                    />
-                    <p className="text-xs text-gray-500">
-                      수집할 페이지의 최대 개수
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="maxItems"
-                      className="text-sm font-medium flex items-center gap-2"
-                    >
-                      <BookOpen className="w-4 h-4" />
-                      최대 포스트 수
-                    </Label>
-                    <Input
-                      id="maxItems"
-                      type="number"
-                      value={maxItems}
-                      onChange={(e) => setMaxItems(Number(e.target.value))}
-                      min={1}
-                      max={1000}
-                      className="h-11"
-                    />
-                    <p className="text-xs text-gray-500">
-                      수집할 포스트의 최대 개수
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               <div className="flex gap-4 pt-4">
                 <Button
                   variant="outline"
@@ -502,10 +564,10 @@ export function NaverBlogCrawlerPage() {
                   className="flex-2 h-12"
                   size="lg"
                 >
-                  {mode === "blog" ? (
+                  {mode === "all" ? (
                     <>
                       <Play className="w-5 h-5 mr-2" />
-                      크롤링 시작
+                      다음 단계로
                     </>
                   ) : isFetchingCategories ? (
                     <>
@@ -582,17 +644,23 @@ export function NaverBlogCrawlerPage() {
 
                   <div className="max-h-96 overflow-y-auto space-y-2 border rounded-lg p-2">
                     {categories.map((category) => {
-                      const isSelected = selectedCategories.includes(category.categoryNo);
+                      const isSelected = selectedCategories.includes(
+                        category.categoryNo
+                      );
                       const isParentCategory = category.depth === 1;
-                      const hasChildren = categories.some(cat => cat.depth === 2 && cat.parentCategoryNo === category.categoryNo);
-                      
+                      const hasChildren = categories.some(
+                        (cat) =>
+                          cat.depth === 2 &&
+                          cat.parentCategoryNo === category.categoryNo
+                      );
+
                       return (
                         <div
                           key={category.categoryNo}
                           className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm ${
                             isSelected
-                              ? isParentCategory 
-                                ? "bg-blue-50 border-blue-300 shadow-sm dark:bg-blue-950/30" 
+                              ? isParentCategory
+                                ? "bg-blue-50 border-blue-300 shadow-sm dark:bg-blue-950/30"
                                 : "bg-green-50 border-green-300 shadow-sm dark:bg-green-950/30"
                               : "hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300"
                           } ${category.depth === 2 ? "ml-6 border-dashed" : "border-solid"}`}
@@ -603,7 +671,9 @@ export function NaverBlogCrawlerPage() {
                               <input
                                 type="checkbox"
                                 checked={isSelected}
-                                onChange={() => toggleCategory(category.categoryNo)}
+                                onChange={() =>
+                                  toggleCategory(category.categoryNo)
+                                }
                                 className="w-4 h-4 rounded border-2"
                                 onClick={(e) => e.stopPropagation()}
                               />
@@ -613,22 +683,36 @@ export function NaverBlogCrawlerPage() {
                                 )}
                                 {category.depth === 2 && (
                                   <div className="flex items-center gap-1">
-                                    <span className="text-gray-400 text-xs">└</span>
+                                    <span className="text-gray-400 text-xs">
+                                      └
+                                    </span>
                                     <FileText className="w-3 h-3 text-green-500" />
                                   </div>
                                 )}
                                 <span
                                   className={`${
-                                    category.depth === 2 
-                                      ? "text-sm text-gray-600 dark:text-gray-400" 
+                                    category.depth === 2
+                                      ? "text-sm text-gray-600 dark:text-gray-400"
                                       : "font-medium text-base text-gray-900 dark:text-gray-100"
                                   }`}
                                 >
                                   {category.name}
                                 </span>
                                 {category.depth === 1 && hasChildren && (
-                                  <Badge variant="outline" className="text-xs ml-2">
-                                    하위 {categories.filter(cat => cat.depth === 2 && cat.parentCategoryNo === category.categoryNo).length}개
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs ml-2"
+                                  >
+                                    하위{" "}
+                                    {
+                                      categories.filter(
+                                        (cat) =>
+                                          cat.depth === 2 &&
+                                          cat.parentCategoryNo ===
+                                            category.categoryNo
+                                      ).length
+                                    }
+                                    개
                                   </Badge>
                                 )}
                               </div>
@@ -661,11 +745,132 @@ export function NaverBlogCrawlerPage() {
                       size="lg"
                     >
                       <Play className="w-5 h-5 mr-2" />
-                      선택된 카테고리로 크롤링 시작
+                      다음 단계로
                     </Button>
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        );
+
+      case "settings":
+        return (
+          <Card className="max-w-4xl mx-auto shadow-lg">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="flex items-center justify-center gap-3 text-xl">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <FileText className="w-6 h-6 text-orange-600" />
+                </div>
+                크롤링 설정
+              </CardTitle>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <strong className="text-blue-600">{blogId}</strong> 블로그
+                크롤링에 사용할 설정을 조정하세요
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-8 px-8 pb-8">
+              {/* 선택된 모드 및 카테고리 요약 */}
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-3 mb-4">
+                  <Globe className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                    선택된 설정
+                  </h3>
+                </div>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-blue-700 dark:text-blue-300">
+                      크롤링 모드
+                    </span>
+                    <span className="font-medium text-blue-900 dark:text-blue-100">
+                      {mode === "all" ? "전체 포스팅" : "선택된 카테고리"}
+                    </span>
+                  </div>
+                  {mode === "category" && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-blue-700 dark:text-blue-300">
+                        선택된 카테고리
+                      </span>
+                      <span className="font-medium text-blue-900 dark:text-blue-100">
+                        {selectedCategories.length}개
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 크롤링 설정 */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border">
+                <Label className="text-base font-medium mb-4 block">
+                  크롤링 설정
+                </Label>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="maxPages"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      최대 페이지 수
+                    </Label>
+                    <Input
+                      id="maxPages"
+                      type="number"
+                      value={maxPages}
+                      onChange={(e) => setMaxPages(Number(e.target.value) || 1)}
+                      min={1}
+                      max={50}
+                      className="h-11"
+                      autoComplete="off"
+                    />
+                    <p className="text-xs text-gray-500">
+                      수집할 페이지의 최대 개수
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="maxItems"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      최대 포스트 수
+                    </Label>
+                    <Input
+                      id="maxItems"
+                      type="number"
+                      value={maxItems}
+                      onChange={(e) => setMaxItems(Number(e.target.value) || 1)}
+                      min={1}
+                      max={1000}
+                      className="h-11"
+                      autoComplete="off"
+                    />
+                    <p className="text-xs text-gray-500">
+                      수집할 포스트의 최대 개수
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleGoBack}
+                  className="flex-1 h-12"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  이전
+                </Button>
+                <Button
+                  onClick={handleSettingsComplete}
+                  className="flex-2 h-12"
+                  size="lg"
+                >
+                  <Play className="w-5 h-5 mr-2" />
+                  크롤링 시작
+                </Button>
+              </div>
             </CardContent>
           </Card>
         );
@@ -714,7 +919,7 @@ export function NaverBlogCrawlerPage() {
                         크롤링 모드
                       </span>
                       <span className="font-medium text-blue-900 dark:text-blue-100">
-                        {mode === "blog" ? "전체 블로그" : "선택된 카테고리"}
+                        {mode === "all" ? "전체 포스팅" : "선택된 카테고리"}
                       </span>
                     </div>
                     {mode === "category" && (
@@ -819,42 +1024,30 @@ export function NaverBlogCrawlerPage() {
       <div className="text-center space-y-3 pb-6">
         {/* Step Indicator - Desktop Optimized */}
         <div className="flex items-center justify-center space-x-4 mt-8 bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border">
-          {["blogId", "mode", "category", "crawl"].map((step, index) => {
-            const stepLabels = ["블로그 ID", "모드 선택", "카테고리", "크롤링"];
-            const stepIcons = [Globe, Folder, Folder, Play];
-            const StepIcon = stepIcons[index];
-            const isActive = currentStep === step;
-            const isCompleted =
-              ["blogId", "mode", "category", "crawl"].indexOf(currentStep) >
-              index;
-            const shouldShow = step !== "category" || mode === "category";
+          {["blogId", "mode", "category", "settings", "crawl"].map(
+            (step, index) => {
+              const stepLabels = [
+                "블로그 ID",
+                "모드 선택",
+                "카테고리",
+                "크롤링 설정",
+                "크롤링",
+              ];
+              const stepIcons = [Globe, Folder, Folder, FileText, Play];
+              const StepIcon = stepIcons[index];
+              const isActive = currentStep === step;
+              const isCompleted =
+                ["blogId", "mode", "category", "settings", "crawl"].indexOf(
+                  currentStep
+                ) > index;
+              const shouldShow = step !== "category" || mode === "category";
 
-            if (!shouldShow) return null;
+              if (!shouldShow) return null;
 
-            return (
-              <div key={step} className="flex items-center">
-                <div
-                  className={`flex flex-col items-center space-y-2 ${
-                    isActive
-                      ? "text-blue-600"
-                      : isCompleted
-                        ? "text-green-600"
-                        : "text-gray-400"
-                  }`}
-                >
+              return (
+                <div key={step} className="flex items-center">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
-                      isCompleted
-                        ? "bg-green-500 text-white shadow-lg"
-                        : isActive
-                          ? "bg-blue-500 text-white shadow-lg scale-110"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-400"
-                    }`}
-                  >
-                    {isCompleted ? "✓" : <StepIcon className="w-5 h-5" />}
-                  </div>
-                  <span
-                    className={`text-sm font-medium ${
+                    className={`flex flex-col items-center space-y-2 ${
                       isActive
                         ? "text-blue-600"
                         : isCompleted
@@ -862,99 +1055,83 @@ export function NaverBlogCrawlerPage() {
                           : "text-gray-400"
                     }`}
                   >
-                    {stepLabels[index]}
-                  </span>
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
+                        isCompleted
+                          ? "bg-green-500 text-white shadow-lg"
+                          : isActive
+                            ? "bg-blue-500 text-white shadow-lg scale-110"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-400"
+                      }`}
+                    >
+                      {isCompleted ? "✓" : <StepIcon className="w-5 h-5" />}
+                    </div>
+                    <span
+                      className={`text-sm font-medium ${
+                        isActive
+                          ? "text-blue-600"
+                          : isCompleted
+                            ? "text-green-600"
+                            : "text-gray-400"
+                      }`}
+                    >
+                      {stepLabels[index]}
+                    </span>
+                  </div>
+                  {index < 4 && shouldShow && (
+                    <div
+                      className={`w-16 h-0.5 mx-4 transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-green-500"
+                          : "bg-gray-200 dark:bg-gray-700"
+                      }`}
+                    />
+                  )}
                 </div>
-                {index < 3 && shouldShow && (
-                  <div
-                    className={`w-16 h-0.5 mx-4 transition-all duration-300 ${
-                      isCompleted
-                        ? "bg-green-500"
-                        : "bg-gray-200 dark:bg-gray-700"
-                    }`}
-                  />
-                )}
-              </div>
-            );
-          })}
+              );
+            }
+          )}
         </div>
       </div>
 
       {/* Step Content */}
       {renderStepContent()}
 
-      {/* Progress Card - Desktop Optimized */}
+      {/* Progress Card - Compact */}
       {(isLoading || progress.currentPage > 0) && (
-        <Card className="max-w-6xl mx-auto shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="flex items-center justify-center gap-3 text-xl">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Clock className="w-6 h-6 text-blue-600" />
+        <Card className="max-w-4xl mx-auto shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600" />
+                <span className="font-medium text-sm">크롤링 진행 중</span>
               </div>
-              실시간 진행 상황
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 px-8 pb-8">
-            {/* Main Progress Bar */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-medium">페이지 진행률</span>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {progress.currentPage} / {progress.totalPages}
-                  </div>
-                  <div className="text-sm text-gray-500">페이지</div>
-                </div>
-              </div>
-              <Progress value={progressPercentage} className="w-full h-3" />
-              <div className="text-center text-sm text-gray-600">
-                {progressPercentage}% 완료
+              <div className="text-sm text-gray-600">
+                {progress.currentPage}/{progress.totalPages} 페이지 ({progressPercentage}%)
               </div>
             </div>
-
-            {/* Stats Grid - Desktop Optimized */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="text-center p-6 bg-blue-100 dark:bg-blue-950/50 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800">
-                <div className="text-3xl font-bold text-blue-600 mb-2">
-                  {progress.currentPage}
-                </div>
-                <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                  현재 페이지
-                </div>
+            
+            <Progress value={progressPercentage} className="w-full h-2 mb-3" />
+            
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
+                <div className="text-lg font-bold text-blue-600">{progress.itemsFound}</div>
+                <div className="text-xs text-blue-700 dark:text-blue-300">발견</div>
               </div>
-              <div className="text-center p-6 bg-green-100 dark:bg-green-950/50 rounded-xl shadow-sm border border-green-200 dark:border-green-800">
-                <div className="text-3xl font-bold text-green-600 mb-2">
-                  {progress.itemsFound}
-                </div>
-                <div className="text-sm font-medium text-green-700 dark:text-green-300">
-                  포스트 발견
-                </div>
+              <div className="bg-green-50 dark:bg-green-950/30 p-3 rounded-lg">
+                <div className="text-lg font-bold text-green-600">{progress.itemsCrawled}</div>
+                <div className="text-xs text-green-700 dark:text-green-300">완료</div>
               </div>
-              <div className="text-center p-6 bg-purple-100 dark:bg-purple-950/50 rounded-xl shadow-sm border border-purple-200 dark:border-purple-800">
-                <div className="text-3xl font-bold text-purple-600 mb-2">
-                  {progress.itemsCrawled}
-                </div>
-                <div className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                  크롤링 완료
-                </div>
-              </div>
-              <div className="text-center p-6 bg-orange-100 dark:bg-orange-950/50 rounded-xl shadow-sm border border-orange-200 dark:border-orange-800">
-                <div className="text-3xl font-bold text-orange-600 mb-2">
-                  {progressPercentage}%
-                </div>
-                <div className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                  전체 진행률
-                </div>
+              <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg">
+                <div className="text-lg font-bold text-purple-600">{progressPercentage}%</div>
+                <div className="text-xs text-purple-700 dark:text-purple-300">진행률</div>
               </div>
             </div>
 
             {progress.message && (
-              <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-                <AlertCircle className="h-5 w-5 text-blue-600" />
-                <AlertDescription className="text-blue-800 dark:text-blue-200">
-                  {progress.message}
-                </AlertDescription>
-              </Alert>
+              <div className="mt-3 text-xs text-gray-600 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                {progress.message}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -968,115 +1145,23 @@ export function NaverBlogCrawlerPage() {
         </Alert>
       )}
 
-      {/* Results Card - Desktop Optimized */}
+      {/* Results DataTable */}
       {results.length > 0 && (
-        <Card className="max-w-6xl mx-auto shadow-lg">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="flex items-center justify-center gap-3 text-xl">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              크롤링 결과 ({results.length}개 포스트)
-            </CardTitle>
-            <div className="flex justify-center gap-4 mt-4">
-              <Badge variant="outline" className="text-sm px-3 py-1">
-                총 {results.length}개 포스트 수집 완료
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="px-8 pb-8">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-h-[600px] overflow-y-auto pr-2">
-              {results.map((post, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-900/50"
-                >
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-semibold text-lg line-clamp-2 flex-1 text-gray-900 dark:text-gray-100">
-                      {post.title}
-                    </h3>
-                    <Badge variant="outline" className="ml-3 shrink-0 text-xs">
-                      #{index + 1}
-                    </Badge>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    {post.author && (
-                      <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-full">
-                        <User className="w-3 h-3" />
-                        <span className="font-medium">{post.author}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-full">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(post.publishDate).toLocaleDateString("ko-KR")}
-                    </div>
-                    {post.viewCount && (
-                      <div className="flex items-center gap-1.5 bg-green-50 dark:bg-green-950/30 px-2 py-1 rounded-full">
-                        <Eye className="w-3 h-3" />
-                        {post.viewCount.toLocaleString()}
-                      </div>
-                    )}
-                    {post.commentCount && (
-                      <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/30 px-2 py-1 rounded-full">
-                        <MessageCircle className="w-3 h-3" />
-                        {post.commentCount}
-                      </div>
-                    )}
-                  </div>
-
-                  {post.content && (
-                    <div className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                      {post.content}
-                    </div>
-                  )}
-
-                  {post.tags && post.tags.length > 0 && (
-                    <div className="flex items-start gap-2">
-                      <Tags className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                      <div className="flex flex-wrap gap-1">
-                        {post.tags.slice(0, 4).map((tag, tagIndex) => (
-                          <Badge
-                            key={tagIndex}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {post.tags.length > 4 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{post.tags.length - 4}개
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
-                    {post.category && (
-                      <Badge
-                        variant="outline"
-                        className="text-xs bg-indigo-50 dark:bg-indigo-950/30"
-                      >
-                        📁 {post.category}
-                      </Badge>
-                    )}
-                    <a
-                      href={post.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
-                    >
-                      <Link className="w-3 h-3" />
-                      원본 보기
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="max-w-6xl mx-auto">
+          <DataTable
+            data={results}
+            columns={columns}
+            title={`크롤링 결과`}
+            subtitle={`총 ${results.length}개 포스트가 수집되었습니다.`}
+            loading={isLoading}
+            searchPlaceholder="제목으로 검색..."
+            initialPageSize={20}
+            pageSizeOptions={[10, 20, 50, 100]}
+            maxHeight="800px"
+            className="shadow-lg"
+            onExport={handleExportToExcel}
+          />
+        </div>
       )}
     </div>
   );
