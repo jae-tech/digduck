@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -62,6 +62,7 @@ export default function UserLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { licenseInfo, clearLicense } = useLicenseStore();
   const { isDesktop } = usePlatform();
 
@@ -94,7 +95,7 @@ export default function UserLayout({
 
   const handleLogout = () => {
     clearLicense();
-    window.location.href = "/license";
+    navigate({ to: "/license" });
   };
 
   const toggleMobileMenu = () => {
@@ -111,18 +112,24 @@ export default function UserLayout({
       // 라이센스 타입에 따라 허용된 경로인지 확인
       const currentPath = location.pathname;
       const allowedPaths = {
-        basic: ['/dashboard', '/crawler/naver-blog'],
-        premium: ['/dashboard', '/crawler/naver-blog', '/crawler/review', '/crawler/insights'],
+        basic: ["/crawler/naver-blog"],
+        premium: [
+          "/crawler/naver-blog",
+          "/crawler/review",
+          "/crawler/insights",
+        ],
       };
-      
-      const userAllowedPaths = allowedPaths[licenseInfo.type as keyof typeof allowedPaths] || allowedPaths.basic;
-      
+
+      const userAllowedPaths =
+        allowedPaths[licenseInfo.type as keyof typeof allowedPaths] ||
+        allowedPaths.basic;
+
       // 현재 경로가 허용되지 않은 경우 첫 번째 허용된 경로로 리다이렉트
       if (!userAllowedPaths.includes(currentPath)) {
-        window.location.href = userAllowedPaths[0];
+        navigate({ to: userAllowedPaths[0] });
       }
     }
-  }, [isDesktop, location.pathname, licenseInfo]);
+  }, [isDesktop, location.pathname, licenseInfo, navigate]);
 
   // 데스크톱 전용 레이아웃 렌더링
   if (isDesktop) {
@@ -137,13 +144,15 @@ export default function UserLayout({
                 <h1 className="text-xl font-bold text-gray-900">Dig Duck</h1>
                 <p className="text-sm text-gray-600">
                   {(() => {
-                    const found = menuItems.find(item => item.to === location.pathname);
+                    const found = menuItems.find(
+                      (item) => item.to === location.pathname
+                    );
                     return found ? found.label : "대시보드";
                   })()}
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-6">
               {/* 라이센스 만료일 정보 */}
               <div className="text-right">
@@ -174,9 +183,11 @@ export default function UserLayout({
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-blue-600" />
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
-                    isUserMenuOpen ? 'rotate-180' : ''
-                  }`} />
+                  <ChevronDown
+                    className={`w-4 h-4 text-gray-500 transition-transform ${
+                      isUserMenuOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </Button>
 
                 {/* 드롭다운 메뉴 */}
@@ -210,9 +221,7 @@ export default function UserLayout({
         </header>
 
         {/* 메인 컨텐츠 - 사이드바 없음 */}
-        <main className="px-6 py-6">
-          {children}
-        </main>
+        <main className="px-6 py-6">{children}</main>
       </div>
     );
   }
@@ -303,9 +312,11 @@ export default function UserLayout({
                     {licenseInfo?.userEmail || "user@example.com"}
                   </p>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
-                  isUserMenuOpen ? 'rotate-180' : ''
-                }`} />
+                <ChevronDown
+                  className={`w-4 h-4 text-gray-500 transition-transform ${
+                    isUserMenuOpen ? "rotate-180" : ""
+                  }`}
+                />
               </Button>
 
               {/* 드롭다운 메뉴 - 모바일 */}
@@ -455,9 +466,11 @@ export default function UserLayout({
                       </p>
                       <p className="text-xs text-gray-500">사용자</p>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
-                      isUserMenuOpen ? 'rotate-180' : ''
-                    }`} />
+                    <ChevronDown
+                      className={`w-4 h-4 text-gray-500 transition-transform ${
+                        isUserMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
                   </Button>
 
                   {/* 드롭다운 메뉴 */}

@@ -3,15 +3,15 @@
   "version": "0.0.0",
   "identifier": "com.digduck.app",
   "build": {
-    "frontendDist": "../src",
+    "frontendDist": "../dist",
     "devUrl": "http://localhost:5173"
   },
   "app": {
     "windows": [
       {
         "title": "Dig Duck",
-        "width": 1200,
-        "height": 800,
+        "width": 1400,
+        "height": 1000,
         "resizable": true,
         "fullscreen": false,
         "center": true
