@@ -38,8 +38,6 @@ export interface CrawlProgressCallback {
 
 // 크롤링 옵션
 export interface CrawlOptions {
-  maxPages?: number;
-  maxItems?: number;
   requestDelay?: number;
   userAgent?: string;
   proxyUrl?: string;
@@ -57,8 +55,6 @@ export abstract class BaseCrawler {
   constructor(sourceSite: SourceSite, options: CrawlOptions = {}) {
     this.sourceSite = sourceSite;
     this.options = {
-      maxPages: 10,
-      maxItems: 2000,
       requestDelay: 1000,
       timeout: 30000,
       retries: 3,
@@ -163,14 +159,19 @@ export abstract class BaseCrawler {
     url: string,
     options: any = {},
     retries: number = this.options.retries || 3
-  ): Promise<{ ok: boolean; status: number; statusText: string; text: () => Promise<string> }> {
+  ): Promise<{
+    ok: boolean;
+    status: number;
+    statusText: string;
+    text: () => Promise<string>;
+  }> {
     let lastError: Error;
 
     for (let i = 0; i < retries; i++) {
       try {
         const response = await axios({
           url,
-          method: options.method || 'GET',
+          method: options.method || "GET",
           data: options.body,
           headers: {
             "User-Agent": this.options.userAgent!,
@@ -184,7 +185,7 @@ export abstract class BaseCrawler {
             ...options.headers,
           },
           timeout: this.options.timeout || 30000,
-          responseType: 'text',
+          responseType: "text",
           validateStatus: () => true, // axios가 모든 상태코드를 허용하도록
         });
 
@@ -193,7 +194,7 @@ export abstract class BaseCrawler {
           ok: response.status >= 200 && response.status < 300,
           status: response.status,
           statusText: response.statusText,
-          text: async () => response.data
+          text: async () => response.data,
         };
 
         if (!wrappedResponse.ok) {

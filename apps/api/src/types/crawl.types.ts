@@ -56,7 +56,8 @@ export interface ProductItem {
 
 // 사이트별 확장 데이터 타입
 export interface SiteSpecificData {
-  smartstore?: SmartStoreReviewItem | ProductItem;
+  smartStore?: SmartStoreReviewItem | ProductItem;
+  naverBlog?: any;
   coupang?: any;
   gmarket?: any;
   [key: string]: any;
