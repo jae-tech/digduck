@@ -20,6 +20,7 @@ declare global {
   interface Window {
     __APP_ENV__: ImportMetaEnv;
     __DEV__: boolean;
+    __TAURI__: any;
   }
 }
 
