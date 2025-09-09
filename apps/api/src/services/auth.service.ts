@@ -1,12 +1,13 @@
-import { FastifyInstance } from "fastify";
-import { prisma } from "../plugins/prisma";
-import { env } from "../config/env";
+import { PlatformType } from "@prisma/client";
 import type { JWTPayload } from "@repo/shared";
+import { FastifyInstance } from "fastify";
+import { env } from "../config/env";
+import { prisma } from "../plugins/prisma";
 
 interface LicenseLoginCredentials {
   licenseKey: string;
   deviceId: string;
-  platform?: "WEB" | "DESKTOP";
+  platform?: PlatformType;
 }
 
 interface RegisterData {
@@ -18,6 +19,7 @@ interface User {
   id: number;
   email: string;
   name: string | null;
+  nickname: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,28 +43,41 @@ export class AuthService {
   async loginWithLicense(
     credentials: LicenseLoginCredentials
   ): Promise<LoginResult> {
-    const { licenseKey, deviceId, platform = "WEB" } = credentials;
+    const { licenseKey, deviceId, platform } = credentials;
 
     // 라이센스 검증
     const licenseData = await prisma.licenses.findUnique({
       where: { licenseKey },
       include: {
-        users: {
+        user: {
           select: {
             id: true,
             email: true,
             name: true,
+            nickname: true,
             createdAt: true,
             updatedAt: true,
           },
         },
-        licenseItems: true,
-        licenseSubscriptions: {
-          where: {
-            isActive: true,
-            endDate: {
-              gt: new Date(),
-            },
+        addons: {
+          include: {
+            addonProduct: true,
+          },
+        },
+        devices: {
+          where: { status: "ACTIVE" },
+        },
+        service: {
+          select: {
+            code: true,
+            name: true,
+          },
+        },
+        subscriptionPlan: {
+          select: {
+            code: true,
+            name: true,
+            duration: true,
           },
         },
       },
@@ -72,48 +87,58 @@ export class AuthService {
       throw new Error("잘못된 라이센스 키");
     }
 
-    // 구독 확인
-    const activeSubscription = licenseData.licenseSubscriptions[0];
-    if (!activeSubscription) {
-      throw new Error("라이센스가 만료되었거나 비활성 상태입니다");
+    // 라이센스 활성화 및 만료 확인
+    if (!licenseData.isActive) {
+      throw new Error("라이센스가 비활성 상태입니다");
     }
 
-    // 디바이스 활성화 확인 및 처리
-    const activatedDevices = (licenseData.activatedDevices as any[]) || [];
-    const isDeviceActivated = activatedDevices.some(
-      (device: any) => device.deviceId === deviceId
-    );
+    const now = new Date();
+    if (licenseData.endDate && licenseData.endDate < now) {
+      throw new Error("라이센스가 만료되었습니다");
+    }
 
-    if (!isDeviceActivated) {
-      // 디바이스 한도 확인
-      if (activatedDevices.length >= licenseData.allowedDevices) {
-        throw new Error("디바이스 한도 초과");
-      }
-
-      // 새 디바이스 추가
-      const newDevice = {
+    // 디바이스 등록 또는 업데이트 (upsert 사용)
+    // 현재 라이센스의 디바이스 한도 확인 (새 디바이스인 경우만)
+    const existingDeviceForLicense = await prisma.devices.findFirst({
+      where: {
         deviceId: deviceId,
-        platform: platform,
-        activatedAt: new Date().toISOString(),
-      };
-      const updatedDevices = [...activatedDevices, newDevice];
+        licenseKey: licenseKey,
+      },
+    });
 
-      // 디바이스 정보 업데이트
-      await prisma.licenses.update({
-        where: { licenseKey },
-        data: {
-          activatedDevices: updatedDevices,
-        },
-      });
-
-      activatedDevices.push(newDevice);
+    if (
+      !existingDeviceForLicense &&
+      licenseData.devices.length >= licenseData.maxDevices
+    ) {
+      throw new Error("디바이스 한도 초과");
     }
+
+    // upsert를 사용하여 디바이스 등록 또는 활동 시간 업데이트
+    await prisma.devices.upsert({
+      where: {
+        deviceId_licenseKey: {
+          deviceId: deviceId,
+          licenseKey: licenseKey,
+        },
+      },
+      update: {
+        lastActive: now,
+        status: "ACTIVE",
+      },
+      create: {
+        deviceId,
+        licenseKey,
+        deviceName: `${platform} Device`,
+        platform: platform as any,
+        status: "ACTIVE",
+      },
+    });
 
     // JWT 토큰 생성
     const token = this.app.jwt.sign(
       {
-        userId: licenseData.users.id.toString(),
-        email: licenseData.users.email,
+        userId: licenseData.user.id.toString(),
+        email: licenseData.user.email,
         licenseKey: licenseKey,
         deviceId: deviceId,
       },
@@ -121,25 +146,36 @@ export class AuthService {
     );
 
     const user = {
-      id: licenseData.users.id,
-      email: licenseData.users.email,
-      name: licenseData.users.name,
-      createdAt: licenseData.users.createdAt,
-      updatedAt: licenseData.users.updatedAt,
+      id: licenseData.user.id,
+      email: licenseData.user.email,
+      name: licenseData.user.name,
+      nickname: licenseData.user.nickname,
+      createdAt: licenseData.user.createdAt,
+      updatedAt: licenseData.user.updatedAt,
     };
 
     const licenseInfo = {
-      allowedDevices: licenseData.allowedDevices,
-      activatedDevices: activatedDevices,
-      isActive: true,
+      allowedDevices: licenseData.maxDevices,
+      activatedDevices: licenseData.devices.map((device) => ({
+        deviceId: device.deviceId,
+        deviceName: device.deviceName,
+        platform: device.platform,
+        lastActive: device.lastActive,
+      })),
+      isActive: licenseData.isActive,
+      expiryDate: licenseData.endDate,
+      serviceName: licenseData.service.name,
+      serviceCode: licenseData.service.code,
+      planCode: licenseData.subscriptionPlan.code,
+      planName: licenseData.subscriptionPlan.name,
     };
 
-    // 구매한 아이템 조회
-    const purchasedItems = licenseData.licenseItems.map((item) => ({
-      id: item.id,
-      itemType: item.itemType,
-      quantity: item.quantity,
-      purchasedAt: item.purchasedAt,
+    // 구매한 애드온 아이템 조회
+    const purchasedItems = licenseData.addons.map((addon) => ({
+      id: addon.id,
+      itemType: addon.addonProduct.code,
+      quantity: addon.quantity,
+      purchasedAt: addon.purchaseDate,
     }));
 
     return {
@@ -172,6 +208,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        nickname: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -187,6 +224,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        nickname: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -210,6 +248,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        nickname: true,
         createdAt: true,
         updatedAt: true,
       },

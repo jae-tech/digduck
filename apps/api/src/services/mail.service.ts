@@ -8,21 +8,17 @@ import {
   MailProvider,
   MailProviderConfig,
   MailStatus,
-  CreateMailHistoryData,
 } from "@/types/mail.types";
 import { MailTemplateService } from "./mail-template.service";
-import { MailHistoryService } from "./mail-history.service";
 import { env } from "@/config/env";
 
 export class MailService {
   private transporter: Transporter | null = null;
   private config: MailConfig | null = null;
   private templateService: MailTemplateService;
-  private historyService: MailHistoryService;
 
   constructor() {
     this.templateService = new MailTemplateService();
-    this.historyService = new MailHistoryService();
   }
 
   private getProviderConfig(provider: MailProvider): Partial<MailConfig> {
@@ -88,25 +84,7 @@ export class MailService {
       );
     }
 
-    // 메일 히스토리 생성
-    const historyData: CreateMailHistoryData = {
-      userEmail: options.userEmail,
-      fromEmail: options.from,
-      toEmail: Array.isArray(options.to) ? options.to[0] : options.to,
-      ccEmails: Array.isArray(options.cc) ? options.cc : (options.cc ? [options.cc] : []),
-      bccEmails: Array.isArray(options.bcc) ? options.bcc : (options.bcc ? [options.bcc] : []),
-      subject: options.subject,
-      provider: this.getCurrentProvider(),
-    };
-
-    let historyId: number | null = null;
-    
-    try {
-      const history = await this.historyService.createMailHistory(historyData);
-      historyId = history.id;
-    } catch (error) {
-      console.error("메일 히스토리 생성 실패:", error);
-    }
+    // 메일 히스토리 기능 비활성화됨
 
     try {
       const mailOptions: SendMailOptions = {
@@ -122,14 +100,7 @@ export class MailService {
 
       const result = await this.transporter.sendMail(mailOptions);
 
-      // 성공시 히스토리 업데이트
-      if (historyId) {
-        await this.historyService.updateMailHistory(historyId, {
-          messageId: result.messageId,
-          status: MailStatus.SENT,
-          sentAt: new Date()
-        });
-      }
+      // 메일 히스토리 기능 비활성화됨
 
       return {
         success: true,
@@ -139,13 +110,7 @@ export class MailService {
     } catch (error) {
       console.error("메일 발송 실패:", error);
       
-      // 실패시 히스토리 업데이트
-      if (historyId) {
-        await this.historyService.updateMailHistory(historyId, {
-          status: MailStatus.FAILED,
-          errorMessage: error instanceof Error ? error.message : "알 수 없는 오류"
-        });
-      }
+      // 메일 히스토리 기능 비활성화됨
 
       return {
         success: false,
@@ -168,27 +133,7 @@ export class MailService {
       };
     }
 
-    // 템플릿 정보 추가
-    const historyData: CreateMailHistoryData = {
-      userEmail: options.userEmail,
-      fromEmail: options.from,
-      toEmail: Array.isArray(options.to) ? options.to[0] : options.to,
-      ccEmails: Array.isArray(options.cc) ? options.cc : (options.cc ? [options.cc] : []),
-      bccEmails: Array.isArray(options.bcc) ? options.bcc : (options.bcc ? [options.bcc] : []),
-      subject: rendered.subject,
-      templateId,
-      templateVars: variables,
-      provider: this.getCurrentProvider(),
-    };
-
-    let historyId: number | null = null;
-    
-    try {
-      const history = await this.historyService.createMailHistory(historyData);
-      historyId = history.id;
-    } catch (error) {
-      console.error("메일 히스토리 생성 실패:", error);
-    }
+    // 메일 히스토리 기능 비활성화됨
 
     const result = await this.sendMail({
       ...options,
@@ -300,6 +245,34 @@ export class MailService {
       this.transporter = null;
       this.config = null;
     }
+  }
+
+  // 메일 히스토리 기능 (MailHistoryService 병합)
+  // 새 스키마에서 mailHistory 테이블이 제거되어 기능이 비활성화됨
+  async createMailHistory(data: any): Promise<void> {
+    // 기능 비활성화됨 - mailHistory 테이블이 스키마에서 제거됨
+    console.warn("Mail history functionality disabled - mailHistory table was removed from schema");
+  }
+
+  async getMailHistory(filter: any): Promise<{ data: any[] }> {
+    // 기능 비활성화됨 - mailHistory 테이블이 스키마에서 제거됨
+    console.warn("Mail history functionality disabled - mailHistory table was removed from schema");
+    return { data: [] };
+  }
+
+  async updateMailHistory(id: number, data: any): Promise<void> {
+    // 기능 비활성화됨 - mailHistory 테이블이 스키마에서 제거됨
+    console.warn("Mail history functionality disabled - mailHistory table was removed from schema");
+  }
+
+  async getMailStatistics(userEmail?: string, fromDate?: Date, toDate?: Date): Promise<any> {
+    // 기능 비활성화됨 - mailHistory 테이블이 스키마에서 제거됨
+    console.warn("Mail history functionality disabled - mailHistory table was removed from schema");
+    return {
+      totalSent: 0,
+      totalFailed: 0,
+      recentSends: []
+    };
   }
 
   // MailInitService 기능 통합

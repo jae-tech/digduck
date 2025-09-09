@@ -1,5 +1,3 @@
-import { SourceSite, CrawlStatus } from "@prisma/client";
-
 // 크롤링 설정 타입
 export interface CrawlSettings {
   maxPages?: number;
@@ -84,39 +82,11 @@ export interface CreateCrawlItemRequest {
   itemOrder?: number;
   pageNumber?: number;
 }
-
-// 크롤링 히스토리 생성 요청
-export interface CreateCrawlHistoryRequest {
-  userEmail: string;
-  deviceId: string;
-  sourceSite: SourceSite;
-  searchUrl: string;
-  searchKeywords?: string;
-  crawlSettings?: CrawlSettings;
-  userAgent?: string;
-  proxyUsed?: string;
-  requestInterval?: number;
-}
-
-// 크롤링 히스토리 업데이트 요청
-export interface UpdateCrawlHistoryRequest {
-  status?: CrawlStatus;
-  itemsFound?: number;
-  itemsCrawled?: number;
-  pagesProcessed?: number;
-  startedAt?: Date;
-  completedAt?: Date;
-  durationMs?: number;
-  errorMessage?: string;
-  errorDetails?: any;
-  metadata?: any;
-}
-
 // 크롤링 시작 요청
 export interface StartCrawlRequest {
   userEmail: string;
   deviceId: string;
-  sourceSite: SourceSite;
+  sourceSite: string; // SourceSite enum 제거
   searchUrl: string;
   searchKeywords?: string;
   crawlSettings?: CrawlSettings;
@@ -128,7 +98,7 @@ export interface CreateCrawlTemplateRequest {
   userEmail: string;
   name: string;
   description?: string;
-  sourceSite: SourceSite;
+  sourceSite: string; // SourceSite enum 제거
   maxPages?: number;
   maxItems?: number;
   requestDelay?: number;
@@ -140,8 +110,8 @@ export interface CreateCrawlTemplateRequest {
 // 크롤링 히스토리 필터
 export interface CrawlHistoryFilter {
   userEmail?: string;
-  sourceSite?: SourceSite;
-  status?: CrawlStatus;
+  sourceSite?: string; // SourceSite enum 제거
+  status?: string; // CrawlStatus enum 제거
   dateRange?: {
     from?: Date;
     to?: Date;
@@ -175,10 +145,10 @@ export interface CrawlHistoryResponse {
   id: number;
   userEmail: string;
   deviceId: string;
-  sourceSite: SourceSite;
+  sourceSite: string; // SourceSite enum 제거
   searchUrl: string;
   searchKeywords?: string;
-  status: CrawlStatus;
+  status: string; // CrawlStatus enum 제거
   itemsFound: number;
   itemsCrawled: number;
   pagesProcessed: number;
@@ -226,7 +196,7 @@ export interface CrawlTemplateResponse {
   userEmail: string;
   name: string;
   description?: string;
-  sourceSite: SourceSite;
+  sourceSite: string; // SourceSite enum 제거
   maxPages: number;
   maxItems: number;
   requestDelay: number;

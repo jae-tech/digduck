@@ -108,7 +108,7 @@ async function main() {
       name: "12개월 구독",
       duration: 365,
       price: 240000,
-      discount: 0.20,
+      discount: 0.2,
       features: {
         maxProducts: 500,
         maxCrawls: 2000,
@@ -185,14 +185,14 @@ async function main() {
 
   // 7. 테스트 사용자용 라이센스 생성 (3개)
   const testServices = [
-    { service: blogService, suffix: 'B' },
-    { service: smartstoreService, suffix: 'S' },
-    { service: mapService, suffix: 'M' }
+    { service: blogService, suffix: "B" },
+    { service: smartstoreService, suffix: "S" },
+    { service: mapService, suffix: "M" },
   ];
 
   for (const { service, suffix } of testServices) {
-    const testLicenseKey = `TEST0109666333${suffix}`;
-    
+    const testLicenseKey = `TEST01096666339${suffix}`;
+
     await prisma.licenses.upsert({
       where: { licenseKey: testLicenseKey },
       update: {},

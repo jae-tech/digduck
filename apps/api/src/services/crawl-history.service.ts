@@ -1,223 +1,265 @@
-import { PrismaClient, SourceSite, CrawlStatus, Prisma } from "@prisma/client";
-import {
-  CreateCrawlHistoryRequest,
-  UpdateCrawlHistoryRequest,
-  CreateCrawlItemRequest,
-  CreateCrawlTemplateRequest,
-  StartCrawlRequest,
-  CrawlHistoryFilter,
-  CrawlHistoryResponse,
-  CrawlItemResponse,
-  CrawlTemplateResponse,
-  CrawlStatistics,
-  CrawlHistoryError,
-  CrawlHistoryErrorCodes,
-} from "../types/crawl.types";
+import { PrismaClient, JobStatus, JobType, TargetType, Prisma } from "@prisma/client";
+
+// 새 스키마에 맞는 인터페이스들
+interface CreateCrawlJobRequest {
+  userEmail: string;
+  projectId?: number;
+  targetId?: number;
+  serviceId: number;
+  jobType: JobType;
+  config: any;
+  priority?: number;
+  scheduledAt?: Date;
+}
+
+interface UpdateCrawlJobRequest {
+  status?: JobStatus;
+  totalItems?: number;
+  processedItems?: number;
+  successItems?: number;
+  failedItems?: number;
+  startedAt?: Date;
+  completedAt?: Date;
+  estimatedTime?: number;
+  errorCode?: string;
+  errorMessage?: string;
+  errorDetails?: any;
+  metadata?: any;
+}
+
+interface CreateCrawlResultRequest {
+  jobId: number;
+  itemId?: string;
+  itemType: string;
+  data: any;
+  metadata?: any;
+  quality?: number;
+  itemOrder?: number;
+  pageNumber?: number;
+}
+
+interface CrawlJobFilter {
+  userEmail?: string;
+  status?: JobStatus;
+  serviceId?: number;
+  jobType?: JobType;
+  dateRange?: { from?: Date; to?: Date };
+}
+
+interface CrawlJobResponse {
+  id: number;
+  userEmail: string;
+  projectId?: number;
+  targetId?: number;
+  serviceId: number;
+  jobType: JobType;
+  config: any;
+  status: JobStatus;
+  priority: number;
+  totalItems: number;
+  processedItems: number;
+  successItems: number;
+  failedItems: number;
+  scheduledAt?: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  estimatedTime?: number;
+  errorCode?: string;
+  errorMessage?: string;
+  errorDetails?: any;
+  metadata?: any;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: any;
+  service?: any;
+  project?: any;
+  target?: any;
+  results?: any[];
+}
+
+interface CrawlStatistics {
+  totalJobs: number;
+  pendingJobs: number;
+  runningJobs: number;
+  completedJobs: number;
+  failedJobs: number;
+  cancelledJobs: number;
+  totalItemsProcessed: number;
+  averageDuration: number;
+  jobsByStatus: { [status: string]: number };
+  jobsByType: { [type: string]: number };
+  jobsByService: { [service: string]: number };
+  recentJobs: CrawlJobResponse[];
+}
 
 export class CrawlHistoryService {
   constructor(private prisma: PrismaClient) {}
 
   /**
-   * 크롤링 시작
+   * 크롤링 작업 시작
    */
-  async startCrawl(data: StartCrawlRequest): Promise<CrawlHistoryResponse> {
+  async startCrawlJob(data: CreateCrawlJobRequest): Promise<CrawlJobResponse> {
     // 라이센스 검증
-    await this.validateUserLicense(data.userEmail, data.deviceId);
+    await this.validateUserLicense(data.userEmail);
 
     // 진행중인 크롤링 확인
-    const runningCrawl = await this.prisma.crawlHistory.findFirst({
+    const runningJob = await this.prisma.crawlJobs.findFirst({
       where: {
         userEmail: data.userEmail,
-        status: CrawlStatus.RUNNING,
+        status: "RUNNING",
       },
     });
 
-    if (runningCrawl) {
-      throw new CrawlHistoryError(
-        "Another crawl is already running",
-        CrawlHistoryErrorCodes.CRAWL_ALREADY_RUNNING,
-        409
-      );
+    if (runningJob) {
+      throw new Error("이미 진행 중인 크롤링 작업이 있습니다");
     }
 
-    // 템플릿 설정 로드 (있는 경우)
-    let crawlSettings = data.crawlSettings;
-    if (data.templateId) {
-      const template = await this.prisma.crawlTemplates.findFirst({
-        where: {
-          id: data.templateId,
-          OR: [{ userEmail: data.userEmail }, { isPublic: true }],
+    // 크롤링 작업 생성
+    const crawlJob = await this.prisma.crawlJobs.create({
+      data: {
+        userEmail: data.userEmail,
+        projectId: data.projectId,
+        targetId: data.targetId,
+        serviceId: data.serviceId,
+        jobType: data.jobType,
+        config: data.config,
+        status: "PENDING",
+        priority: data.priority || 5,
+        scheduledAt: data.scheduledAt,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            projectName: true,
+          },
+        },
+        target: {
+          select: {
+            id: true,
+            targetType: true,
+            targetValue: true,
+          },
+        },
+      },
+    });
+
+    return this.formatCrawlJobResponse(crawlJob);
+  }
+
+  /**
+   * 크롤링 작업 업데이트
+   */
+  async updateCrawlJob(jobId: number, data: UpdateCrawlJobRequest): Promise<CrawlJobResponse> {
+    const job = await this.prisma.crawlJobs.findUnique({
+      where: { id: jobId },
+    });
+
+    if (!job) {
+      throw new Error("크롤링 작업을 찾을 수 없습니다");
+    }
+
+    const updatedJob = await this.prisma.crawlJobs.update({
+      where: { id: jobId },
+      data,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            projectName: true,
+          },
+        },
+        target: {
+          select: {
+            id: true,
+            targetType: true,
+            targetValue: true,
+          },
+        },
+      },
+    });
+
+    return this.formatCrawlJobResponse(updatedJob);
+  }
+
+  /**
+   * 크롤링 결과 추가 (배치)
+   */
+  async addCrawlResults(results: CreateCrawlResultRequest[]): Promise<any[]> {
+    if (results.length === 0) return [];
+
+    const createdResults = await this.prisma.crawlResults.createMany({
+      data: results,
+    });
+
+    // 첫 번째 결과의 jobId로 작업 진행률 업데이트
+    if (results.length > 0) {
+      const jobId = results[0].jobId;
+      await this.prisma.crawlJobs.update({
+        where: { id: jobId },
+        data: {
+          processedItems: { increment: results.length },
+          successItems: { increment: results.length },
         },
       });
-
-      if (template) {
-        crawlSettings = {
-          maxPages: template.maxPages,
-          maxItems: template.maxItems,
-          requestDelay: template.requestDelay,
-          filters: template.filters as any,
-          selectors: template.selectors as any,
-          ...crawlSettings,
-        };
-
-        // 사용 횟수 증가
-        await this.prisma.crawlTemplates.update({
-          where: { id: template.id },
-          data: { usageCount: { increment: 1 } },
-        });
-      }
     }
 
-    // 크롤링 히스토리 생성
-    const crawlHistory = await this.prisma.crawlHistory.create({
-      data: {
-        userEmail: data.userEmail,
-        deviceId: data.deviceId,
-        sourceSite: data.sourceSite,
-        searchUrl: data.searchUrl,
-        searchKeywords: data.searchKeywords,
-        status: CrawlStatus.PENDING,
-        crawlSettings: crawlSettings as any,
-        startedAt: new Date(),
-      },
-    });
-
-    return this.formatCrawlHistoryResponse(crawlHistory);
+    return [createdResults];
   }
 
   /**
-   * 크롤링 히스토리 생성
-   */
-  async createCrawlHistory(
-    data: CreateCrawlHistoryRequest
-  ): Promise<CrawlHistoryResponse> {
-    const crawlHistory = await this.prisma.crawlHistory.create({
-      data: {
-        userEmail: data.userEmail,
-        deviceId: data.deviceId,
-        sourceSite: data.sourceSite,
-        searchUrl: data.searchUrl,
-        searchKeywords: data.searchKeywords,
-        crawlSettings: data.crawlSettings as any,
-        userAgent: data.userAgent,
-        proxyUsed: data.proxyUsed,
-        requestInterval: data.requestInterval,
-      },
-    });
-
-    return this.formatCrawlHistoryResponse(crawlHistory);
-  }
-
-  /**
-   * 크롤링 히스토리 업데이트
-   */
-  async updateCrawlHistory(
-    crawlId: number,
-    data: UpdateCrawlHistoryRequest
-  ): Promise<CrawlHistoryResponse> {
-    const crawlHistory = await this.prisma.crawlHistory.findUnique({
-      where: { id: crawlId },
-    });
-
-    if (!crawlHistory) {
-      throw new CrawlHistoryError(
-        "Crawl history not found",
-        CrawlHistoryErrorCodes.CRAWL_NOT_FOUND,
-        404
-      );
-    }
-
-    const updatedCrawlHistory = await this.prisma.crawlHistory.update({
-      where: { id: crawlId },
-      data: {
-        ...data,
-        errorDetails: data.errorDetails as any,
-        metadata: data.metadata as any,
-      },
-    });
-
-    return this.formatCrawlHistoryResponse(updatedCrawlHistory);
-  }
-
-  /**
-   * 크롤링 아이템 추가 (배치)
-   */
-  async addCrawlItems(
-    items: CreateCrawlItemRequest[]
-  ): Promise<CrawlItemResponse[]> {
-    if (items.length === 0) return [];
-
-    // 트랜잭션으로 배치 삽입
-    const createdItems = await this.prisma.$transaction(
-      items.map((item) =>
-        this.prisma.crawlItems.create({
-          data: {
-            crawlHistoryId: item.crawlHistoryId,
-            itemId: item.itemId,
-            title: item.title,
-            content: item.content,
-            url: item.url,
-            rating: item.rating,
-            reviewDate: item.reviewDate,
-            reviewerName: item.reviewerName,
-            isVerified: item.isVerified,
-            price: item.price,
-            originalPrice: item.originalPrice,
-            discount: item.discount,
-            stock: item.stock,
-            imageUrls: item.imageUrls as any,
-            videoUrls: item.videoUrls as any,
-            siteSpecificData: item.siteSpecificData as any,
-            itemOrder: item.itemOrder,
-            pageNumber: item.pageNumber,
-          },
-        })
-      )
-    );
-
-    // 크롤링 히스토리의 아이템 수 업데이트
-    const crawlHistoryId = items[0].crawlHistoryId;
-    await this.prisma.crawlHistory.update({
-      where: { id: crawlHistoryId },
-      data: {
-        itemsCrawled: { increment: items.length },
-      },
-    });
-
-    return createdItems.map(this.formatCrawlItemResponse);
-  }
-
-  /**
-   * 사용자별 크롤링 히스토리 조회
+   * 사용자별 크롤링 작업 히스토리 조회
    */
   async getCrawlHistory(
-    filter: CrawlHistoryFilter,
+    filter: CrawlJobFilter,
     options: {
       page?: number;
       limit?: number;
-      includeItems?: boolean;
-      itemsLimit?: number;
+      includeResults?: boolean;
+      resultsLimit?: number;
     } = {}
   ) {
     const {
       page = 1,
       limit = 20,
-      includeItems = false,
-      itemsLimit = 100,
+      includeResults = false,
+      resultsLimit = 100,
     } = options;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.crawlHistoryWhereInput = {
+    const where: Prisma.crawlJobsWhereInput = {
       userEmail: filter.userEmail,
-      sourceSite: filter.sourceSite,
+      serviceId: filter.serviceId,
       status: filter.status,
-      deviceId: filter.deviceId,
-      ...(filter.searchKeywords && {
-        searchKeywords: {
-          contains: filter.searchKeywords,
-          mode: "insensitive",
-        },
-      }),
+      jobType: filter.jobType,
       ...(filter.dateRange && {
         createdAt: {
           gte: filter.dateRange.from,
@@ -226,28 +268,53 @@ export class CrawlHistoryService {
       }),
     };
 
-    const [crawlHistories, total] = await Promise.all([
-      this.prisma.crawlHistory.findMany({
+    const [crawlJobs, total] = await Promise.all([
+      this.prisma.crawlJobs.findMany({
         where,
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
-        include: includeItems
-          ? {
-              crawlItems: {
-                take: itemsLimit,
-                orderBy: { itemOrder: "asc" },
-              },
-            }
-          : undefined,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+          project: {
+            select: {
+              id: true,
+              projectName: true,
+            },
+          },
+          target: {
+            select: {
+              id: true,
+              targetType: true,
+              targetValue: true,
+            },
+          },
+          results: includeResults
+            ? {
+                take: resultsLimit,
+                orderBy: { createdAt: "desc" },
+              }
+            : false,
+        },
       }),
-      this.prisma.crawlHistory.count({ where }),
+      this.prisma.crawlJobs.count({ where }),
     ]);
 
     return {
-      data: crawlHistories.map((ch: any) =>
-        this.formatCrawlHistoryResponse(ch)
-      ),
+      data: crawlJobs.map((job: any) => this.formatCrawlJobResponse(job)),
       pagination: {
         page,
         limit,
@@ -258,100 +325,55 @@ export class CrawlHistoryService {
   }
 
   /**
-   * 크롤링 히스토리 상세 조회
+   * 크롤링 작업 상세 조회
    */
-  async getCrawlHistoryDetail(
-    crawlId: number,
-    userEmail?: string
-  ): Promise<CrawlHistoryResponse> {
-    const where: Prisma.crawlHistoryWhereInput = {
-      id: crawlId,
+  async getCrawlJobDetail(jobId: number, userEmail?: string): Promise<CrawlJobResponse> {
+    const where: Prisma.crawlJobsWhereInput = {
+      id: jobId,
       ...(userEmail && { userEmail }),
     };
 
-    const crawlHistory = await this.prisma.crawlHistory.findFirst({
+    const crawlJob = await this.prisma.crawlJobs.findFirst({
       where,
       include: {
-        crawlItems: {
-          orderBy: { itemOrder: "asc" },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            projectName: true,
+          },
+        },
+        target: {
+          select: {
+            id: true,
+            targetType: true,
+            targetValue: true,
+          },
+        },
+        results: {
+          orderBy: { createdAt: "desc" },
         },
       },
     });
 
-    if (!crawlHistory) {
-      throw new CrawlHistoryError(
-        "Crawl history not found",
-        CrawlHistoryErrorCodes.CRAWL_NOT_FOUND,
-        404
-      );
+    if (!crawlJob) {
+      throw new Error("크롤링 작업을 찾을 수 없습니다");
     }
 
-    return this.formatCrawlHistoryResponse(crawlHistory);
-  }
-
-  /**
-   * 크롤링 템플릿 생성
-   */
-  async createCrawlTemplate(
-    data: CreateCrawlTemplateRequest
-  ): Promise<CrawlTemplateResponse> {
-    const template = await this.prisma.crawlTemplates.create({
-      data: {
-        userEmail: data.userEmail,
-        name: data.name,
-        description: data.description,
-        sourceSite: data.sourceSite,
-        maxPages: data.maxPages || 10,
-        maxItems: data.maxItems || 2000,
-        requestDelay: data.requestDelay || 1000,
-        filters: data.filters as any,
-        selectors: data.selectors as any,
-        isPublic: data.isPublic || false,
-      },
-    });
-
-    return this.formatCrawlTemplateResponse(template);
-  }
-
-  /**
-   * 사용자별 크롤링 템플릿 조회
-   */
-  async getCrawlTemplates(
-    userEmail: string,
-    options: {
-      includePublic?: boolean;
-      sourceSite?: SourceSite;
-      page?: number;
-      limit?: number;
-    } = {}
-  ) {
-    const { includePublic = true, sourceSite, page = 1, limit = 20 } = options;
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.crawlTemplatesWhereInput = {
-      OR: [{ userEmail }, ...(includePublic ? [{ isPublic: true }] : [])],
-      ...(sourceSite && { sourceSite }),
-    };
-
-    const [templates, total] = await Promise.all([
-      this.prisma.crawlTemplates.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ usageCount: "desc" }, { createdAt: "desc" }],
-      }),
-      this.prisma.crawlTemplates.count({ where }),
-    ]);
-
-    return {
-      data: templates.map(this.formatCrawlTemplateResponse),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return this.formatCrawlJobResponse(crawlJob);
   }
 
   /**
@@ -361,7 +383,7 @@ export class CrawlHistoryService {
     userEmail: string,
     dateRange?: { from?: Date; to?: Date }
   ): Promise<CrawlStatistics> {
-    const where: Prisma.crawlHistoryWhereInput = {
+    const where: Prisma.crawlJobsWhereInput = {
       userEmail,
       ...(dateRange && {
         createdAt: {
@@ -372,233 +394,277 @@ export class CrawlHistoryService {
     };
 
     const [
-      totalCrawls,
-      successfulCrawls,
-      failedCrawls,
-      crawlsByStatus,
-      crawlsBySite,
-      totalItems,
+      totalJobs,
+      pendingJobs,
+      runningJobs,
+      completedJobs,
+      failedJobs,
+      cancelledJobs,
+      jobsByStatus,
+      jobsByType,
+      jobsByService,
+      totalItemsProcessed,
       avgDuration,
+      recentJobs,
     ] = await Promise.all([
-      this.prisma.crawlHistory.count({ where }),
-      this.prisma.crawlHistory.count({
-        where: {
-          ...where,
-          status: { in: [CrawlStatus.COMPLETED, CrawlStatus.SUCCESS] },
-        },
-      }),
-      this.prisma.crawlHistory.count({
-        where: { ...where, status: CrawlStatus.FAILED },
-      }),
-      this.prisma.crawlHistory.groupBy({
+      this.prisma.crawlJobs.count({ where }),
+      this.prisma.crawlJobs.count({ where: { ...where, status: "PENDING" } }),
+      this.prisma.crawlJobs.count({ where: { ...where, status: "RUNNING" } }),
+      this.prisma.crawlJobs.count({ where: { ...where, status: "COMPLETED" } }),
+      this.prisma.crawlJobs.count({ where: { ...where, status: "FAILED" } }),
+      this.prisma.crawlJobs.count({ where: { ...where, status: "CANCELLED" } }),
+      this.prisma.crawlJobs.groupBy({
         by: ["status"],
         where,
         _count: { status: true },
       }),
-      this.prisma.crawlHistory.groupBy({
-        by: ["sourceSite"],
+      this.prisma.crawlJobs.groupBy({
+        by: ["jobType"],
         where,
-        _count: { sourceSite: true },
+        _count: { jobType: true },
       }),
-      this.prisma.crawlHistory.aggregate({
+      this.prisma.crawlJobs.groupBy({
+        by: ["serviceId"],
         where,
-        _sum: { itemsCrawled: true },
+        _count: { serviceId: true },
       }),
-      this.prisma.crawlHistory.aggregate({
+      this.prisma.crawlJobs.aggregate({
+        where,
+        _sum: { successItems: true },
+      }),
+      this.prisma.crawlJobs.aggregate({
         where: {
           ...where,
-          durationMs: { not: null },
+          startedAt: { not: null },
+          completedAt: { not: null },
         },
-        _avg: { durationMs: true },
+        _avg: { estimatedTime: true },
+      }),
+      this.prisma.crawlJobs.findMany({
+        where,
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: {
+          service: { select: { name: true } },
+          project: { select: { projectName: true } },
+        },
       }),
     ]);
 
     return {
-      totalCrawls,
-      successfulCrawls,
-      failedCrawls,
-      totalItemsCrawled: totalItems._sum.itemsCrawled || 0,
-      averageDuration: Math.round(avgDuration._avg.durationMs || 0),
-      crawlsByStatus: crawlsByStatus.reduce(
+      totalJobs,
+      pendingJobs,
+      runningJobs,
+      completedJobs,
+      failedJobs,
+      cancelledJobs,
+      totalItemsProcessed: totalItemsProcessed._sum.successItems || 0,
+      averageDuration: Math.round(avgDuration._avg.estimatedTime || 0),
+      jobsByStatus: jobsByStatus.reduce(
         (acc: any, item: any) => {
           acc[item.status] = item._count.status;
           return acc;
         },
         {} as { [status: string]: number }
       ),
-      crawlsBySite: crawlsBySite.reduce(
+      jobsByType: jobsByType.reduce(
         (acc: any, item: any) => {
-          acc[item.sourceSite] = item._count.sourceSite;
+          acc[item.jobType] = item._count.jobType;
           return acc;
         },
-        {} as { [site: string]: number }
+        {} as { [type: string]: number }
       ),
-      crawlsByDate: [], // TODO: 날짜별 통계 구현
+      jobsByService: jobsByService.reduce(
+        (acc: any, item: any) => {
+          acc[item.serviceId] = item._count.serviceId;
+          return acc;
+        },
+        {} as { [service: string]: number }
+      ),
+      recentJobs: recentJobs.map((job: any) => this.formatCrawlJobResponse(job)),
     };
   }
 
   /**
-   * 크롤링 완료 처리
+   * 크롤링 작업 완료 처리
    */
-  async completeCrawl(
-    crawlId: number,
+  async completeCrawlJob(
+    jobId: number,
     success: boolean = true,
-    errorMessage?: string
-  ): Promise<CrawlHistoryResponse> {
+    errorMessage?: string,
+    errorCode?: string
+  ): Promise<CrawlJobResponse> {
     const completedAt = new Date();
 
-    const crawlHistory = await this.prisma.crawlHistory.findUnique({
-      where: { id: crawlId },
+    const job = await this.prisma.crawlJobs.findUnique({
+      where: { id: jobId },
     });
 
-    if (!crawlHistory) {
-      throw new CrawlHistoryError(
-        "Crawl history not found",
-        CrawlHistoryErrorCodes.CRAWL_NOT_FOUND,
-        404
-      );
+    if (!job) {
+      throw new Error("크롤링 작업을 찾을 수 없습니다");
     }
 
-    const durationMs = crawlHistory.startedAt
-      ? completedAt.getTime() - crawlHistory.startedAt.getTime()
+    const estimatedTime = job.startedAt
+      ? completedAt.getTime() - job.startedAt.getTime()
       : null;
 
-    const updatedCrawlHistory = await this.prisma.crawlHistory.update({
-      where: { id: crawlId },
+    const updatedJob = await this.prisma.crawlJobs.update({
+      where: { id: jobId },
       data: {
-        status: success ? CrawlStatus.COMPLETED : CrawlStatus.FAILED,
+        status: success ? "COMPLETED" : "FAILED",
         completedAt,
-        durationMs,
+        estimatedTime,
         errorMessage: success ? null : errorMessage,
+        errorCode: success ? null : errorCode,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            projectName: true,
+          },
+        },
+        target: {
+          select: {
+            id: true,
+            targetType: true,
+            targetValue: true,
+          },
+        },
       },
     });
 
-    return this.formatCrawlHistoryResponse(updatedCrawlHistory);
+    return this.formatCrawlJobResponse(updatedJob);
+  }
+
+  /**
+   * 크롤링 작업 취소
+   */
+  async cancelCrawlJob(jobId: number, userEmail: string): Promise<CrawlJobResponse> {
+    const job = await this.prisma.crawlJobs.findFirst({
+      where: {
+        id: jobId,
+        userEmail,
+      },
+    });
+
+    if (!job) {
+      throw new Error("크롤링 작업을 찾을 수 없습니다");
+    }
+
+    if (job.status === "COMPLETED" || job.status === "CANCELLED") {
+      throw new Error("이미 완료되거나 취소된 작업입니다");
+    }
+
+    const updatedJob = await this.prisma.crawlJobs.update({
+      where: { id: jobId },
+      data: {
+        status: "CANCELLED",
+        completedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            projectName: true,
+          },
+        },
+        target: {
+          select: {
+            id: true,
+            targetType: true,
+            targetValue: true,
+          },
+        },
+      },
+    });
+
+    return this.formatCrawlJobResponse(updatedJob);
   }
 
   /**
    * 라이센스 검증
    */
-  private async validateUserLicense(userEmail: string, deviceId: string) {
-    const licenseUser = await this.prisma.licenseUsers.findUnique({
-      where: { userEmail: userEmail },
-      include: {
-        licenseSubscriptions: {
-          where: { isActive: true },
-          take: 1,
-        },
+  private async validateUserLicense(userEmail: string) {
+    const license = await this.prisma.licenses.findFirst({
+      where: {
+        userEmail,
+        isActive: true,
+        OR: [
+          { endDate: null }, // 평생 라이센스
+          { endDate: { gt: new Date() } }, // 유효한 라이센스
+        ],
       },
     });
 
-    if (!licenseUser) {
-      throw new CrawlHistoryError(
-        "License not found",
-        CrawlHistoryErrorCodes.LICENSE_EXPIRED,
-        402
-      );
+    if (!license) {
+      throw new Error("유효한 라이센스가 없습니다");
     }
 
-    // 구독 확인
-    const activeSubscription = licenseUser.licenseSubscriptions[0];
-    if (
-      !activeSubscription ||
-      new Date(activeSubscription.endDate) < new Date()
-    ) {
-      throw new CrawlHistoryError(
-        "License expired",
-        CrawlHistoryErrorCodes.LICENSE_EXPIRED,
-        402
-      );
-    }
-
-    // 디바이스 활성화 확인
-    const activatedDevices = licenseUser.activatedDevices as any[];
-    const isDeviceActivated = activatedDevices.some(
-      (device) => device.device_id === deviceId
-    );
-
-    if (!isDeviceActivated) {
-      throw new CrawlHistoryError(
-        "Device not activated",
-        CrawlHistoryErrorCodes.DEVICE_NOT_ACTIVATED,
-        403
-      );
-    }
+    return license;
   }
 
   /**
    * 응답 포매팅
    */
-  private formatCrawlHistoryResponse(crawlHistory: any): CrawlHistoryResponse {
+  private formatCrawlJobResponse(crawlJob: any): CrawlJobResponse {
     return {
-      id: crawlHistory.id,
-      userEmail: crawlHistory.userEmail,
-      deviceId: crawlHistory.deviceId,
-      sourceSite: crawlHistory.sourceSite,
-      searchUrl: crawlHistory.searchUrl,
-      searchKeywords: crawlHistory.searchKeywords,
-      status: crawlHistory.status,
-      itemsFound: crawlHistory.itemsFound,
-      itemsCrawled: crawlHistory.itemsCrawled,
-      pagesProcessed: crawlHistory.pagesProcessed,
-      startedAt: crawlHistory.startedAt,
-      completedAt: crawlHistory.completedAt,
-      durationMs: crawlHistory.durationMs,
-      errorMessage: crawlHistory.errorMessage,
-      errorDetails: crawlHistory.errorDetails,
-      userAgent: crawlHistory.userAgent,
-      proxyUsed: crawlHistory.proxyUsed,
-      requestInterval: crawlHistory.requestInterval,
-      crawlSettings: crawlHistory.crawlSettings,
-      metadata: crawlHistory.metadata,
-      createdAt: crawlHistory.createdAt,
-      crawlItems: crawlHistory.crawlItems?.map(this.formatCrawlItemResponse),
-    };
-  }
-
-  private formatCrawlItemResponse(crawlItem: any): CrawlItemResponse {
-    return {
-      id: crawlItem.id,
-      crawlHistoryId: crawlItem.crawlHistoryId,
-      itemId: crawlItem.itemId,
-      title: crawlItem.title,
-      content: crawlItem.content,
-      url: crawlItem.url,
-      rating: crawlItem.rating ? Number(crawlItem.rating) : undefined,
-      reviewDate: crawlItem.reviewDate,
-      reviewerName: crawlItem.reviewerName,
-      isVerified: crawlItem.isVerified,
-      price: crawlItem.price ? Number(crawlItem.price) : undefined,
-      originalPrice: crawlItem.originalPrice
-        ? Number(crawlItem.originalPrice)
-        : undefined,
-      discount: crawlItem.discount,
-      stock: crawlItem.stock,
-      imageUrls: crawlItem.imageUrls,
-      videoUrls: crawlItem.videoUrls,
-      siteSpecificData: crawlItem.siteSpecificData,
-      itemOrder: crawlItem.itemOrder,
-      pageNumber: crawlItem.pageNumber,
-      createdAt: crawlItem.createdAt,
-    };
-  }
-
-  private formatCrawlTemplateResponse(template: any): CrawlTemplateResponse {
-    return {
-      id: template.id,
-      userEmail: template.userEmail,
-      name: template.name,
-      description: template.description,
-      sourceSite: template.sourceSite,
-      maxPages: template.maxPages,
-      maxItems: template.maxItems,
-      requestDelay: template.requestDelay,
-      filters: template.filters,
-      selectors: template.selectors,
-      isPublic: template.isPublic,
-      usageCount: template.usageCount,
-      createdAt: template.createdAt,
-      updatedAt: template.updatedAt,
+      id: crawlJob.id,
+      userEmail: crawlJob.userEmail,
+      projectId: crawlJob.projectId,
+      targetId: crawlJob.targetId,
+      serviceId: crawlJob.serviceId,
+      jobType: crawlJob.jobType,
+      config: crawlJob.config,
+      status: crawlJob.status,
+      priority: crawlJob.priority,
+      totalItems: crawlJob.totalItems,
+      processedItems: crawlJob.processedItems,
+      successItems: crawlJob.successItems,
+      failedItems: crawlJob.failedItems,
+      scheduledAt: crawlJob.scheduledAt,
+      startedAt: crawlJob.startedAt,
+      completedAt: crawlJob.completedAt,
+      estimatedTime: crawlJob.estimatedTime,
+      errorCode: crawlJob.errorCode,
+      errorMessage: crawlJob.errorMessage,
+      errorDetails: crawlJob.errorDetails,
+      metadata: crawlJob.metadata,
+      createdAt: crawlJob.createdAt,
+      updatedAt: crawlJob.updatedAt,
+      user: crawlJob.user,
+      service: crawlJob.service,
+      project: crawlJob.project,
+      target: crawlJob.target,
+      results: crawlJob.results,
     };
   }
 }

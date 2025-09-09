@@ -1,4 +1,4 @@
-import { SourceSite } from "@prisma/client";
+// SourceSite는 새 스키마에서 제거됨
 import { CrawlSettings, SiteSpecificData } from "@/types/crawl.types";
 import axios from "axios";
 
@@ -47,12 +47,12 @@ export interface CrawlOptions {
 
 // 추상 크롤러 베이스 클래스
 export abstract class BaseCrawler {
-  protected sourceSite: SourceSite;
+  protected sourceSite: string;
   protected options: CrawlOptions;
   protected isRunning: boolean = false;
   protected shouldStop: boolean = false;
 
-  constructor(sourceSite: SourceSite, options: CrawlOptions = {}) {
+  constructor(sourceSite: string, options: CrawlOptions = {}) {
     this.sourceSite = sourceSite;
     this.options = {
       requestDelay: 1000,

@@ -7,6 +7,7 @@ import {
   Delete,
 } from "@/decorators/controller.decorator";
 import { prisma } from "@/plugins/prisma";
+import { AdminService } from "@/services/admin.service";
 
 interface AdminStatsQuery {
   period?: "day" | "week" | "month" | "year";
@@ -24,96 +25,23 @@ interface LicenseQuery {
 
 @Controller("/admin")
 export class AdminController {
+  private adminService: AdminService;
+
+  constructor() {
+    this.adminService = new AdminService(prisma);
+  }
   @Get("/licenses/stats")
   async getLicenseStats(
     request: FastifyRequest<{ Querystring: AdminStatsQuery }>,
     reply: FastifyReply
   ) {
     try {
-      const { } = request.query;
-
-      // 통계 쿼리 실행
-      const [
-        totalUsers,
-        activeUsers,
-        expiredUsers,
-        suspendedUsers,
-        revokedUsers,
-        adminUsers,
-      ] = await Promise.all([
-        prisma.licenses.count(),
-        prisma.licenses.count({
-          where: {
-            licenses: {
-              some: {
-                isActive: true,
-                endDate: { gt: new Date() },
-              },
-            },
-          },
-        }),
-        prisma.licenses.count({
-          where: {
-            licenses: {
-              some: {
-                isActive: false,
-                endDate: { lt: new Date() },
-              },
-            },
-          },
-        }),
-        prisma.licenses.count({
-          where: {
-            licenses: {
-              some: {
-                isActive: false,
-              },
-            },
-          },
-        }),
-        prisma.licenses.count({
-          where: {
-            licenses: {
-              none: {},
-            },
-          },
-        }),
-        prisma.licenses.count({
-          where: {
-            licenseKey: { startsWith: "ADMIN" },
-          },
-        }),
-      ]);
-
-      // 30일 내 만료 예정
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-
-      const expiringSoon = await prisma.licenses.count({
-        where: {
-          licenses: {
-            some: {
-              isActive: true,
-              endDate: {
-                gte: new Date(),
-                lte: thirtyDaysFromNow,
-              },
-            },
-          },
-        },
-      });
+      const filter = request.query;
+      const stats = await this.adminService.getLicenseStats(filter);
 
       reply.code(200).send({
         success: true,
-        data: {
-          total: totalUsers,
-          active: activeUsers,
-          expired: expiredUsers,
-          suspended: suspendedUsers,
-          revoked: revokedUsers,
-          admin: adminUsers,
-          expiringSoon,
-        },
+        data: stats,
       });
     } catch (error) {
       console.error("관리자 통계 오류:", error);
@@ -138,90 +66,19 @@ export class AdminController {
         licenseType,
       } = request.query;
 
-      const skip = (Number(page) - 1) * Number(limit);
+      const filter = {
+        page: Number(page),
+        limit: Number(limit),
+        search,
+        status,
+        licenseType,
+      };
 
-      // 검색 및 필터 조건 구성
-      const where: any = {};
-
-      if (search) {
-        where.OR = [
-          { licenseKey: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
-          { users: { name: { contains: search, mode: "insensitive" } } },
-        ];
-      }
-
-      if (licenseType === "admin") {
-        where.licenseKey = { startsWith: "ADMIN" };
-      } else if (licenseType === "user") {
-        where.licenseKey = { not: { startsWith: "ADMIN" } };
-      }
-
-      if (status) {
-        switch (status) {
-          case "active":
-            where.licenses = {
-              some: {
-                isActive: true,
-                endDate: { gt: new Date() },
-              },
-            };
-            break;
-          case "expired":
-            where.licenses = {
-              some: {
-                endDate: { lt: new Date() },
-              },
-            };
-            break;
-          case "suspended":
-            where.licenses = {
-              some: {
-                isActive: false,
-              },
-            };
-            break;
-          case "revoked":
-            where.licenses = {
-              none: {},
-            };
-            break;
-        }
-      }
-
-      const [users, total] = await Promise.all([
-        prisma.licenses.findMany({
-          where,
-          skip,
-          take: Number(limit),
-          include: {
-            licenses: {
-              where: { isActive: true },
-              take: 1,
-            },
-            licenseItems: true,
-            deviceTransfers: {
-              take: 5,
-              orderBy: { transferDate: "desc" },
-            },
-            users: true,
-          },
-          orderBy: { createdAt: "desc" },
-        }),
-        prisma.licenses.count({ where }),
-      ]);
+      const result = await this.adminService.getLicenses(filter);
 
       reply.code(200).send({
         success: true,
-        data: {
-          users,
-          pagination: {
-            page: Number(page),
-            limit: Number(limit),
-            total,
-            totalPages: Math.ceil(total / Number(limit)),
-          },
-        },
+        data: result,
       });
     } catch (error) {
       console.error("라이센스 목록 오류:", error);
@@ -240,10 +97,7 @@ export class AdminController {
     try {
       const { licenseKey } = request.params;
 
-      // 라이센스 사용자 삭제 (CASCADE로 관련 데이터도 함께 삭제됨)
-      await prisma.licenses.delete({
-        where: { licenseKey },
-      });
+      await this.adminService.deleteLicense(licenseKey);
 
       reply.code(200).send({
         success: true,
@@ -270,25 +124,7 @@ export class AdminController {
       const { licenseKey } = request.params;
       const { action } = request.body;
 
-      switch (action) {
-        case "activate":
-          await prisma.licenses.updateMany({
-            where: { userEmail: licenseKey },
-            data: { isActive: true },
-          });
-          break;
-        case "suspend":
-          await prisma.licenses.updateMany({
-            where: { userEmail: licenseKey },
-            data: { isActive: false },
-          });
-          break;
-        case "revoke":
-          await prisma.licenses.deleteMany({
-            where: { userEmail: licenseKey },
-          });
-          break;
-      }
+      await this.adminService.updateLicenseStatus(licenseKey, action);
 
       reply.code(200).send({
         success: true,
@@ -316,30 +152,7 @@ export class AdminController {
     try {
       const { action, licenseIds } = request.body;
 
-      switch (action) {
-        case "activate":
-          await prisma.licenses.updateMany({
-            where: { userEmail: { in: licenseIds } },
-            data: { isActive: true },
-          });
-          break;
-        case "suspend":
-          await prisma.licenses.updateMany({
-            where: { userEmail: { in: licenseIds } },
-            data: { isActive: false },
-          });
-          break;
-        case "revoke":
-          await prisma.licenses.deleteMany({
-            where: { userEmail: { in: licenseIds } },
-          });
-          break;
-        case "delete":
-          await prisma.licenses.deleteMany({
-            where: { licenseKey: { in: licenseIds } },
-          });
-          break;
-      }
+      await this.adminService.bulkLicenseAction(action, licenseIds);
 
       reply.code(200).send({
         success: true,

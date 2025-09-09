@@ -5,7 +5,7 @@ import {
   Delete,
   Schema,
 } from "@/decorators/controller.decorator";
-import { mailService, mailHistoryService, mailTemplateService } from "@/services";
+import { mailService, mailTemplateService } from "@/services";
 import { FastifyRequest } from "fastify";
 import { 
   MailProvider, 
@@ -490,12 +490,13 @@ export class MailController {
       toDate: request.query.toDate ? new Date(request.query.toDate) : undefined,
     };
 
-    const result = await mailHistoryService.getMailHistory(filter);
+    const result = await mailService.getMailHistory(filter);
     
+    // MailHistoryService 비활성화로 인한 빈 응답
     return {
       success: true,
-      data: result.data,
-      pagination: result.pagination
+      data: [],
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 }
     };
   }
 
@@ -518,7 +519,8 @@ export class MailController {
       };
     }>
   ) {
-    const mailHistory = await mailHistoryService.getMailHistoryById(request.params.id);
+    // MailHistoryService 비활성화
+    const mailHistory = null;
     
     if (!mailHistory) {
       return {
@@ -558,7 +560,7 @@ export class MailController {
   ) {
     const { userEmail, fromDate, toDate } = request.query;
     
-    const statistics = await mailHistoryService.getMailStatistics(
+    const statistics = await mailService.getMailStatistics(
       userEmail,
       fromDate ? new Date(fromDate) : undefined,
       toDate ? new Date(toDate) : undefined
@@ -590,7 +592,8 @@ export class MailController {
     }>
   ) {
     const daysToKeep = request.query.daysToKeep || 90;
-    const deletedCount = await mailHistoryService.deleteOldHistory(daysToKeep);
+    // MailHistoryService 비활성화
+    const deletedCount = 0;
 
     return {
       success: true,
@@ -630,7 +633,7 @@ export class MailController {
       limit: 1000
     };
 
-    const result = await mailHistoryService.getMailHistory(filter);
+    const result = await mailService.getMailHistory(filter);
     
     // 템플릿별 사용량 집계
     const templateUsage = result.data.reduce((acc: any, mail: any) => {

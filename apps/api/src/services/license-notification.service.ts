@@ -37,8 +37,8 @@ export class LicenseNotificationService {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const expiringSubscriptions =
-      await this.prisma.licenseSubscriptions.findMany({
+    const expiringLicenses =
+      await this.prisma.licenses.findMany({
         where: {
           endDate: {
             gte: startOfDay,
@@ -47,7 +47,9 @@ export class LicenseNotificationService {
           isActive: true,
         },
         include: {
-          licenseUsers: true,
+          user: true,
+          service: true,
+          subscriptionPlan: true,
         },
       });
 
@@ -56,36 +58,36 @@ export class LicenseNotificationService {
       (targetDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)
     );
 
-    for (const subscription of expiringSubscriptions) {
+    for (const license of expiringLicenses) {
       try {
-        if (!subscription.licenseUsers) continue;
+        if (!license.user) continue;
 
         await mailService.sendTemplatedMail(
           "license-expiry-warning",
           {
             userName:
-              subscription.licenseUsers.userEmail ||
-              subscription.userEmail.split("@")[0],
+              license.user.name ||
+              license.userEmail.split("@")[0],
             productName: env.PRODUCT_NAME || "DigDuck",
             daysLeft: daysLeft.toString(),
-            licenseKey: subscription.licenseUsers.licenseKey,
-            expirationDate: subscription.endDate.toLocaleDateString("ko-KR"),
+            licenseKey: license.licenseKey,
+            expirationDate: license.endDate?.toLocaleDateString("ko-KR") || "",
             renewUrl: `${env.CLIENT_URL || "https://app.example.com"}/license/renew`,
             contactUrl: `${env.CLIENT_URL || "https://app.example.com"}/contact`,
             companyName: env.COMPANY_NAME || "DigDuck",
           },
           {
             from: env.MAIL_FROM || "noreply@digduck.com",
-            to: subscription.userEmail,
+            to: license.userEmail,
           }
         );
 
         console.log(
-          `만료 경고 메일 발송 완료: ${subscription.userEmail} (${daysLeft}일 남음)`
+          `만료 경고 메일 발송 완료: ${license.userEmail} (${daysLeft}일 남음)`
         );
       } catch (error) {
         console.error(
-          `만료 경고 메일 발송 실패: ${subscription.userEmail}`,
+          `만료 경고 메일 발송 실패: ${license.userEmail}`,
           error
         );
       }
@@ -105,33 +107,36 @@ export class LicenseNotificationService {
     }
 
     try {
-      const licenseUser = await this.prisma.licenseUsers.findUnique({
-        where: { userEmail: userEmail },
+      const license = await this.prisma.licenses.findFirst({
+        where: { 
+          userEmail: userEmail,
+          isActive: true,
+          OR: [
+            { endDate: null },
+            { endDate: { gt: new Date() } }
+          ]
+        },
         include: {
-          licenseSubscriptions: {
-            where: { isActive: true },
-            orderBy: { endDate: "desc" },
-            take: 1,
-          },
+          user: true,
+          service: true,
+          subscriptionPlan: true,
         },
       });
 
-      if (!licenseUser || licenseUser.licenseSubscriptions.length === 0) {
+      if (!license) {
         console.log(`활성 라이센스를 찾을 수 없습니다: ${userEmail}`);
         return false;
       }
 
-      const activeSubscription = licenseUser.licenseSubscriptions[0];
-
       await mailService.sendTemplatedMail(
         "license-expiry-warning",
         {
-          userName: licenseUser.userEmail || userEmail.split("@")[0],
+          userName: license.user?.name || userEmail.split("@")[0],
           productName: env.PRODUCT_NAME || "DigDuck",
           daysLeft: daysLeft.toString(),
-          licenseKey: licenseUser.licenseKey,
+          licenseKey: license.licenseKey,
           expirationDate:
-            activeSubscription.endDate.toLocaleDateString("ko-KR"),
+            license.endDate?.toLocaleDateString("ko-KR") || "",
           renewUrl: `${env.CLIENT_URL || "https://app.example.com"}/license/renew`,
           contactUrl: `${env.CLIENT_URL || "https://app.example.com"}/contact`,
           companyName: env.COMPANY_NAME || "DigDuck",
@@ -161,36 +166,37 @@ export class LicenseNotificationService {
     }
 
     try {
-      const licenseUser = await this.prisma.licenseUsers.findUnique({
-        where: { userEmail: userEmail },
+      const license = await this.prisma.licenses.findFirst({
+        where: { 
+          userEmail: userEmail,
+          isActive: true,
+          OR: [
+            { endDate: null },
+            { endDate: { gt: new Date() } }
+          ]
+        },
         include: {
-          licenseSubscriptions: {
-            where: { isActive: true },
-            orderBy: { endDate: "desc" },
-            take: 1,
-          },
+          user: true,
+          service: true,
+          subscriptionPlan: true,
         },
       });
 
-      if (!licenseUser || licenseUser.licenseSubscriptions.length === 0) {
+      if (!license) {
         return false;
       }
-
-      const activeSubscription = licenseUser.licenseSubscriptions[0];
 
       await mailService.sendTemplatedMail(
         "license-created", // 갱신도 동일한 템플릿 사용
         {
-          userName: licenseUser.userEmail || userEmail.split("@")[0],
+          userName: license.user?.name || userEmail.split("@")[0],
           productName: env.PRODUCT_NAME || "DigDuck",
-          licenseKey: licenseUser.licenseKey,
+          licenseKey: license.licenseKey,
           userEmail: userEmail,
-          issueDate: activeSubscription.createdAt.toLocaleDateString("ko-KR"),
+          issueDate: license.createdAt.toLocaleDateString("ko-KR"),
           expirationDate:
-            activeSubscription.endDate.toLocaleDateString("ko-KR"),
-          licenseType: this.getSubscriptionTypeName(
-            activeSubscription.subscriptionType
-          ),
+            license.endDate?.toLocaleDateString("ko-KR") || "평생",
+          licenseType: license.subscriptionPlan?.name || "기본",
           loginUrl: env.CLIENT_URL || "https://app.example.com/login",
           companyName: env.COMPANY_NAME || "DigDuck",
         },
