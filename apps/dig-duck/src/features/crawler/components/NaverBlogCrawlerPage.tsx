@@ -2,7 +2,6 @@ import { DataTable } from "@/components/DataTable";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import UserLayout from "@/components/layouts/UserLayout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CompactRadio } from "@/components/ui/compact-radio";
@@ -59,10 +58,10 @@ interface CrawlProgress {
 }
 
 type CrawlMode = "all" | "category";
-type SearchStep = "blogId" | "mode" | "category" | "settings" | "crawl";
+type SearchStep = "settings" | "crawl";
 
 export function NaverBlogCrawlerPage() {
-  const [currentStep, setCurrentStep] = useState<SearchStep>("blogId");
+  const [currentStep, setCurrentStep] = useState<SearchStep>("settings");
   const [blogId, setBlogId] = useState("");
   const [mode, setMode] = useState<CrawlMode>("all");
 
@@ -118,8 +117,8 @@ export function NaverBlogCrawlerPage() {
   ];
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [maxPages, setMaxPages] = useState(5);
-  const [maxItems, setMaxItems] = useState(100);
+  const [maxPages, setMaxPages] = useState<string | number>(5);
+  const [maxItems, setMaxItems] = useState<string | number>(100);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCategories, setIsFetchingCategories] = useState(false);
   const [progress, setProgress] = useState<CrawlProgress>({
@@ -202,8 +201,6 @@ export function NaverBlogCrawlerPage() {
       setError("블로그 ID를 입력해주세요.");
       return;
     }
-
-    setCurrentStep("mode");
     setError(null);
   };
 
@@ -220,7 +217,7 @@ export function NaverBlogCrawlerPage() {
 
       setCategories(data.categories || []);
       if (data.categories && data.categories.length > 0) {
-        setCurrentStep("category");
+        setCurrentStep("settings");
       } else {
         setError("카테고리를 찾을 수 없습니다. 블로그 ID를 확인해주세요.");
       }
@@ -234,11 +231,7 @@ export function NaverBlogCrawlerPage() {
 
   // 모드 선택 완료
   const handleModeSelect = () => {
-    if (mode === "all") {
-      // 전체 블로그 크롤링은 설정 단계로
-      setCurrentStep("settings");
-    } else if (mode === "category") {
-      // 카테고리 선택 모드는 카테고리 가져오기
+    if (mode === "category") {
       handleFetchCategories();
     }
   };
@@ -300,7 +293,6 @@ export function NaverBlogCrawlerPage() {
       setError("최소 하나의 카테고리를 선택해주세요.");
       return;
     }
-    setCurrentStep("settings");
     setError(null);
   };
 
@@ -342,8 +334,8 @@ export function NaverBlogCrawlerPage() {
           body: JSON.stringify({
             url: finalUrl,
             mode,
-            maxPages,
-            maxItems,
+            maxPages: Number(maxPages),
+            maxItems: Number(maxItems),
             blogId,
             ...(mode === "category" && {
               selectedCategories,
@@ -419,17 +411,7 @@ export function NaverBlogCrawlerPage() {
 
   // 뒤로가기
   const handleGoBack = () => {
-    if (currentStep === "mode") {
-      setCurrentStep("blogId");
-    } else if (currentStep === "category") {
-      setCurrentStep("mode");
-    } else if (currentStep === "settings") {
-      if (mode === "category") {
-        setCurrentStep("category");
-      } else {
-        setCurrentStep("mode");
-      }
-    } else if (currentStep === "crawl") {
+    if (currentStep === "crawl") {
       setCurrentStep("settings");
     }
     setError(null);
@@ -437,7 +419,7 @@ export function NaverBlogCrawlerPage() {
 
   // 처음부터 다시 시작
   const handleReset = () => {
-    setCurrentStep("blogId");
+    setCurrentStep("settings");
     setBlogId("");
     setCategories([]);
     setSelectedCategories([]);
@@ -458,23 +440,17 @@ export function NaverBlogCrawlerPage() {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case "blogId":
+      case "settings":
         return (
-          <Card className="max-w-2xl mx-auto shadow-lg">
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="flex items-center justify-center gap-3 text-xl">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Globe className="w-6 h-6 text-blue-600" />
-                </div>
-                블로그 ID 입력
-              </CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                크롤링할 네이버 블로그의 ID를 입력해주세요
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-8 px-8 pb-8">
-              <div className="space-y-4">
-                <Label htmlFor="blogId" className="text-base font-medium">
+          <Card className="max-w-4xl mx-auto shadow-lg">
+            <CardContent className="space-y-6 px-8 pb-8">
+              {/* 블로그 ID 입력 */}
+              <div className="space-y-3">
+                <Label
+                  htmlFor="blogId"
+                  className="text-base font-medium flex items-center gap-2"
+                >
+                  <Globe className="w-4 h-4" />
                   네이버 블로그 ID
                 </Label>
                 <div className="relative">
@@ -482,536 +458,415 @@ export function NaverBlogCrawlerPage() {
                     id="blogId"
                     value={blogId}
                     onChange={(e) => setBlogId(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && blogId.trim()) {
-                        handleSearchBlog();
-                      }
-                    }}
                     placeholder="예: digduck"
-                    className="w-full h-12 text-lg px-4 border-2 focus:border-blue-500 transition-colors"
-                    autoFocus
+                    className="w-full h-11 px-4"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <Globe className="w-5 h-5 text-gray-400" />
+                    <Globe className="w-4 h-4 text-gray-400" />
                   </div>
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    💡 <strong>예시:</strong> blog.naver.com/
-                    <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded">
-                      digduck
-                    </span>
-                    에서
-                    <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded ml-1">
-                      digduck
-                    </span>{" "}
-                    부분만 입력하세요
-                  </p>
-                </div>
+                <p className="text-xs text-gray-500">
+                  💡 blog.naver.com/digduck에서 'digduck' 부분만 입력
+                </p>
               </div>
-              <Button
-                onClick={handleSearchBlog}
-                disabled={!blogId.trim()}
-                className="w-full h-12 text-base"
-                size="lg"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                다음 단계로 이동
-              </Button>
-            </CardContent>
-          </Card>
-        );
 
-      case "mode":
-        return (
-          <Card className="max-w-4xl mx-auto shadow-lg">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="flex items-center justify-center gap-3 text-xl">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Folder className="w-6 h-6 text-purple-600" />
-                </div>
-                크롤링 모드 선택
-              </CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong className="text-blue-600">{blogId}</strong> 블로그를
-                어떤 방식으로 크롤링하시겠습니까?
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-8 px-8 pb-8">
-              <div className="space-y-4">
-                <Label className="text-base font-medium">크롤링 모드</Label>
+              {/* 크롤링 모드 선택 */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium flex items-center gap-2">
+                  <Folder className="w-4 h-4" />
+                  크롤링 모드
+                </Label>
                 <CompactRadio
                   value={mode}
                   onChange={(value) => setMode(value as CrawlMode)}
                   options={modeOptions}
                   name="crawl-mode"
                   variant="cards"
-                  size="lg"
+                  size="md"
                 />
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={handleGoBack}
-                  className="flex-1 h-12"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  이전
-                </Button>
-                <Button
-                  onClick={handleModeSelect}
-                  disabled={isFetchingCategories}
-                  className="flex-2 h-12"
-                  size="lg"
-                >
-                  {mode === "all" ? (
-                    <>
-                      <Play className="w-5 h-5 mr-2" />
-                      다음 단계로
-                    </>
-                  ) : isFetchingCategories ? (
-                    <>
-                      <div className="animate-spin w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full" />
-                      카테고리 조회 중...
-                    </>
-                  ) : (
-                    <>
-                      <Folder className="w-5 h-5 mr-2" />
+              {/* 카테고리 선택 (카테고리 모드일 때만) */}
+              {mode === "category" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Folder className="w-4 h-4" />
                       카테고리 선택
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case "category":
-        return (
-          <Card className="max-w-4xl mx-auto shadow-lg">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="flex items-center justify-center gap-3 text-xl">
-                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                  <Folder className="w-6 h-6 text-green-600" />
-                </div>
-                카테고리 선택
-              </CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong className="text-blue-600">{blogId}</strong> 블로그에서
-                크롤링할 카테고리를 선택하세요
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-8 px-8 pb-8">
-              {isFetchingCategories ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600 text-lg">
-                    카테고리 정보를 가져오는 중...
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    잠시만 기다려주세요
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <div>
-                        <p className="font-medium">
-                          선택된 카테고리:{" "}
-                          <span className="text-blue-600">
-                            {selectedCategories.length}
-                          </span>{" "}
-                          / {categories.length}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          원하는 카테고리를 클릭하여 선택하세요
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={toggleAllCategories}
-                      className="h-10"
-                    >
-                      {selectedCategories.length === categories.length
-                        ? "전체 해제"
-                        : "전체 선택"}
-                    </Button>
+                    </Label>
+                    {!isFetchingCategories && categories.length === 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleFetchCategories}
+                        disabled={!blogId.trim()}
+                      >
+                        카테고리 불러오기
+                      </Button>
+                    )}
                   </div>
 
-                  <div className="max-h-96 overflow-y-auto space-y-2 border rounded-lg p-2">
-                    {categories.map((category) => {
-                      const isSelected = selectedCategories.includes(
-                        category.categoryNo
-                      );
-                      const isParentCategory = category.depth === 1;
-                      const hasChildren = categories.some(
-                        (cat) =>
-                          cat.depth === 2 &&
-                          cat.parentCategoryNo === category.categoryNo
-                      );
-
-                      return (
-                        <div
-                          key={category.categoryNo}
-                          className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm ${
-                            isSelected
-                              ? isParentCategory
-                                ? "bg-blue-50 border-blue-300 shadow-sm dark:bg-blue-950/30"
-                                : "bg-green-50 border-green-300 shadow-sm dark:bg-green-950/30"
-                              : "hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300"
-                          } ${category.depth === 2 ? "ml-6 border-dashed" : "border-solid"}`}
-                          onClick={() => toggleCategory(category.categoryNo)}
+                  {isFetchingCategories ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600">
+                        카테고리 조회 중...
+                      </p>
+                    </div>
+                  ) : categories.length > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                        <span className="text-sm text-gray-600">
+                          선택: {selectedCategories.length}/{categories.length}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={toggleAllCategories}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() =>
-                                  toggleCategory(category.categoryNo)
-                                }
-                                className="w-4 h-4 rounded border-2"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <div className="flex items-center gap-2">
-                                {category.depth === 1 && hasChildren && (
-                                  <Folder className="w-4 h-4 text-blue-500" />
-                                )}
-                                {category.depth === 2 && (
-                                  <div className="flex items-center gap-1">
+                          {selectedCategories.length === categories.length
+                            ? "전체 해제"
+                            : "전체 선택"}
+                        </Button>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
+                        {categories.map((category) => {
+                          const isSelected = selectedCategories.includes(
+                            category.categoryNo
+                          );
+                          const isParentCategory = category.depth === 1;
+
+                          return (
+                            <div
+                              key={category.categoryNo}
+                              className={`p-2 rounded cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                                isSelected
+                                  ? "bg-blue-50 dark:bg-blue-950/30"
+                                  : ""
+                              } ${category.depth === 2 ? "ml-4" : ""}`}
+                              onClick={() =>
+                                toggleCategory(category.categoryNo)
+                              }
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() =>
+                                      toggleCategory(category.categoryNo)
+                                    }
+                                    className="w-3 h-3"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  {category.depth === 2 && (
                                     <span className="text-gray-400 text-xs">
                                       └
                                     </span>
-                                    <FileText className="w-3 h-3 text-green-500" />
-                                  </div>
-                                )}
-                                <span
-                                  className={`${
-                                    category.depth === 2
-                                      ? "text-sm text-gray-600 dark:text-gray-400"
-                                      : "font-medium text-base text-gray-900 dark:text-gray-100"
-                                  }`}
-                                >
-                                  {category.name}
-                                </span>
-                                {category.depth === 1 && hasChildren && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs ml-2"
+                                  )}
+                                  <span
+                                    className={`text-sm ${isParentCategory ? "font-medium" : ""}`}
                                   >
-                                    하위{" "}
-                                    {
-                                      categories.filter(
-                                        (cat) =>
-                                          cat.depth === 2 &&
-                                          cat.parentCategoryNo ===
-                                            category.categoryNo
-                                      ).length
-                                    }
-                                    개
-                                  </Badge>
-                                )}
+                                    {category.name}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  {category.postCount || 0}개
+                                </span>
                               </div>
                             </div>
-                            <Badge
-                              variant={isSelected ? "default" : "outline"}
-                              className="text-xs"
-                            >
-                              {category.postCount || 0}개
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleGoBack}
-                      className="flex-1 h-12"
-                    >
-                      <ChevronLeft className="w-4 h-4 mr-2" />
-                      이전
-                    </Button>
-                    <Button
-                      onClick={handleCategorySelect}
-                      disabled={selectedCategories.length === 0}
-                      className="flex-2 h-12"
-                      size="lg"
-                    >
-                      <Play className="w-5 h-5 mr-2" />
-                      다음 단계로
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        );
-
-      case "settings":
-        return (
-          <Card className="max-w-4xl mx-auto shadow-lg">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="flex items-center justify-center gap-3 text-xl">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                  <FileText className="w-6 h-6 text-orange-600" />
-                </div>
-                크롤링 설정
-              </CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong className="text-blue-600">{blogId}</strong> 블로그
-                크롤링에 사용할 설정을 조정하세요
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-8 px-8 pb-8">
-              {/* 선택된 모드 및 카테고리 요약 */}
-              <div className="bg-blue-50 dark:bg-blue-950/30 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-3 mb-4">
-                  <Globe className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-                    선택된 설정
-                  </h3>
-                </div>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-blue-700 dark:text-blue-300">
-                      크롤링 모드
-                    </span>
-                    <span className="font-medium text-blue-900 dark:text-blue-100">
-                      {mode === "all" ? "전체 포스팅" : "선택된 카테고리"}
-                    </span>
-                  </div>
-                  {mode === "category" && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-blue-700 dark:text-blue-300">
-                        선택된 카테고리
-                      </span>
-                      <span className="font-medium text-blue-900 dark:text-blue-100">
-                        {selectedCategories.length}개
-                      </span>
-                    </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      블로그 ID를 입력한 후 카테고리를 불러오세요
+                    </p>
                   )}
                 </div>
-              </div>
+              )}
 
               {/* 크롤링 설정 */}
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border">
-                <Label className="text-base font-medium mb-4 block">
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                <Label className="text-base font-medium mb-3 block flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
                   크롤링 설정
                 </Label>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="maxPages"
-                      className="text-sm font-medium flex items-center gap-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      최대 페이지 수
-                    </Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm mb-1 block">최대 페이지 수</Label>
                     <Input
-                      id="maxPages"
                       type="number"
                       value={maxPages}
-                      onChange={(e) => setMaxPages(Number(e.target.value) || 1)}
+                      onChange={(e) => setMaxPages(e.target.value)}
+                      onBlur={(e) => {
+                        const num = Number(e.target.value);
+                        if (num < 1) setMaxPages(1);
+                        else if (num > 50) setMaxPages(50);
+                      }}
                       min={1}
                       max={50}
-                      className="h-11"
-                      autoComplete="off"
+                      className="h-9"
                     />
-                    <p className="text-xs text-gray-500">
-                      수집할 페이지의 최대 개수
-                    </p>
                   </div>
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="maxItems"
-                      className="text-sm font-medium flex items-center gap-2"
-                    >
-                      <BookOpen className="w-4 h-4" />
-                      최대 포스트 수
-                    </Label>
+                  <div>
+                    <Label className="text-sm mb-1 block">최대 포스트 수</Label>
                     <Input
-                      id="maxItems"
                       type="number"
                       value={maxItems}
-                      onChange={(e) => setMaxItems(Number(e.target.value) || 1)}
+                      onChange={(e) => setMaxItems(e.target.value)}
+                      onBlur={(e) => {
+                        const num = Number(e.target.value);
+                        if (num < 1) setMaxItems(1);
+                        else if (num > 1000) setMaxItems(1000);
+                      }}
                       min={1}
                       max={1000}
-                      className="h-11"
-                      autoComplete="off"
+                      className="h-9"
                     />
-                    <p className="text-xs text-gray-500">
-                      수집할 포스트의 최대 개수
-                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={handleGoBack}
-                  className="flex-1 h-12"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  이전
-                </Button>
-                <Button
-                  onClick={handleSettingsComplete}
-                  className="flex-2 h-12"
-                  size="lg"
-                >
-                  <Play className="w-5 h-5 mr-2" />
-                  크롤링 시작
-                </Button>
-              </div>
+              <Button
+                onClick={handleSettingsComplete}
+                disabled={
+                  !blogId.trim() ||
+                  (mode === "category" && selectedCategories.length === 0)
+                }
+                className="w-full h-12 text-base"
+                size="lg"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                크롤링 시작
+              </Button>
             </CardContent>
           </Card>
         );
 
       case "crawl":
         return (
-          <Card className="max-w-4xl mx-auto shadow-lg">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="flex items-center justify-center gap-3 text-xl">
-                <div
-                  className={`p-2 rounded-lg ${isLoading ? "bg-orange-100 dark:bg-orange-900/30" : "bg-emerald-100 dark:bg-emerald-900/30"}`}
-                >
-                  {isLoading ? (
-                    <div className="animate-spin w-6 h-6 border-2 border-orange-600 border-t-transparent rounded-full" />
-                  ) : (
-                    <CheckCircle className="w-6 h-6 text-emerald-600" />
-                  )}
-                </div>
-                {isLoading ? "크롤링 진행중" : "크롤링 실행"}
-              </CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                설정을 확인하고 크롤링을 시작하세요
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-8 px-8 pb-8">
-              {/* 설정 요약 */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Globe className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-                      블로그 정보
-                    </h3>
-                  </div>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-blue-700 dark:text-blue-300">
-                        블로그 ID
-                      </span>
-                      <span className="font-mono font-medium text-blue-900 dark:text-blue-100">
-                        {blogId}
-                      </span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {/* 크롤링 설정 카드 */}
+            <div className="lg:col-span-2">
+              <Card className="shadow-lg h-fit">
+                <CardHeader className="text-center pb-6">
+                  <CardTitle className="flex items-center justify-center gap-3 text-xl">
+                    <div
+                      className={`p-2 rounded-lg ${isLoading ? "bg-orange-100 dark:bg-orange-900/30" : "bg-emerald-100 dark:bg-emerald-900/30"}`}
+                    >
+                      {isLoading ? (
+                        <div className="animate-spin w-6 h-6 border-2 border-orange-600 border-t-transparent rounded-full" />
+                      ) : (
+                        <CheckCircle className="w-6 h-6 text-emerald-600" />
+                      )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-blue-700 dark:text-blue-300">
-                        크롤링 모드
-                      </span>
-                      <span className="font-medium text-blue-900 dark:text-blue-100">
-                        {mode === "all" ? "전체 포스팅" : "선택된 카테고리"}
-                      </span>
-                    </div>
-                    {mode === "category" && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-blue-700 dark:text-blue-300">
-                          선택된 카테고리
-                        </span>
-                        <span className="font-medium text-blue-900 dark:text-blue-100">
-                          {selectedCategories.length}개
-                        </span>
+                    {isLoading ? "크롤링 진행중" : "크롤링 실행"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 px-8 pb-8">
+                  {/* 설정 요약 */}
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Globe className="w-4 h-4 text-blue-600" />
+                        <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                          블로그 정보
+                        </h3>
                       </div>
-                    )}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-blue-700 dark:text-blue-300">
+                            블로그 ID
+                          </span>
+                          <span className="font-mono font-medium text-blue-900 dark:text-blue-100">
+                            {blogId}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-700 dark:text-blue-300">
+                            크롤링 모드
+                          </span>
+                          <span className="font-medium text-blue-900 dark:text-blue-100">
+                            {mode === "all" ? "전체 포스팅" : "선택된 카테고리"}
+                          </span>
+                        </div>
+                        {mode === "category" && (
+                          <div className="flex justify-between">
+                            <span className="text-blue-700 dark:text-blue-300">
+                              선택된 카테고리
+                            </span>
+                            <span className="font-medium text-blue-900 dark:text-blue-100">
+                              {selectedCategories.length}개
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 p-4 rounded-xl border border-purple-200 dark:border-purple-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="w-4 h-4 text-purple-600" />
+                        <h3 className="font-semibold text-purple-900 dark:text-purple-100">
+                          크롤링 설정
+                        </h3>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-purple-700 dark:text-purple-300">
+                            최대 페이지
+                          </span>
+                          <span className="font-medium text-purple-900 dark:text-purple-100">
+                            {maxPages}개
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700 dark:text-purple-300">
+                            최대 포스트
+                          </span>
+                          <span className="font-medium text-purple-900 dark:text-purple-100">
+                            {maxItems}개
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 p-6 rounded-xl border border-purple-200 dark:border-purple-800">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FileText className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-semibold text-purple-900 dark:text-purple-100">
-                      크롤링 설정
-                    </h3>
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleGoBack}
+                      disabled={isLoading}
+                      className="flex-1 h-12"
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-2" />
+                      이전
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleReset}
+                      disabled={isLoading}
+                      className="flex-1 h-12"
+                    >
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                      처음부터
+                    </Button>
+                    <Button
+                      onClick={handleStartCrawling}
+                      disabled={isLoading}
+                      className="flex-2 h-12"
+                      size="lg"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Pause className="w-5 h-5 mr-2" />
+                          크롤링 중...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-5 h-5 mr-2" />
+                          크롤링 시작
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-purple-700 dark:text-purple-300">
-                        최대 페이지
-                      </span>
-                      <span className="font-medium text-purple-900 dark:text-purple-100">
-                        {maxPages}개
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-purple-700 dark:text-purple-300">
-                        최대 포스트
-                      </span>
-                      <span className="font-medium text-purple-900 dark:text-purple-100">
-                        {maxItems}개
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-purple-700 dark:text-purple-300">
-                        예상 소요시간
-                      </span>
-                      <span className="font-medium text-purple-900 dark:text-purple-100">
-                        {Math.ceil(maxPages * 0.5)}분
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+            </div>
 
-              <div className="flex gap-4 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={handleGoBack}
-                  disabled={isLoading}
-                  className="flex-1 h-12"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  이전
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleReset}
-                  disabled={isLoading}
-                  className="flex-1 h-12"
-                >
-                  <AlertCircle className="w-4 h-4 mr-2" />
-                  처음부터
-                </Button>
-                <Button
-                  onClick={handleStartCrawling}
-                  disabled={isLoading}
-                  className="flex-2 h-12"
-                  size="lg"
-                >
-                  {isLoading ? (
+            {/* 진행상황 카드 */}
+            <div className="lg:col-span-1">
+              <Card className="shadow-lg h-fit sticky top-6">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    <h3 className="font-semibold">크롤링 진행상황</h3>
+                  </div>
+
+                  {isLoading || progress.currentPage > 0 ? (
                     <>
-                      <Pause className="w-5 h-5 mr-2" />
-                      크롤링 중...
+                      <div className="space-y-4">
+                        {/* 프로그레스 바 */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>진행률</span>
+                            <span className="font-medium">
+                              {progressPercentage}%
+                            </span>
+                          </div>
+                          <Progress
+                            value={progressPercentage}
+                            className="h-2"
+                          />
+                        </div>
+
+                        {/* 페이지 정보 */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
+                            <div className="text-blue-600 font-semibold">
+                              {progress.currentPage}
+                            </div>
+                            <div className="text-blue-700 dark:text-blue-300 text-xs">
+                              현재 페이지
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                            <div className="text-gray-600 font-semibold">
+                              {progress.totalPages}
+                            </div>
+                            <div className="text-gray-500 text-xs">
+                              전체 페이지
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 아이템 정보 */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="bg-green-50 dark:bg-green-950/30 p-3 rounded-lg">
+                            <div className="text-green-600 font-semibold">
+                              {progress.itemsFound}
+                            </div>
+                            <div className="text-green-700 dark:text-green-300 text-xs">
+                              발견된 포스트
+                            </div>
+                          </div>
+                          <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg">
+                            <div className="text-purple-600 font-semibold">
+                              {progress.itemsCrawled}
+                            </div>
+                            <div className="text-purple-700 dark:text-purple-300 text-xs">
+                              수집 완료
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 현재 상태 메시지 */}
+                        {progress.message && (
+                          <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+                            <div className="text-amber-800 dark:text-amber-200 text-sm font-medium">
+                              현재 상태
+                            </div>
+                            <div className="text-amber-700 dark:text-amber-300 text-xs mt-1">
+                              {progress.message}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </>
                   ) : (
-                    <>
-                      <Play className="w-5 h-5 mr-2" />
-                      크롤링 시작하기
-                    </>
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">
+                        크롤링을 시작하면
+                        <br />
+                        진행상황이 표시됩니다
+                      </p>
+                    </div>
                   )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         );
 
       default:
@@ -1021,135 +876,8 @@ export function NaverBlogCrawlerPage() {
 
   const CrawlerContent = () => (
     <div className="min-h-screen p-6 space-y-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="text-center space-y-3 pb-6">
-        {/* Step Indicator - Desktop Optimized */}
-        <div className="flex items-center justify-center space-x-4 mt-8 bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border">
-          {["blogId", "mode", "category", "settings", "crawl"].map(
-            (step, index) => {
-              const stepLabels = [
-                "블로그 ID",
-                "모드 선택",
-                "카테고리",
-                "크롤링 설정",
-                "크롤링",
-              ];
-              const stepIcons = [Globe, Folder, Folder, FileText, Play];
-              const StepIcon = stepIcons[index];
-              const isActive = currentStep === step;
-              const isCompleted =
-                ["blogId", "mode", "category", "settings", "crawl"].indexOf(
-                  currentStep
-                ) > index;
-              const shouldShow = step !== "category" || mode === "category";
-
-              if (!shouldShow) return null;
-
-              return (
-                <div key={step} className="flex items-center">
-                  <div
-                    className={`flex flex-col items-center space-y-2 ${
-                      isActive
-                        ? "text-blue-600"
-                        : isCompleted
-                          ? "text-green-600"
-                          : "text-gray-400"
-                    }`}
-                  >
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
-                        isCompleted
-                          ? "bg-green-500 text-white shadow-lg"
-                          : isActive
-                            ? "bg-blue-500 text-white shadow-lg scale-110"
-                            : "bg-gray-100 dark:bg-gray-800 text-gray-400"
-                      }`}
-                    >
-                      {isCompleted ? "✓" : <StepIcon className="w-5 h-5" />}
-                    </div>
-                    <span
-                      className={`text-sm font-medium ${
-                        isActive
-                          ? "text-blue-600"
-                          : isCompleted
-                            ? "text-green-600"
-                            : "text-gray-400"
-                      }`}
-                    >
-                      {stepLabels[index]}
-                    </span>
-                  </div>
-                  {index < 4 && shouldShow && (
-                    <div
-                      className={`w-16 h-0.5 mx-4 transition-all duration-300 ${
-                        isCompleted
-                          ? "bg-green-500"
-                          : "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    />
-                  )}
-                </div>
-              );
-            }
-          )}
-        </div>
-      </div>
-
       {/* Step Content */}
       {renderStepContent()}
-
-      {/* Progress Card - Compact */}
-      {(isLoading || progress.currentPage > 0) && (
-        <Card className="max-w-4xl mx-auto shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600" />
-                <span className="font-medium text-sm">크롤링 진행 중</span>
-              </div>
-              <div className="text-sm text-gray-600">
-                {progress.currentPage}/{progress.totalPages} 페이지 (
-                {progressPercentage}%)
-              </div>
-            </div>
-
-            <Progress value={progressPercentage} className="w-full h-2 mb-3" />
-
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-                <div className="text-lg font-bold text-blue-600">
-                  {progress.itemsFound}
-                </div>
-                <div className="text-xs text-blue-700 dark:text-blue-300">
-                  발견
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-950/30 p-3 rounded-lg">
-                <div className="text-lg font-bold text-green-600">
-                  {progress.itemsCrawled}
-                </div>
-                <div className="text-xs text-green-700 dark:text-green-300">
-                  완료
-                </div>
-              </div>
-              <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg">
-                <div className="text-lg font-bold text-purple-600">
-                  {progressPercentage}%
-                </div>
-                <div className="text-xs text-purple-700 dark:text-purple-300">
-                  진행률
-                </div>
-              </div>
-            </div>
-
-            {progress.message && (
-              <div className="mt-3 text-xs text-gray-600 bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                {progress.message}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Error Alert */}
       {error && (

@@ -1,13 +1,13 @@
 import { ChromiumBrowserManager } from "@/automation/browser/chromium-browser-manager";
 import { StealthPageFactory } from "@/automation/browser/stealth-page-factory";
-import { Page } from "playwright";
-import { JSDOM } from "jsdom";
 import {
   CrawlOptions,
-  CrawlResultItem,
   CrawlProgressCallback,
+  CrawlResultItem,
 } from "@/services/crawlers/base-crawler";
 import { CrawlSettings } from "@/types/crawl.types";
+import { JSDOM } from "jsdom";
+import { Page } from "playwright";
 
 export interface NaverBlogPost {
   title: string;
@@ -467,38 +467,58 @@ export class NaverBlogCrawler {
     const document = dom.window.document;
     const results: NaverBlogCategory[] = [];
 
-    const categoryElements = document.querySelectorAll(
-      '#category-list a[id^="category"]'
-    );
+    const selectors = [
+      '#category-list a[id^="category"]',
+      "#category-list ul li a",
+    ];
 
-    categoryElements.forEach((element) => {
-      const href = element.getAttribute("href") || "";
-      const text = element.textContent?.trim() || "";
+    // 각 셀렉터로 시도
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll(selector);
+      console.log(`셀렉터 "${selector}": ${elements.length}개 요소 발견`);
 
-      const categoryNoMatch = href.match(/categoryNo=(\\d+)/);
-      if (!categoryNoMatch) return;
+      if (elements.length > 0) {
+        console.log("성공한 셀렉터:", selector);
+        
+        elements.forEach((element) => {
+          const href = element.getAttribute("href") || "";
+          const text = element.textContent?.trim() || "";
 
-      const categoryNo = parseInt(categoryNoMatch[1]);
-      const name = text.replace(/\\(\\d+\\)/, "").trim();
+          const categoryNoMatch = href.match(/categoryNo=(\d+)/);
+          if (!categoryNoMatch) return;
 
-      const postCountRaw =
-        element.querySelector(".num.cm-col1")?.textContent || "0";
-      const postCount =
-        postCountRaw.replace(/[()]/g, "").replace(/\\D/g, "") || "0";
+          const categoryNo = parseInt(categoryNoMatch[1]);
+          const name = text.replace(/\(\d+\)/, "").trim();
 
-      const isSubCategory = element.closest("li.depth2") !== null;
-      const depth = isSubCategory ? 2 : 1;
+          // 포스트 수 추출 시도
+          const postCountMatch = text.match(/\((\d+)\)/);
+          const postCount = postCountMatch ? parseInt(postCountMatch[1]) : 0;
 
-      if (categoryNo > 0) {
-        results.push({
-          categoryNo,
-          name,
-          postCount: Number(postCount),
-          depth,
+          // 깊이 추정 (부모 요소 기반)
+          const parentLi = element.closest("li");
+          const depth =
+            parentLi?.className?.includes("depth2") ||
+            parentLi?.style?.marginLeft ||
+            element.style?.marginLeft
+              ? 2
+              : 1;
+
+          if (categoryNo > 0 && name) {
+            results.push({
+              categoryNo,
+              name,
+              postCount,
+              depth,
+            });
+          }
         });
+        
+        break; // 성공한 셀렉터가 있으면 중단
       }
-    });
+    }
 
+    console.log("최종 파싱된 카테고리 개수:", results.length);
+    
     return results;
   }
 
@@ -512,7 +532,7 @@ export class NaverBlogCrawler {
   ): Promise<NaverBlogPost[]> {
     return await page.evaluate(() => {
       const results: NaverBlogPost[] = [];
-      
+
       // 네이버 블로그 포스트 목록 메인 셀렉터
       const postSelector = "#postBottomTitleListBody tr";
 

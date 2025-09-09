@@ -5,8 +5,9 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2 } from "lucide-react";
-import React, { useRef } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
 
 interface LicenseKeyInputProps {
   value: string;
@@ -15,6 +16,10 @@ interface LicenseKeyInputProps {
   isValid?: boolean;
   error?: string;
 }
+
+const hasKoreanCharacters = (text: string): boolean => {
+  return /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
+};
 
 interface MobileInputOTPProps {
   value: string;
@@ -149,6 +154,25 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
   isValid = false,
 }) => {
   const isAdminLicense = value.startsWith("ADMIN");
+  const [showKoreanWarning, setShowKoreanWarning] = useState(false);
+
+  const handleInputChange = (newValue: string) => {
+    if (hasKoreanCharacters(newValue)) {
+      setShowKoreanWarning(true);
+      return;
+    }
+    setShowKoreanWarning(false);
+    onChange(newValue);
+  };
+
+  useEffect(() => {
+    if (showKoreanWarning) {
+      const timer = setTimeout(() => {
+        setShowKoreanWarning(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showKoreanWarning]);
 
   return (
     <div className="space-y-3 w-full">
@@ -166,7 +190,7 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
             <InputOTP
               maxLength={16}
               value={value}
-              onChange={onChange}
+              onChange={handleInputChange}
               disabled={disabled}
               pattern={`[A-Za-z0-9]*`}
             >
@@ -220,13 +244,22 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
         <div className="md:hidden space-y-2">
           <MobileInputOTP
             value={value}
-            onChange={onChange}
+            onChange={handleInputChange}
             disabled={disabled}
             isAdminLicense={isAdminLicense}
             isValid={isValid}
           />
         </div>
       </div>
+      
+      {showKoreanWarning && (
+        <Alert variant="destructive" className="mt-3">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            한글은 입력할 수 없습니다. 영문과 숫자만 입력해주세요.
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 };
