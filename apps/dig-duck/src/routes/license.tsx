@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import CenteredLayout from "@/components/layouts/CenteredLayout";
+import { getRedirectPath } from "@/lib/service-routes";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { LicenseKeyScreen } from "../features/license";
 import { useLicenseStore } from "../features/license/store/license.store";
 import { type LicenseVerificationResult } from "../features/license/types/license.types";
-import CenteredLayout from "@/components/layouts/CenteredLayout";
 
 export const Route = createFileRoute("/license")({
   beforeLoad: () => {
@@ -14,11 +15,18 @@ export const Route = createFileRoute("/license")({
     const isAdmin = state.licenseKey?.startsWith("ADMIN") || false;
 
     if (isAuthenticated) {
-      if (isAdmin) {
-        throw redirect({ to: "/admin/dashboard" });
-      } else {
-        throw redirect({ to: "/crawler/review" });
-      }
+      const targetRoute = getRedirectPath(
+        isAdmin,
+        state.licenseInfo?.serviceCode
+      );
+
+      console.log("License beforeLoad redirect:", {
+        isAdmin,
+        serviceCode: state.licenseInfo?.serviceCode,
+        targetRoute,
+      });
+
+      throw redirect({ to: targetRoute });
     }
   },
   component: LicenseRoute,
@@ -28,10 +36,10 @@ function LicenseRoute() {
   const navigate = useNavigate();
   const { isLicenseValid, setLicenseData } = useLicenseStore();
 
-  // 이미 라이센스가 유효하다면 크롤러 페이지로 리다이렉트
+  // 이미 라이센스가 유효하다면 루트로 이동 (__root.tsx에서 서비스별 처리)
   useEffect(() => {
     if (isLicenseValid) {
-      navigate({ to: "/crawler/review" });
+      navigate({ to: "/" });
     }
   }, [isLicenseValid, navigate]);
 
@@ -40,15 +48,6 @@ function LicenseRoute() {
     result: LicenseVerificationResult
   ) => {
     setLicenseData(licenseKey, result);
-
-    // 사용자 타입에 따라 다른 페이지로 이동
-    setTimeout(() => {
-      if (result.userType === "admin") {
-        navigate({ to: "/admin/dashboard" });
-      } else {
-        navigate({ to: "/crawler/review" });
-      }
-    }, 1500);
   };
 
   const handleLicenseError = (error: string) => {

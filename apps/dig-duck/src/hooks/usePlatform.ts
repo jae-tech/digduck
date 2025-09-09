@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 
 export const usePlatform = () => {
-  const [platform, setPlatform] = useState<"web" | "desktop" | "unknown">(
-    "unknown"
-  );
+  const [platform, setPlatform] = useState<"web" | "desktop">("web");
 
   useEffect(() => {
     // 동기적 체크 (즉시 실행)
@@ -19,7 +17,7 @@ export const usePlatform = () => {
   return {
     isDesktop: platform === "desktop",
     isWeb: platform === "web",
-    isLoading: platform === "unknown",
+    isLoading: platform === "web",
     platform,
   };
 };

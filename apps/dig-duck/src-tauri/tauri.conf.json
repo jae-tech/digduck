@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "identifier": "com.digduck.app",
   "build": {
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:5173"
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [

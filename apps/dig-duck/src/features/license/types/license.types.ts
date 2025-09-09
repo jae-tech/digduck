@@ -11,7 +11,8 @@ export interface LicenseVerificationResult {
   licenseInfo?: {
     expiryDate: string;
     userEmail: string;
-    productName: string;
+    serviceCode: string;
+    serviceName: string;
     type?: string;
     phoneNumber?: string;
     userName?: string;

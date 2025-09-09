@@ -1,4 +1,3 @@
-import React, { useRef } from "react";
 import {
   InputOTP,
   InputOTPGroup,
@@ -7,6 +6,7 @@ import {
 } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2 } from "lucide-react";
+import React, { useRef } from "react";
 
 interface LicenseKeyInputProps {
   value: string;
@@ -213,9 +213,6 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
                 <InputOTPSlot index={15} className="w-8 h-10 text-sm" />
               </InputOTPGroup>
             </InputOTP>
-            {isValid && (
-              <CheckCircle2 className="ml-3 w-5 h-5 text-green-500" />
-            )}
           </div>
         </div>
 

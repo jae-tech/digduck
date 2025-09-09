@@ -1,33 +1,33 @@
-import { useState } from "react";
-import UserLayout from "@/components/layouts/UserLayout";
+import { DataTable } from "@/components/DataTable";
 import AdminLayout from "@/components/layouts/AdminLayout";
-import { useLicenseStore } from "@/features/license/store/license.store";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import UserLayout from "@/components/layouts/UserLayout";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CompactRadio } from "@/components/ui/compact-radio";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CompactRadio } from "@/components/ui/compact-radio";
-import {
-  Globe,
-  Play,
-  Pause,
-  FileText,
-  Calendar,
-  MessageCircle,
-  BookOpen,
-  Folder,
-  Link,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  ChevronLeft,
-} from "lucide-react";
-import { apiHelpers, apiClient, type ApiError } from "@/lib/apiClient";
-import { DataTable } from "@/components/DataTable";
+import { useLicenseStore } from "@/features/license/store/license.store";
+import { apiClient, apiHelpers, type ApiError } from "@/lib/apiClient";
 import { type ColumnDef } from "@tanstack/react-table";
+import {
+  AlertCircle,
+  BookOpen,
+  Calendar,
+  CheckCircle,
+  ChevronLeft,
+  Clock,
+  FileText,
+  Folder,
+  Globe,
+  Link,
+  MessageCircle,
+  Pause,
+  Play,
+} from "lucide-react";
+import { useState } from "react";
 
 interface NaverBlogPost {
   title: string;
@@ -140,29 +140,33 @@ export function NaverBlogCrawlerPage() {
 
     // 데이터를 CSV 형태로 변환
     const csvHeaders = ["제목", "작성일", "댓글 수", "URL"];
-    const csvData = results.map(post => [
+    const csvData = results.map((post) => [
       post.title,
       post.publishDate,
       post.commentCount || 0,
-      post.url
+      post.url,
     ]);
 
     // CSV 문자열 생성
     const csvContent = [
       csvHeaders.join(","),
-      ...csvData.map(row => 
-        row.map(field => 
-          typeof field === 'string' && field.includes(',') 
-            ? `"${field.replace(/"/g, '""')}"` 
-            : field
-        ).join(",")
-      )
+      ...csvData.map((row) =>
+        row
+          .map((field) =>
+            typeof field === "string" && field.includes(",")
+              ? `"${field.replace(/"/g, '""')}"`
+              : field
+          )
+          .join(",")
+      ),
     ].join("\n");
 
     // BOM 추가 (한글 깨짐 방지)
     const BOM = "\uFEFF";
-    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
-    
+    const blob = new Blob([BOM + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
     // 파일 다운로드
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -483,7 +487,7 @@ export function NaverBlogCrawlerPage() {
                         handleSearchBlog();
                       }
                     }}
-                    placeholder="예: yangsa254"
+                    placeholder="예: digduck"
                     className="w-full h-12 text-lg px-4 border-2 focus:border-blue-500 transition-colors"
                     autoFocus
                   />
@@ -495,11 +499,11 @@ export function NaverBlogCrawlerPage() {
                   <p className="text-sm text-blue-700 dark:text-blue-300">
                     💡 <strong>예시:</strong> blog.naver.com/
                     <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded">
-                      yangsa254
+                      digduck
                     </span>
                     에서
                     <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded ml-1">
-                      yangsa254
+                      digduck
                     </span>{" "}
                     부분만 입력하세요
                   </p>
@@ -1104,24 +1108,37 @@ export function NaverBlogCrawlerPage() {
                 <span className="font-medium text-sm">크롤링 진행 중</span>
               </div>
               <div className="text-sm text-gray-600">
-                {progress.currentPage}/{progress.totalPages} 페이지 ({progressPercentage}%)
+                {progress.currentPage}/{progress.totalPages} 페이지 (
+                {progressPercentage}%)
               </div>
             </div>
-            
+
             <Progress value={progressPercentage} className="w-full h-2 mb-3" />
-            
+
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-                <div className="text-lg font-bold text-blue-600">{progress.itemsFound}</div>
-                <div className="text-xs text-blue-700 dark:text-blue-300">발견</div>
+                <div className="text-lg font-bold text-blue-600">
+                  {progress.itemsFound}
+                </div>
+                <div className="text-xs text-blue-700 dark:text-blue-300">
+                  발견
+                </div>
               </div>
               <div className="bg-green-50 dark:bg-green-950/30 p-3 rounded-lg">
-                <div className="text-lg font-bold text-green-600">{progress.itemsCrawled}</div>
-                <div className="text-xs text-green-700 dark:text-green-300">완료</div>
+                <div className="text-lg font-bold text-green-600">
+                  {progress.itemsCrawled}
+                </div>
+                <div className="text-xs text-green-700 dark:text-green-300">
+                  완료
+                </div>
               </div>
               <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg">
-                <div className="text-lg font-bold text-purple-600">{progressPercentage}%</div>
-                <div className="text-xs text-purple-700 dark:text-purple-300">진행률</div>
+                <div className="text-lg font-bold text-purple-600">
+                  {progressPercentage}%
+                </div>
+                <div className="text-xs text-purple-700 dark:text-purple-300">
+                  진행률
+                </div>
               </div>
             </div>
 

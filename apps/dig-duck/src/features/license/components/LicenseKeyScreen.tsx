@@ -30,16 +30,24 @@ export const LicenseKeyScreen: React.FC<LicenseVerificationProps> = ({
   } = useLicenseVerification();
 
   const handleVerify = async () => {
+    console.log("🚀 Starting license verification...");
     const result = await verifyLicense();
+
+    console.log("📋 Verification result:", result);
 
     if (result) {
       if (result.success) {
+        console.log("✅ License verification successful, calling onLicenseVerified...");
         setTimeout(() => {
+          console.log("🔄 Calling onLicenseVerified callback");
           onLicenseVerified?.(licenseKey, result);
         }, 1000);
       } else {
+        console.log("❌ License verification failed");
         onError?.(result.message || "검증에 실패했습니다.");
       }
+    } else {
+      console.log("⚠️ No result returned from verifyLicense");
     }
   };
 

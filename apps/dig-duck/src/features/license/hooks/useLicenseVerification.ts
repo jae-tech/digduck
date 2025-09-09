@@ -5,8 +5,10 @@ import {
   type LicenseStatus,
 } from "../types/license.types";
 import { LicenseService } from "../services/license.service";
+import { usePlatform } from "@/hooks/usePlatform";
 
 export const useLicenseVerification = () => {
+  const { platform } = usePlatform();
   const [state, setState] = useState<LicenseState>({
     licenseKey: "",
     isVerifying: false,
@@ -60,7 +62,10 @@ export const useLicenseVerification = () => {
       setStatus("verifying");
 
       try {
-        const result = await LicenseService.verifyLicense(state.licenseKey);
+        const result = await LicenseService.verifyLicense(
+          state.licenseKey,
+          platform
+        );
 
         setState((prev) => ({
           ...prev,
