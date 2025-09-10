@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "@tanstack/react-router";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,9 +15,16 @@ import {
   ChevronRight,
   Globe,
   TrendingUp,
+  User,
+  Calendar,
+  MessageSquare,
+  Coffee,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
 import { useLicenseStore } from "@/features/license/store/license.store";
+import { formatDate } from "@/lib/utils";
 
 interface MenuItemProps {
   to: string;
@@ -63,33 +70,55 @@ export default function AdminLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [remainingDays, setRemainingDays] = useState<number | null>(null);
+  const [isExpiringSoon, setIsExpiringSoon] = useState(false);
+  const [isUserViewMode, setIsUserViewMode] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { licenseInfo, clearLicense } = useLicenseStore();
 
-  const menuItems = [
+  // 남은 일수 계산 함수
+  const calculateRemainingDays = (expiryDate: string | null): number | null => {
+    if (!expiryDate) return null;
+
+    try {
+      const expiry = new Date(expiryDate);
+      const now = new Date();
+      const diffTime = expiry.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      return diffDays > 0 ? diffDays : 0;
+    } catch (error) {
+      console.error("Error calculating remaining days:", error);
+      return null;
+    }
+  };
+
+  // 실시간 남은 일수 업데이트
+  useEffect(() => {
+    const updateRemainingDays = () => {
+      const days = calculateRemainingDays(licenseInfo?.expiryDate || null);
+      setRemainingDays(days);
+      setIsExpiringSoon(days !== null && days <= 7); // 7일 이하면 곧 만료
+    };
+
+    // 초기 계산
+    updateRemainingDays();
+
+    // 1시간마다 업데이트 (실시간이지만 너무 자주 업데이트할 필요는 없음)
+    const interval = setInterval(updateRemainingDays, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [licenseInfo?.expiryDate]);
+
+  // 관리자 전용 메뉴
+  const adminMenuItems = [
     {
       to: "/admin/dashboard",
       icon: <LayoutDashboard className="w-5 h-5" />,
       label: "대시보드",
       badge: undefined,
-    },
-    {
-      key: "services",
-      icon: <Globe className="w-5 h-5" />,
-      label: "서비스",
-      hasSubmenu: true,
-      submenu: [
-        {
-          to: "/crawler/review",
-          icon: <Search className="w-4 h-4" />,
-          label: "크롤링 서비스",
-        },
-        {
-          to: "/crawler/insights",
-          icon: <TrendingUp className="w-4 h-4" />,
-          label: "쇼핑 인사이트",
-        },
-      ],
     },
     {
       to: "/admin/license-manager",
@@ -105,9 +134,44 @@ export default function AdminLayout({
     },
   ];
 
+  // 공통 서비스 메뉴
+  const serviceMenuItems = [
+    {
+      key: "services",
+      icon: <Globe className="w-5 h-5" />,
+      label: "서비스",
+      hasSubmenu: true,
+      submenu: [
+        {
+          to: "/crawler/review",
+          icon: <Search className="w-4 h-4" />,
+          label: "리뷰 크롤링",
+        },
+        {
+          to: "/crawler/insights",
+          icon: <TrendingUp className="w-4 h-4" />,
+          label: "쇼핑 인사이트",
+        },
+        {
+          to: "/crawler/naver-blog",
+          icon: <Coffee className="w-4 h-4" />,
+          label: "네이버 블로그",
+        },
+        {
+          to: "/crawler/naver-cafe",
+          icon: <MessageSquare className="w-4 h-4" />,
+          label: "네이버 카페",
+        },
+      ],
+    },
+  ];
+
+  // 현재 보기 모드에 따른 메뉴 결정
+  const menuItems = isUserViewMode ? serviceMenuItems : [...adminMenuItems, ...serviceMenuItems];
+
   const handleLogout = () => {
     clearLicense();
-    window.location.href = "/license";
+    navigate({ to: "/license" });
   };
 
   const toggleMobileMenu = () => {
@@ -131,9 +195,11 @@ export default function AdminLayout({
             {!isSidebarCollapsed && (
               <div className="ml-3">
                 <h1 className="text-lg font-bold text-gray-900">
-                  Dig Duck Admin
+                  {isUserViewMode ? "Dig Duck" : "Dig Duck Admin"}
                 </h1>
-                <p className="text-xs text-gray-500">관리자 패널</p>
+                <p className="text-xs text-gray-500">
+                  {isUserViewMode ? "사용자 모드" : "관리자 패널"}
+                </p>
               </div>
             )}
           </div>
@@ -223,48 +289,6 @@ export default function AdminLayout({
             })}
           </nav>
 
-          {/* 사용자 정보 및 로그아웃 */}
-          <div className="px-4 py-4 border-t border-gray-200">
-            {!isSidebarCollapsed ? (
-              <>
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <DigDuckIcon className="text-blue-600" size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {licenseInfo?.userEmail || "admin@company.com"}
-                    </p>
-                    <p className="text-xs text-gray-500">관리자</p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  로그아웃
-                </Button>
-              </>
-            ) : (
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleLogout}
-                  variant="ghost"
-                  size="sm"
-                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 group relative"
-                >
-                  <LogOut className="w-5 h-5" />
-                  {/* 접힌 상태에서의 툴팁 */}
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                    로그아웃
-                  </div>
-                </Button>
-              </div>
-            )}
-          </div>
         </div>
       </aside>
 
@@ -286,7 +310,7 @@ export default function AdminLayout({
               </Button>
               <DigDuckIcon className="text-blue-600" size={24} />
               <h1 className="text-lg font-semibold text-gray-900">
-                관리자 패널
+                {isUserViewMode ? "Dig Duck" : "관리자 패널"}
               </h1>
             </div>
             <Button
@@ -315,11 +339,33 @@ export default function AdminLayout({
                 <div className="flex items-center space-x-3">
                   <DigDuckIcon className="text-blue-600" size={24} />
                   <h1 className="text-lg font-semibold text-gray-900">
-                    관리자 패널
+                    {isUserViewMode ? "Dig Duck" : "관리자 패널"}
                   </h1>
                 </div>
                 <Button variant="ghost" size="sm" onClick={toggleMobileMenu}>
                   <X className="w-5 h-5" />
+                </Button>
+              </div>
+
+              {/* 모드 전환 버튼 - 모바일 */}
+              <div className="px-4 py-2 border-b border-gray-200">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsUserViewMode(!isUserViewMode)}
+                  className="w-full flex items-center justify-center space-x-2"
+                >
+                  {isUserViewMode ? (
+                    <>
+                      <EyeOff className="w-4 h-4" />
+                      <span>관리자 모드</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      <span>사용자 모드</span>
+                    </>
+                  )}
                 </Button>
               </div>
 
@@ -339,29 +385,6 @@ export default function AdminLayout({
                   ))}
               </nav>
 
-              {/* 모바일 메뉴 하단 사용자 정보 */}
-              <div className="absolute bottom-0 left-0 right-0 px-4 py-4 border-t border-gray-200 bg-white">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <DigDuckIcon className="text-blue-600" size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {licenseInfo?.userEmail || "admin@company.com"}
-                    </p>
-                    <p className="text-xs text-gray-500">관리자</p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  로그아웃
-                </Button>
-              </div>
             </div>
           </>
         )}
@@ -397,19 +420,170 @@ export default function AdminLayout({
                       }
                     }
 
-                    return "관리자 패널";
+                    return isUserViewMode ? "Dig Duck" : "관리자 패널";
                   })()}
                 </h2>
               </div>
               <div className="flex items-center space-x-4">
-                <Badge
+                {/* 보기 모드 전환 버튼 */}
+                <Button
                   variant="outline"
-                  className="text-green-600 border-green-200"
+                  size="sm"
+                  onClick={() => setIsUserViewMode(!isUserViewMode)}
+                  className="flex items-center space-x-2"
                 >
-                  온라인
-                </Badge>
-                <div className="text-sm text-gray-600">
-                  {new Date().toLocaleDateString("ko-KR")}
+                  {isUserViewMode ? (
+                    <>
+                      <EyeOff className="w-4 h-4" />
+                      <span>관리자 모드</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      <span>사용자 모드</span>
+                    </>
+                  )}
+                </Button>
+                {/* 라이선스 정보 */}
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium text-gray-900">
+                    {licenseInfo?.userName || "관리자"}
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${
+                        isExpiringSoon
+                          ? "text-orange-600 border-orange-300"
+                          : "text-green-600 border-green-300"
+                      }`}
+                    >
+                      {remainingDays !== null
+                        ? remainingDays === 0
+                          ? "만료됨"
+                          : `${remainingDays}일 남음`
+                        : "활성"}
+                    </Badge>
+                    <span className="text-xs text-gray-500">
+                      만료:{" "}
+                      {licenseInfo?.expiryDate
+                        ? formatDate(licenseInfo.expiryDate)
+                        : "확인 중..."}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 사용자 메뉴 */}
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center space-x-2 hover:bg-gray-100"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <ChevronDown
+                      className={`w-4 h-4 text-gray-500 transition-transform ${
+                        isUserMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </Button>
+
+                  {/* 드롭다운 메뉴 */}
+                  {isUserMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                        <div className="p-4">
+                          {/* 사용자 정보 */}
+                          <div className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-100">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <User className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {licenseInfo?.userName || "관리자"}
+                              </p>
+                              <p className="text-xs text-gray-500">시스템 관리자</p>
+                            </div>
+                          </div>
+
+                          {/* 라이선스 정보 */}
+                          <div className="mb-3 pb-3 border-b border-gray-100">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-gray-600">
+                                라이선스 상태
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${
+                                  isExpiringSoon
+                                    ? "text-orange-600 border-orange-300"
+                                    : remainingDays === 0
+                                      ? "text-red-600 border-red-300"
+                                      : "text-green-600 border-green-300"
+                                }`}
+                              >
+                                {remainingDays !== null
+                                  ? remainingDays === 0
+                                    ? "만료됨"
+                                    : `${remainingDays}일 남음`
+                                  : "활성"}
+                              </Badge>
+                            </div>
+
+                            {/* 남은 일수 상세 표시 */}
+                            <div className="flex items-center space-x-1 mb-1">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">
+                                {licenseInfo?.expiryDate
+                                  ? `만료일: ${formatDate(licenseInfo.expiryDate)}`
+                                  : "만료일 확인 중..."}
+                              </span>
+                            </div>
+
+                            {/* 만료 경고 메시지 */}
+                            {isExpiringSoon &&
+                              remainingDays !== null &&
+                              remainingDays > 0 && (
+                                <div className="text-xs text-orange-600 mt-1 font-medium">
+                                  ⚠️ 곧 만료됩니다! 연장을 고려해주세요.
+                                </div>
+                              )}
+
+                            {remainingDays === 0 && (
+                              <div className="text-xs text-red-600 mt-1 font-medium">
+                                🚨 라이선스가 만료되었습니다.
+                              </div>
+                            )}
+
+                            <div className="text-xs text-gray-500 mt-1">
+                              서비스: {licenseInfo?.serviceName || "확인 중..."}
+                            </div>
+                          </div>
+
+                          {/* 로그아웃 버튼 */}
+                          <Button
+                            onClick={() => {
+                              handleLogout();
+                              setIsUserMenuOpen(false);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                          >
+                            <LogOut className="w-4 h-4 mr-2" />
+                            로그아웃
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

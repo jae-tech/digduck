@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LicenseRouteImport } from './routes/license'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedCrawlerReviewRouteImport } from './routes/_authenticated/crawler/review'
+import { Route as AuthenticatedCrawlerNaverCafeRouteImport } from './routes/_authenticated/crawler/naver-cafe'
 import { Route as AuthenticatedCrawlerNaverBlogRouteImport } from './routes/_authenticated/crawler/naver-blog'
 import { Route as AuthenticatedCrawlerInsightsRouteImport } from './routes/_authenticated/crawler/insights'
 import { Route as AuthenticatedAdminLicenseManagerRouteImport } from './routes/_authenticated/admin/license-manager'
@@ -31,6 +32,12 @@ const AuthenticatedCrawlerReviewRoute =
   AuthenticatedCrawlerReviewRouteImport.update({
     id: '/_authenticated/crawler/review',
     path: '/crawler/review',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedCrawlerNaverCafeRoute =
+  AuthenticatedCrawlerNaverCafeRouteImport.update({
+    id: '/_authenticated/crawler/naver-cafe',
+    path: '/crawler/naver-cafe',
     getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedCrawlerNaverBlogRoute =
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
   '/crawler/insights': typeof AuthenticatedCrawlerInsightsRoute
   '/crawler/naver-blog': typeof AuthenticatedCrawlerNaverBlogRoute
+  '/crawler/naver-cafe': typeof AuthenticatedCrawlerNaverCafeRoute
   '/crawler/review': typeof AuthenticatedCrawlerReviewRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
   '/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
   '/crawler/insights': typeof AuthenticatedCrawlerInsightsRoute
   '/crawler/naver-blog': typeof AuthenticatedCrawlerNaverBlogRoute
+  '/crawler/naver-cafe': typeof AuthenticatedCrawlerNaverCafeRoute
   '/crawler/review': typeof AuthenticatedCrawlerReviewRoute
 }
 export interface FileRoutesById {
@@ -84,6 +93,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
   '/_authenticated/crawler/insights': typeof AuthenticatedCrawlerInsightsRoute
   '/_authenticated/crawler/naver-blog': typeof AuthenticatedCrawlerNaverBlogRoute
+  '/_authenticated/crawler/naver-cafe': typeof AuthenticatedCrawlerNaverCafeRoute
   '/_authenticated/crawler/review': typeof AuthenticatedCrawlerReviewRoute
 }
 export interface FileRouteTypes {
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/admin/license-manager'
     | '/crawler/insights'
     | '/crawler/naver-blog'
+    | '/crawler/naver-cafe'
     | '/crawler/review'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/admin/license-manager'
     | '/crawler/insights'
     | '/crawler/naver-blog'
+    | '/crawler/naver-cafe'
     | '/crawler/review'
   id:
     | '__root__'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/license-manager'
     | '/_authenticated/crawler/insights'
     | '/_authenticated/crawler/naver-blog'
+    | '/_authenticated/crawler/naver-cafe'
     | '/_authenticated/crawler/review'
   fileRoutesById: FileRoutesById
 }
@@ -123,6 +136,7 @@ export interface RootRouteChildren {
   AuthenticatedAdminLicenseManagerRoute: typeof AuthenticatedAdminLicenseManagerRoute
   AuthenticatedCrawlerInsightsRoute: typeof AuthenticatedCrawlerInsightsRoute
   AuthenticatedCrawlerNaverBlogRoute: typeof AuthenticatedCrawlerNaverBlogRoute
+  AuthenticatedCrawlerNaverCafeRoute: typeof AuthenticatedCrawlerNaverCafeRoute
   AuthenticatedCrawlerReviewRoute: typeof AuthenticatedCrawlerReviewRoute
 }
 
@@ -147,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/crawler/review'
       fullPath: '/crawler/review'
       preLoaderRoute: typeof AuthenticatedCrawlerReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/crawler/naver-cafe': {
+      id: '/_authenticated/crawler/naver-cafe'
+      path: '/crawler/naver-cafe'
+      fullPath: '/crawler/naver-cafe'
+      preLoaderRoute: typeof AuthenticatedCrawlerNaverCafeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/crawler/naver-blog': {
@@ -187,6 +208,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedAdminLicenseManagerRoute: AuthenticatedAdminLicenseManagerRoute,
   AuthenticatedCrawlerInsightsRoute: AuthenticatedCrawlerInsightsRoute,
   AuthenticatedCrawlerNaverBlogRoute: AuthenticatedCrawlerNaverBlogRoute,
+  AuthenticatedCrawlerNaverCafeRoute: AuthenticatedCrawlerNaverCafeRoute,
   AuthenticatedCrawlerReviewRoute: AuthenticatedCrawlerReviewRoute,
 }
 export const routeTree = rootRouteImport

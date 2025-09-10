@@ -137,7 +137,7 @@ export function DataTable<TData>({
   const selectedRowCount = Object.keys(rowSelection).length;
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`h-full flex flex-col space-y-4 ${className}`}>
       {/* 📋 헤더 & 툴바 */}
       <div className="flex items-center justify-between">
         <div>
@@ -209,9 +209,9 @@ export function DataTable<TData>({
       )}
 
       {/* 🗂️ 메인 테이블 */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto" style={{ maxHeight }}>
-          <table className="w-full">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex-1 flex flex-col">
+        <div className="overflow-x-auto flex-1" style={{ maxHeight: maxHeight === '100%' ? undefined : maxHeight }}>
+          <table className="w-full h-full">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
