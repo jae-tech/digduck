@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { build } from '@/app';
-import type { FastifyInstance } from 'fastify';
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { build } from "@/app";
+import type { FastifyInstance } from "fastify";
 
-describe('Auth Controller', () => {
+describe("Auth Controller", () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
@@ -14,133 +14,133 @@ describe('Auth Controller', () => {
     await app.close();
   });
 
-  describe('POST /auth/login', () => {
-    it('should return 401 for invalid credentials', async () => {
+  describe("POST /auth/login", () => {
+    it("should return 401 for invalid credentials", async () => {
       const response = await app.inject({
-        method: 'POST',
-        url: '/auth/login',
+        method: "POST",
+        url: "/auth/login",
         payload: {
-          email: 'nonexistent@example.com',
-          password: 'wrongpassword'
-        }
+          email: "nonexistent@example.com",
+          password: "wrongpassword",
+        },
       });
 
       expect(response.statusCode).toBe(401);
       const result = response.json();
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Invalid credentials');
+      expect(result.error).toBe("Invalid credentials");
     });
 
-    it('should validate required fields', async () => {
+    it("should validate required fields", async () => {
       const response = await app.inject({
-        method: 'POST',
-        url: '/auth/login',
+        method: "POST",
+        url: "/auth/login",
         payload: {
-          email: 'invalid-email'
+          email: "invalid-email",
           // missing password
-        }
+        },
       });
 
       // Fastify validation should return 400 for schema validation errors
       expect(response.statusCode).toBe(400);
     });
 
-    it('should validate email format', async () => {
+    it("should validate email format", async () => {
       const response = await app.inject({
-        method: 'POST',
-        url: '/auth/login',
+        method: "POST",
+        url: "/auth/login",
         payload: {
-          email: 'not-an-email',
-          password: 'validpassword123'
-        }
+          email: "not-an-email",
+          password: "validpassword123",
+        },
       });
 
       expect(response.statusCode).toBe(400);
     });
   });
 
-  describe('POST /auth/register', () => {
-    it('should validate required fields', async () => {
+  describe("POST /auth/register", () => {
+    it("should validate required fields", async () => {
       const response = await app.inject({
-        method: 'POST',
-        url: '/auth/register',
+        method: "POST",
+        url: "/auth/register",
         payload: {
-          email: 'newuser@example.com'
+          email: "newuser@example.com",
           // missing password and name
-        }
+        },
       });
 
-      // Fastify validation should return 400 for schema validation errors  
+      // Fastify validation should return 400 for schema validation errors
       expect(response.statusCode).toBe(400);
     });
 
-    it('should validate email format', async () => {
+    it("should validate email format", async () => {
       const response = await app.inject({
-        method: 'POST',
-        url: '/auth/register',
+        method: "POST",
+        url: "/auth/register",
         payload: {
-          email: 'invalid-email',
-          password: 'password123',
-          name: 'Test User'
-        }
+          email: "invalid-email",
+          password: "password123",
+          name: "Test User",
+        },
       });
 
       expect(response.statusCode).toBe(400);
     });
 
-    it('should validate password length', async () => {
+    it("should validate password length", async () => {
       const response = await app.inject({
-        method: 'POST',
-        url: '/auth/register',
+        method: "POST",
+        url: "/auth/register",
         payload: {
-          email: 'test@example.com',
-          password: '123', // too short
-          name: 'Test User'
-        }
+          email: "test@example.com",
+          password: "123", // too short
+          name: "Test User",
+        },
       });
 
       expect(response.statusCode).toBe(400);
     });
   });
 
-  describe('GET /auth/profile', () => {
-    it('should handle missing authorization header', async () => {
+  describe("GET /auth/profile", () => {
+    it("should handle missing authorization header", async () => {
       const response = await app.inject({
-        method: 'GET',
-        url: '/auth/profile'
+        method: "GET",
+        url: "/auth/profile",
       });
 
       // Since profile endpoint may not exist or have auth middleware, expect error
       expect([401, 404, 500]).toContain(response.statusCode);
     });
 
-    it('should handle invalid JWT token', async () => {
+    it("should handle invalid JWT token", async () => {
       const response = await app.inject({
-        method: 'GET',
-        url: '/auth/profile',
+        method: "GET",
+        url: "/auth/profile",
         headers: {
-          authorization: 'Bearer invalid-token'
-        }
+          authorization: "Bearer invalid-token",
+        },
       });
 
       expect([401, 404, 500]).toContain(response.statusCode);
     });
 
-    it('should handle valid JWT token format', async () => {
+    it("should handle valid JWT token format", async () => {
       // Create a valid token using the app's JWT instance
       const payload = {
-        userId: 'test-user-id',
-        email: 'test@example.com'
+        userId: "test-user-id",
+        email: "test@example.com",
       };
-      
-      const token = app.jwt.sign(payload, { expiresIn: '1h' });
+
+      const token = app.jwt.sign(payload, { expiresIn: "1h" });
 
       const response = await app.inject({
-        method: 'GET',
-        url: '/auth/profile',
+        method: "GET",
+        url: "/auth/profile",
         headers: {
-          authorization: `Bearer ${token}`
-        }
+          authorization: `Bearer ${token}`,
+        },
       });
 
       // Expect either success or controlled error (not auth failure)
