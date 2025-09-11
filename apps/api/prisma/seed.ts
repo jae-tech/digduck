@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-// No more enums to import
 
 const prisma = new PrismaClient();
 
