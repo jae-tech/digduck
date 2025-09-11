@@ -40,6 +40,12 @@ pnpm format
 
 # Run type checking
 pnpm check-types
+
+# Run lint with auto-fix + format (combined)
+pnpm lint:fix
+
+# Run full quality check (lint + type check + format)
+pnpm quality
 ```
 
 ### Frontend (dig-duck) Specific Commands
@@ -276,12 +282,16 @@ After completing any development task, ALWAYS run the following commands:
 **Root level (all packages):**
 
 ```bash
-# Run linting and type checking
+# Recommended: Run full quality check (lint + type check + format)
+pnpm quality
+
+# Or individually:
 pnpm lint
 pnpm check-types
-
-# Format code with Prettier
 pnpm format
+
+# Auto-fix linting issues + format
+pnpm lint:fix
 ```
 
 **For specific apps (if working in one app only):**
@@ -294,9 +304,34 @@ cd apps/dig-duck && pnpm lint
 cd apps/api && pnpm lint && pnpm type-check
 ```
 
-## Response Language
+### Formatting Guidelines
+
+- **Format only when necessary**: Run `pnpm format` only when code files (.ts, .tsx, .js, .jsx, .md) have been modified
+- **Don't format unchanged files**: Skip formatting if no code changes were made
+- **Automatic formatting**: Code formatting happens automatically during development workflow when files are edited
+
+## Response Language and Style
 
 - **Default response language**: Korean (한국어)
 - All responses should be in Korean unless specifically requested otherwise
 - Technical terms may be kept in English when appropriate
 - Code comments and documentation should follow existing language patterns
+
+## Communication Style
+
+- **Use compact mode frequently**: Keep responses concise and to the point (1-4 lines)
+- Minimize unnecessary explanations and preamble
+- Answer the specific task at hand without tangential information
+- Prefer direct, actionable responses over verbose explanations
+- Only provide detailed explanations when explicitly requested
+- Avoid redundant summaries of completed actions
+- Focus on what needs to be done, not what was already done
+
+## Import Path Guidelines
+
+- **Always use absolute paths with aliases**: Use `@/` for imports instead of relative paths
+- **Prioritize absolute paths**: `import Component from "@/components/Component"` (preferred)
+- **Avoid relative paths**: Never use `../../../` or `./` imports
+- **Follow path mapping**: Use configured path mappings in tsconfig.json
+- **Consistent import order**: External libraries → absolute imports → relative imports (if unavoidable)
+- **Use shortest possible absolute path**: Always choose the most direct route to the target file

@@ -22,6 +22,24 @@ export const config = [
     },
   },
   {
+    rules: {
+      // TypeScript 관련 공용 규칙
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
+      "@typescript-eslint/no-unsafe-function-type": "warn",
+      
+      // 일반적인 코드 품질 규칙
+      "prefer-const": "warn",
+      "no-empty": "warn",
+      "no-empty-pattern": "warn",
+      "no-useless-catch": "warn",
+      "no-useless-escape": "warn",
+      "no-case-declarations": "warn",
+    },
+  },
+  {
     plugins: {
       onlyWarn,
     },

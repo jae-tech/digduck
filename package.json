@@ -6,6 +6,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "lint:fix": "turbo run lint -- --fix && pnpm format",
+    "quality": "pnpm lint && pnpm check-types && pnpm format",
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
@@ -15,6 +17,6 @@
   },
   "packageManager": "pnpm@10.15.1+sha512.34e538c329b5553014ca8e8f4535997f96180a1d0f614339357449935350d924e22f8614682191264ec33d1462ac21561aff97f6bb18065351c162c7e8f6de67",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   }
 }

@@ -34,6 +34,11 @@ export const config = [
       ...pluginReactHooks.configs.recommended.rules,
       // React scope no longer necessary with new JSX transform.
       "react/react-in-jsx-scope": "off",
+      
+      // React 관련 공용 규칙
+      "react/prop-types": "off", // TypeScript 사용 시 불필요
+      "react/no-unescaped-entities": "warn",
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
 ];

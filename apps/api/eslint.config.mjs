@@ -13,8 +13,8 @@ export default [
       },
     },
     rules: {
-      // any 타입 사용 시 경고만 발생 (엄격하게 막지 않음)
-      "@typescript-eslint/no-explicit-any": "warn",
+      // 프로젝트별 특화 규칙은 여기에 추가
+      // 대부분의 규칙은 base config에서 처리됨
     },
   },
 ];
