@@ -231,3 +231,72 @@ export enum CrawlHistoryErrorCodes {
   DEVICE_NOT_ACTIVATED = "DEVICE_NOT_ACTIVATED",
   LICENSE_EXPIRED = "LICENSE_EXPIRED",
 }
+
+// Crawler Service Types
+export interface CreateCrawlJobRequest {
+  userEmail: string;
+  projectId?: number;
+  targetId?: number;
+  serviceId: number;
+  jobType: any; // JobType from Prisma
+  config: any;
+}
+
+export interface UpdateCrawlJobRequest {
+  status?: any; // JobStatus from Prisma
+  totalItems?: number;
+  processedItems?: number;
+  successItems?: number;
+  failedItems?: number;
+  startedAt?: Date;
+  completedAt?: Date;
+  estimatedTime?: number;
+  errorCode?: string;
+  errorMessage?: string;
+  errorDetails?: any;
+  metadata?: any;
+}
+
+export interface AddCrawlResultRequest {
+  jobId: number;
+  itemId?: string;
+  itemType: string;
+  data: any;
+  metadata?: any;
+  quality?: number;
+  itemOrder?: number;
+  pageNumber?: number;
+}
+
+export interface CrawlJobFilter {
+  userEmail?: string;
+  status?: any; // JobStatus from Prisma
+  serviceId?: number;
+  jobType?: any; // JobType from Prisma
+  page?: number;
+  limit?: number;
+  dateRange?: { from?: Date; to?: Date };
+}
+
+export interface NaverBlogPost {
+  title: string;
+  content?: string;
+  author?: string;
+  publishDate: Date;
+  url: string;
+  viewCount?: number;
+  commentCount?: number;
+  likeCount?: number;
+  tags?: string[];
+  category?: string;
+  thumbnailUrl?: string;
+}
+
+export interface NaverBlogCategory {
+  categoryNo: number;
+  name: string;
+  parentCategoryNo?: number;
+  depth: number;
+  postCount?: number;
+  isOpen?: boolean;
+}

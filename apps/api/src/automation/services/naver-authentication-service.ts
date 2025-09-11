@@ -195,7 +195,7 @@ export class NaverAuthenticationService {
 
   private async findField(
     page: Page,
-    selectors: string[]
+    selectors: string[],
   ): Promise<string | null> {
     for (const selector of selectors) {
       try {
@@ -221,7 +221,7 @@ export class NaverAuthenticationService {
   private async typeText(
     page: Page,
     selector: string,
-    text: string
+    text: string,
   ): Promise<void> {
     await page.locator(selector).click();
     await this.delay(600, 1100);
@@ -296,7 +296,7 @@ export class NaverAuthenticationService {
             if (box) {
               await page.mouse.click(
                 box.x + box.width / 2,
-                box.y + box.height / 2
+                box.y + box.height / 2,
               );
             } else {
               await submitBtn.click();
@@ -355,7 +355,7 @@ export class NaverAuthenticationService {
     } catch (error) {
       if (this.loginAttempts < this.maxLoginAttempts) {
         console.log(
-          `로그인 재시도 (${this.loginAttempts}/${this.maxLoginAttempts})`
+          `로그인 재시도 (${this.loginAttempts}/${this.maxLoginAttempts})`,
         );
         await this.delay(5000, 8000);
         return this.performLogin(page);

@@ -1,14 +1,8 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Schema,
-} from "@/decorators/controller.decorator";
-import { crawlService, comparisonService } from "@/services";
+import { Controller, Post, Schema } from "@/decorators/controller.decorator";
 import { NaverShoppingAPI } from "@/external/apis/naver-shopping-api";
-import { CrawlService } from "@/services/crawl.service";
+import { crawlerService } from "@/services";
 import type { ShoppingInsightsParams } from "@/types/api/naver-shopping.types";
-import { FastifyRequest, FastifyReply } from "fastify";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 @Controller("/naver")
 export class NaverController {
@@ -50,7 +44,7 @@ export class NaverController {
         maxPages?: number;
       };
     }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     const { url, sort = "latest", maxPages = 5 } = request.body;
 
@@ -97,7 +91,7 @@ export class NaverController {
     };
 
     try {
-      const result = await crawlService.crawlSmartStore(
+      const result = await crawlerService.crawlSmartStore(
         url,
         {
           maxPages,
@@ -118,7 +112,7 @@ export class NaverController {
               message: error.message,
             });
           },
-        }
+        },
       );
 
       // 최종 완료 메시지
@@ -160,13 +154,12 @@ export class NaverController {
   async getBlogCategories(
     request: FastifyRequest<{
       Body: { blogId: string };
-    }>
+    }>,
   ) {
     const { blogId } = request.body;
 
     try {
-      const crawlService = new CrawlService();
-      const categories = await crawlService.getNaverBlogCategories(blogId);
+      const categories = await crawlerService.getNaverBlogCategories(blogId);
 
       return {
         blogId,
@@ -177,7 +170,7 @@ export class NaverController {
       throw new Error(
         error instanceof Error
           ? error.message
-          : "블로그 카테고리 조회 중 오류가 발생했습니다."
+          : "블로그 카테고리 조회 중 오류가 발생했습니다.",
       );
     }
   }
@@ -214,7 +207,7 @@ export class NaverController {
         selectedCategories?: number[];
       };
     }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     const {
       mode = "all",
@@ -232,8 +225,6 @@ export class NaverController {
     reply.raw.setHeader("Access-Control-Allow-Headers", "Cache-Control");
 
     try {
-      const crawlService = new CrawlService();
-
       // 카테고리 선택 모드일 경우 여러 카테고리 처리
       if (
         mode === "category" &&
@@ -247,7 +238,7 @@ export class NaverController {
           const categoryUrl = `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}`;
 
           try {
-            const results = await crawlService.crawlNaverBlog(
+            const results = await crawlerService.crawlNaverBlog(
               categoryUrl,
               {
                 maxPages: Math.ceil(maxPages / selectedCategories.length),
@@ -282,7 +273,7 @@ export class NaverController {
                   });
                   reply.raw.write(`data: ${data}\n\n`);
                 },
-              }
+              },
             );
 
             allResults.push(...results);
@@ -313,7 +304,7 @@ export class NaverController {
         // 단일 URL 크롤링
         const url = `https://blog.naver.com/PostList.naver?blogId=${blogId}`;
 
-        const results = await crawlService.crawlNaverBlog(
+        const results = await crawlerService.crawlNaverBlog(
           url,
           { maxPages, maxItems },
           {
@@ -349,7 +340,7 @@ export class NaverController {
               });
               reply.raw.write(`data: ${data}\n\n`);
             },
-          }
+          },
         );
 
         // 최종 완료 메시지
@@ -419,7 +410,7 @@ export class NaverController {
   })
   async getShoppingInsights(
     request: FastifyRequest<{ Body: ShoppingInsightsParams }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { startDate, endDate, timeUnit, category, device, gender, ages } =

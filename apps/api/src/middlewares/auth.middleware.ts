@@ -5,7 +5,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 // 서비스 코드에 따른 리다이렉트 경로 매핑
 const getServiceRoute = (serviceCode: string): string => {
   const serviceRoutes: Record<string, string> = {
-    "NAVER_BLOG_CRAWLING": "/crawler/naver-blog",
+    NAVER_BLOG_CRAWLING: "/crawler/naver-blog",
     // 추가 구현된 서비스들은 여기에 추가
   };
   return serviceRoutes[serviceCode] || "/dashboard";
@@ -39,12 +39,12 @@ const getRedirectPath = async (licenseKey: string): Promise<string | null> => {
 
 export const authMiddleware = async (
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   try {
     console.log(
       "authMiddleware called, headers:",
-      request.headers.authorization
+      request.headers.authorization,
     );
     const decoded = (await request.jwtVerify()) as JWTPayload;
     console.log("JWT verified, decoded:", decoded);
@@ -68,7 +68,7 @@ export const authMiddleware = async (
 
 export const optionalAuthMiddleware = async (
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   try {
     const decoded = (await request.jwtVerify()) as JWTPayload;

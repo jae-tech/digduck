@@ -24,7 +24,7 @@ async function recordDetailedNaverLoginFlow() {
   const recordingsPath = path.join(
     process.cwd(),
     "detailed-recordings",
-    "naver-login"
+    "naver-login",
   );
   const recorder = new PlaywrightActionRecorder(recordingsPath);
 
@@ -94,7 +94,7 @@ async function analyzeRecordings() {
   const recordingsPath = path.join(
     process.cwd(),
     "detailed-recordings",
-    "naver-login"
+    "naver-login",
   );
   const recorder = new PlaywrightActionRecorder(recordingsPath);
 
@@ -110,25 +110,25 @@ async function analyzeRecordings() {
   for (let i = 0; i < recordings.length; i++) {
     const recordingPath = recordings[i];
     const sessionData = JSON.parse(
-      require("fs").readFileSync(recordingPath, "utf8")
+      require("fs").readFileSync(recordingPath, "utf8"),
     );
 
     console.log(`🔍 세션 ${i + 1}: ${sessionData.sessionId}`);
     console.log(
-      `   - 총 지속시간: ${(sessionData.totalDuration / 1000).toFixed(2)}초`
+      `   - 총 지속시간: ${(sessionData.totalDuration / 1000).toFixed(2)}초`,
     );
     console.log(`   - 총 액션 수: ${sessionData.statistics.totalActions}개`);
     console.log(`   - 클릭: ${sessionData.statistics.clickCount}회`);
     console.log(`   - 타이핑: ${sessionData.statistics.typeCount}회`);
     console.log(`   - 네비게이션: ${sessionData.statistics.navigationCount}회`);
     console.log(
-      `   - 평균 액션 시간: ${sessionData.statistics.averageActionDuration.toFixed(2)}ms`
+      `   - 평균 액션 시간: ${sessionData.statistics.averageActionDuration.toFixed(2)}ms`,
     );
 
     // 분석 리포트 파일 확인
     const analysisPath = recordingPath.replace(
       "_detailed.json",
-      "_analysis.json"
+      "_analysis.json",
     );
     if (require("fs").existsSync(analysisPath)) {
       console.log(`   📋 분석 리포트: ${analysisPath}`);
@@ -151,7 +151,7 @@ async function extractLoginPattern() {
   const recordingsPath = path.join(
     process.cwd(),
     "detailed-recordings",
-    "naver-login"
+    "naver-login",
   );
   const recorder = new PlaywrightActionRecorder(recordingsPath);
 
@@ -165,7 +165,7 @@ async function extractLoginPattern() {
   // 가장 최근 기록 사용
   const latestRecording = recordings[recordings.length - 1];
   const sessionData = JSON.parse(
-    require("fs").readFileSync(latestRecording, "utf8")
+    require("fs").readFileSync(latestRecording, "utf8"),
   );
 
   console.log(`🔍 로그인 패턴 추출: ${sessionData.sessionId}\n`);
@@ -200,12 +200,12 @@ async function extractLoginPattern() {
     switch (action.type) {
       case "navigate":
         console.log(
-          `${index + 1}. [${relativeTime}s] 페이지 이동: ${action.url}`
+          `${index + 1}. [${relativeTime}s] 페이지 이동: ${action.url}`,
         );
         break;
       case "click":
         console.log(
-          `${index + 1}. [${relativeTime}s] 클릭: ${action.selector} (${action.duration}ms)`
+          `${index + 1}. [${relativeTime}s] 클릭: ${action.selector} (${action.duration}ms)`,
         );
         break;
       case "type":
@@ -213,12 +213,12 @@ async function extractLoginPattern() {
           ? "****"
           : action.text?.substring(0, 10) + "...";
         console.log(
-          `${index + 1}. [${relativeTime}s] 타이핑: ${displayText} (${action.duration}ms)`
+          `${index + 1}. [${relativeTime}s] 타이핑: ${displayText} (${action.duration}ms)`,
         );
         break;
       case "keypress":
         console.log(
-          `${index + 1}. [${relativeTime}s] 키 입력: ${action.keyCode}`
+          `${index + 1}. [${relativeTime}s] 키 입력: ${action.keyCode}`,
         );
         break;
     }
@@ -231,7 +231,7 @@ async function extractLoginPattern() {
     const avgTypingSpeed =
       typingActions.reduce(
         (sum: number, action: any) => sum + action.duration,
-        0
+        0,
       ) / typingActions.length;
     console.log(`- 평균 타이핑 속도: ${avgTypingSpeed.toFixed(2)}ms per input`);
   }
@@ -241,7 +241,7 @@ async function extractLoginPattern() {
     const avgClickDuration =
       clickActions.reduce(
         (sum: number, action: any) => sum + action.duration,
-        0
+        0,
       ) / clickActions.length;
     console.log(`- 평균 클릭 지속시간: ${avgClickDuration.toFixed(2)}ms`);
   }

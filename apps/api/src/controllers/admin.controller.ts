@@ -1,35 +1,16 @@
-import { FastifyRequest, FastifyReply } from "fastify";
 import {
   Controller,
+  Delete,
   Get,
   Post,
   Put,
-  Delete,
 } from "@/decorators/controller.decorator";
-import { prisma } from "@/plugins/prisma";
-import { AdminService } from "@/services/admin.service";
-
-interface AdminStatsQuery {
-  period?: "day" | "week" | "month" | "year";
-  startDate?: string;
-  endDate?: string;
-}
-
-interface LicenseQuery {
-  page?: string;
-  limit?: string;
-  search?: string;
-  status?: "active" | "expired" | "suspended" | "revoked";
-  licenseType?: "user" | "admin";
-}
+import { adminService } from "@/services";
+import { AdminStatsQuery, LicenseQuery } from "@/types/admin.types";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 @Controller("/admin")
 export class AdminController {
-  private adminService: AdminService;
-
-  constructor() {
-    this.adminService = new AdminService(prisma);
-  }
   @Get("/licenses/stats")
   async getLicenseStats(
     request: FastifyRequest<{ Querystring: AdminStatsQuery }>,
@@ -37,7 +18,7 @@ export class AdminController {
   ) {
     try {
       const filter = request.query;
-      const stats = await this.adminService.getLicenseStats(filter);
+      const stats = await adminService.getLicenseStats(filter);
 
       reply.code(200).send({
         success: true,
@@ -74,7 +55,7 @@ export class AdminController {
         licenseType,
       };
 
-      const result = await this.adminService.getLicenses(filter);
+      const result = await adminService.getLicenses(filter);
 
       reply.code(200).send({
         success: true,
@@ -97,7 +78,7 @@ export class AdminController {
     try {
       const { licenseKey } = request.params;
 
-      await this.adminService.deleteLicense(licenseKey);
+      await adminService.deleteLicense(licenseKey);
 
       reply.code(200).send({
         success: true,
@@ -124,7 +105,7 @@ export class AdminController {
       const { licenseKey } = request.params;
       const { action } = request.body;
 
-      await this.adminService.updateLicenseStatus(licenseKey, action);
+      await adminService.updateLicenseStatus(licenseKey, action);
 
       reply.code(200).send({
         success: true,
@@ -152,7 +133,7 @@ export class AdminController {
     try {
       const { action, licenseIds } = request.body;
 
-      await this.adminService.bulkLicenseAction(action, licenseIds);
+      await adminService.bulkLicenseAction(action, licenseIds);
 
       reply.code(200).send({
         success: true,

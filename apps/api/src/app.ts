@@ -1,4 +1,3 @@
-import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
@@ -6,16 +5,16 @@ import postgres from "@fastify/postgres";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import Fastify, { FastifyInstance } from "fastify";
 import path from "path";
 import prismaPlugin from "./plugins/prisma";
 
 import { env } from "@/config/env";
-import { autoRegisterControllers } from "@/utils/auto-register";
-import { errorHandler } from "@/middlewares/error.middleware";
 import { setupAuthDecorator } from "@/middlewares/auth.middleware";
-import { setAppInstance } from "@/controllers/auth.controller";
-import type { JWTPayload } from "@repo/shared";
+import { errorHandler } from "@/middlewares/error.middleware";
+import { autoRegisterControllers } from "@/utils/auto-register";
 import logger, { loggerConfig } from "@/utils/logger";
+import type { JWTPayload } from "@repo/shared";
 
 // 타입 확장 (수정됨)
 declare module "fastify" {
@@ -182,14 +181,11 @@ export const build = async (): Promise<FastifyInstance> => {
   // Auth decorator 설정
   setupAuthDecorator(app);
 
-  // 컨트롤러에 app 인스턴스 전달
-  setAppInstance(app);
-
   // Error handler
   app.setErrorHandler(errorHandler);
 
   // Health check endpoint
-  app.get("/health", async (request, reply) => {
+  app.get("/health", async () => {
     return {
       status: "healthy",
       timestamp: new Date().toISOString(),

@@ -1,35 +1,24 @@
-import axios from "axios";
-import { JSDOM } from "jsdom";
 import {
   CrawlOptions,
-  CrawlResultItem,
   CrawlProgressCallback,
+  CrawlResultItem,
 } from "@/services/crawlers/base-crawler";
 import { CrawlSettings, SmartStoreReviewItem } from "@/types/crawl.types";
-
-export interface SmartStoreProduct {
-  productId: string;
-  title: string;
-  price?: number;
-  originalPrice?: number;
-  discount?: number;
-  rating?: number;
-  imageUrls?: string[];
-  url?: string;
-}
+import axios from "axios";
+import { JSDOM } from "jsdom";
 
 export class SmartStoreCrawler {
   constructor() {}
 
   /**
-   * 스마트스토어 크롤링 실행
+   * 네이버 쇼핑 리뷰 크롤링 실행
    */
-  async crawlSmartStore(
+  async crawlNaverShoppingReview(
     searchUrl: string,
     options: CrawlOptions & CrawlSettings,
     callback?: CrawlProgressCallback
   ): Promise<CrawlResultItem[]> {
-    const urlInfo = this.parseSmartStoreUrl(searchUrl);
+    const urlInfo = this.parseNaverShoppingUrl(searchUrl);
 
     if (!urlInfo.isValid) {
       throw new Error("Invalid SmartStore URL");
@@ -110,7 +99,7 @@ export class SmartStoreCrawler {
     return results.slice(0, maxItems);
   }
 
-  private parseSmartStoreUrl(url: string): {
+  private parseNaverShoppingUrl(url: string): {
     isValid: boolean;
     searchKeywords?: string;
     category?: string;

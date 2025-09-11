@@ -1,38 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-
-interface AdminStatsFilter {
-  period?: "day" | "week" | "month" | "year";
-  startDate?: string;
-  endDate?: string;
-}
-
-interface LicenseFilter {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: "active" | "expired" | "suspended" | "revoked";
-  licenseType?: "user" | "admin";
-}
-
-interface LicenseStats {
-  total: number;
-  active: number;
-  expired: number;
-  suspended: number;
-  revoked: number;
-  admin: number;
-  expiringSoon: number;
-}
-
-interface LicenseListResult {
-  licenses: any[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+import {
+  AdminStatsFilter,
+  LicenseFilter,
+  LicenseStats,
+  LicenseListResult,
+} from "@/types/admin.types";
 
 export class AdminService {
   constructor(private prisma: PrismaClient) {}
@@ -55,7 +27,7 @@ export class AdminService {
     ] = await Promise.all([
       // 전체 라이센스 수
       this.prisma.licenses.count(),
-      
+
       // 활성 라이센스 수
       this.prisma.licenses.count({
         where: {
@@ -66,21 +38,21 @@ export class AdminService {
           ],
         },
       }),
-      
+
       // 만료된 라이센스 수
       this.prisma.licenses.count({
         where: {
           endDate: { lt: now },
         },
       }),
-      
+
       // 정지된 라이센스 수
       this.prisma.licenses.count({
         where: {
           isActive: false,
         },
       }),
-      
+
       // 관리자 라이센스 수 (Admin 서비스 기반)
       this.prisma.licenses.count({
         where: {
@@ -89,7 +61,7 @@ export class AdminService {
           },
         },
       }),
-      
+
       // 30일 내 만료 예정
       this.prisma.licenses.count({
         where: {
@@ -145,10 +117,7 @@ export class AdminService {
       switch (status) {
         case "active":
           where.isActive = true;
-          where.OR = [
-            { endDate: null },
-            { endDate: { gt: now } },
-          ];
+          where.OR = [{ endDate: null }, { endDate: { gt: now } }];
           break;
         case "expired":
           where.endDate = { lt: now };
@@ -241,7 +210,7 @@ export class AdminService {
    */
   async updateLicenseStatus(
     licenseKey: string,
-    action: "activate" | "suspend" | "revoke"
+    action: "activate" | "suspend" | "revoke",
   ): Promise<void> {
     switch (action) {
       case "activate":
@@ -269,7 +238,7 @@ export class AdminService {
    */
   async bulkLicenseAction(
     action: "activate" | "suspend" | "revoke" | "delete",
-    licenseKeys: string[]
+    licenseKeys: string[],
   ): Promise<void> {
     switch (action) {
       case "activate":

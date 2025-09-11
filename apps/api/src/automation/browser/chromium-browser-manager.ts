@@ -50,7 +50,7 @@ export class ChromiumBrowserManager {
     try {
       const response = await axios.get<ChromeVersionResponse[]>(
         "https://chromiumdash.appspot.com/fetch_releases?channel=Stable&platform=Windows&num=1",
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
 
       if (response.status === 200) {
@@ -167,7 +167,7 @@ export class ChromiumBrowserManager {
         Math.floor(Math.random() * this.SUPPORTED_VIEWPORTS.length)
       ];
     console.log(
-      `📱 선택된 뷰포트: ${selectedViewport.width}x${selectedViewport.height}`
+      `📱 선택된 뷰포트: ${selectedViewport.width}x${selectedViewport.height}`,
     );
     return selectedViewport;
   }

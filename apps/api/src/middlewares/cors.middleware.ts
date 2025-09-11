@@ -3,7 +3,7 @@ import { env } from "@/config/env";
 
 export const corsMiddleware = async (
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const origin = request.headers.origin;
   const allowedOrigins = env.CORS_ORIGIN.split(",");
@@ -17,7 +17,7 @@ export const corsMiddleware = async (
 
   reply.header(
     "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    "GET, POST, PUT, DELETE, PATCH, OPTIONS",
   );
   reply.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   reply.header("Access-Control-Allow-Credentials", "true");

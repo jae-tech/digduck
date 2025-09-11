@@ -118,7 +118,7 @@ async function testCrawlingSetup() {
       const reviews = await crawlProductReviews(
         page,
         stealthPageFactory,
-        "latest"
+        "latest",
       );
 
       console.log(`✅ 페이지 ${currentPage}: ${reviews.length}개 리뷰 수집`);
@@ -138,7 +138,7 @@ async function testCrawlingSetup() {
       const hasNextPage = await checkAndNavigateToNextPage(
         page,
         stealthPageFactory,
-        currentPage
+        currentPage,
       );
       if (!hasNextPage) {
         console.log("🔚 더 이상 페이지가 없습니다.");
@@ -148,7 +148,7 @@ async function testCrawlingSetup() {
       // 다음 페이지 진행 여부 확인
       if (currentPage < maxPages) {
         await waitForUserInput(
-          `다음 페이지 ${currentPage + 1}로 진행하시겠습니까?`
+          `다음 페이지 ${currentPage + 1}로 진행하시겠습니까?`,
         );
       }
 
@@ -156,7 +156,7 @@ async function testCrawlingSetup() {
     }
 
     console.log(
-      `✅ Step 5 completed: 총 ${allReviews.length}개 리뷰 수집 (${currentPage - 1}페이지)`
+      `✅ Step 5 completed: 총 ${allReviews.length}개 리뷰 수집 (${currentPage - 1}페이지)`,
     );
 
     if (allReviews.length > 0) {
@@ -164,7 +164,7 @@ async function testCrawlingSetup() {
       console.log(`   - 총 리뷰 수: ${allReviews.length}`);
       console.log(`   - 크롤링 페이지: ${currentPage - 1}`);
       console.log(
-        `   - 평균 평점: ${(allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)}`
+        `   - 평균 평점: ${(allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)}`,
       );
     }
 
@@ -211,7 +211,7 @@ if (require.main === module) {
 async function crawlProductReviews(
   page: Page,
   stealthPageFactory: StealthPageFactory,
-  sortOrder: ReviewSortOrder = "latest"
+  sortOrder: ReviewSortOrder = "latest",
 ): Promise<ProductReview[]> {
   const reviews: ProductReview[] = [];
 
@@ -238,7 +238,7 @@ async function crawlProductReviews(
 
     if (!reviewTabFound) {
       console.log(
-        "⚠️ Review tab not found, looking for reviews on current page"
+        "⚠️ Review tab not found, looking for reviews on current page",
       );
     }
 
@@ -376,14 +376,14 @@ async function crawlProductReviews(
 async function setReviewSortOrder(
   page: Page,
   sortOrder: ReviewSortOrder,
-  stealthPageFactory: StealthPageFactory
+  stealthPageFactory: StealthPageFactory,
 ): Promise<void> {
   try {
     console.log(`🔄 Setting review sort order to: ${sortOrder}`);
 
     // 네이버 스마트스토어 정렬 옵션 ul 찾기
     const sortUl = page.locator(
-      'ul[data-shp-inventory="revlist"][data-shp-area="revlist.sort"]'
+      'ul[data-shp-inventory="revlist"][data-shp-area="revlist.sort"]',
     );
     const sortUlCount = await sortUl.count();
 
@@ -439,7 +439,7 @@ async function setReviewSortOrder(
 async function checkAndNavigateToNextPage(
   page: Page,
   stealthPageFactory: StealthPageFactory,
-  currentPage: number
+  currentPage: number,
 ): Promise<boolean> {
   try {
     console.log(`🔍 페이지 ${currentPage + 1} 존재 여부 확인 중...`);
@@ -516,7 +516,7 @@ async function checkPaginationInfo(page: Page): Promise<void> {
       'a[data-shp-inventory="revlist"][data-shp-contents-type="pgn"]',
     ];
 
-    let visiblePages: number[] = [];
+    const visiblePages: number[] = [];
     let hasNextButton = false;
 
     for (const selector of visiblePageSelectors) {
@@ -553,11 +553,11 @@ async function checkPaginationInfo(page: Page): Promise<void> {
       const maxVisible = Math.max(...visiblePages);
       if (hasNextButton) {
         console.log(
-          `📄 현재 표시 페이지: 1-${maxVisible} (다음 페이지 있음, 총 페이지 수는 예상 불가)`
+          `📄 현재 표시 페이지: 1-${maxVisible} (다음 페이지 있음, 총 페이지 수는 예상 불가)`,
         );
       } else {
         console.log(
-          `📄 현재 표시 페이지: 1-${maxVisible} (마지막 페이지 그룹)`
+          `📄 현재 표시 페이지: 1-${maxVisible} (마지막 페이지 그룹)`,
         );
       }
     } else {

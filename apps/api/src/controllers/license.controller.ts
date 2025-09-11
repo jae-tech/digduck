@@ -1,36 +1,16 @@
-import { FastifyRequest, FastifyReply } from "fastify";
+import { env } from "@/config/env";
 import {
   Controller,
+  Delete,
   Get,
   Post,
-  Delete,
 } from "@/decorators/controller.decorator";
-import { prisma } from "@/plugins/prisma";
-import { mailService } from "@/services";
-import { env } from "@/config/env";
-import { LicenseManagementService } from "@/services/license-management.service";
-
-interface CreateLicenseUserBody {
-  email: string;
-  serviceId: number;
-  subscriptionPlanId: number;
-  allowedDevices?: number;
-  maxTransfers?: number;
-}
-
-interface AdminUsersQuery {
-  page?: string;
-  limit?: string;
-  search?: string;
-}
+import { licenseService, notificationService } from "@/services";
+import { AdminUsersQuery, CreateLicenseUserBody } from "@/types/license.types";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 @Controller("/license")
 export class LicenseController {
-  private licenseService: LicenseManagementService;
-
-  constructor() {
-    this.licenseService = new LicenseManagementService(prisma);
-  }
   @Get("/admin/users")
   async getAdminUsers(
     request: FastifyRequest<{ Querystring: AdminUsersQuery }>,
@@ -45,7 +25,7 @@ export class LicenseController {
         search,
       };
 
-      const result = await this.licenseService.getAdminUsers(filter);
+      const result = await licenseService.getAdminUsers(filter);
 
       reply.code(200).send({
         success: true,
@@ -66,9 +46,15 @@ export class LicenseController {
     reply: FastifyReply
   ) {
     try {
-      const { email, serviceId, subscriptionPlanId, allowedDevices = 3, maxTransfers = 5 } = request.body;
+      const {
+        email,
+        serviceId,
+        subscriptionPlanId,
+        allowedDevices = 3,
+        maxTransfers = 5,
+      } = request.body;
 
-      const license = await this.licenseService.createLicense({
+      const license = await licenseService.createLicense({
         email,
         serviceId,
         subscriptionPlanId,
@@ -77,29 +63,30 @@ export class LicenseController {
       });
 
       // 라이센스 발급 완료 메일 발송
-      if (mailService.isConfigured()) {
+      if (notificationService.isConfigured()) {
         try {
-          await mailService.sendTemplatedMail(
-            'license-created',
+          await notificationService.sendTemplatedMail(
+            "license-created",
             {
-              userName: email.split('@')[0],
-              productName: env.PRODUCT_NAME || 'DigDuck',
+              userName: email.split("@")[0],
+              productName: env.PRODUCT_NAME || "DigDuck",
               licenseKey: license.licenseKey,
               userEmail: email,
-              issueDate: license.startDate.toLocaleDateString('ko-KR'),
-              expirationDate: license.endDate?.toLocaleDateString('ko-KR') || '평생',
+              issueDate: license.startDate.toLocaleDateString("ko-KR"),
+              expirationDate:
+                license.endDate?.toLocaleDateString("ko-KR") || "평생",
               licenseType: license.subscriptionPlan.name,
-              loginUrl: env.CLIENT_URL || 'https://app.example.com/login',
-              companyName: env.COMPANY_NAME || 'DigDuck'
+              loginUrl: env.CLIENT_URL || "https://digduck.app/license",
+              companyName: env.COMPANY_NAME || "DigDuck",
             },
             {
-              from: env.MAIL_FROM || 'noreply@digduck.com',
-              to: email
+              from: env.MAIL_FROM || "noreply@digduck.com",
+              to: email,
             }
           );
           console.log(`라이센스 발급 메일 발송 완료: ${email}`);
         } catch (error) {
-          console.error('라이센스 발급 메일 발송 실패:', error);
+          console.error("라이센스 발급 메일 발송 실패:", error);
         }
       }
 
@@ -118,12 +105,9 @@ export class LicenseController {
   }
 
   @Get("/subscription-plans")
-  async getSubscriptionPlans(
-    request: FastifyRequest,
-    reply: FastifyReply
-  ) {
+  async getSubscriptionPlans(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const plans = await this.licenseService.getSubscriptionPlans();
+      const plans = await licenseService.getSubscriptionPlans();
 
       reply.code(200).send({
         success: true,
@@ -139,12 +123,9 @@ export class LicenseController {
   }
 
   @Get("/services")
-  async getServices(
-    request: FastifyRequest,
-    reply: FastifyReply
-  ) {
+  async getServices(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const services = await this.licenseService.getServices();
+      const services = await licenseService.getServices();
 
       reply.code(200).send({
         success: true,
@@ -167,7 +148,7 @@ export class LicenseController {
     try {
       const { licenseKey } = request.params;
 
-      const result = await this.licenseService.validateLicense(licenseKey);
+      const result = await licenseService.validateLicense(licenseKey);
 
       if (!result.isValid) {
         return reply.code(400).send({
@@ -207,7 +188,7 @@ export class LicenseController {
     try {
       const { email } = request.params;
 
-      await this.licenseService.deleteLicenseUser(email);
+      await licenseService.deleteLicenseUser(email);
 
       reply.code(200).send({
         success: true,
@@ -221,5 +202,4 @@ export class LicenseController {
       });
     }
   }
-
 }

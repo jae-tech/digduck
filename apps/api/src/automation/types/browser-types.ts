@@ -26,7 +26,7 @@ export interface AntiDetectionFeatures {
 }
 
 export interface PageNavigationOptions {
-  waitStrategy?: 'load' | 'domcontentloaded' | 'networkidle';
+  waitStrategy?: "load" | "domcontentloaded" | "networkidle";
   timeout?: number;
   referer?: string;
   simulateHumanBehavior?: boolean;

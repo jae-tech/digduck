@@ -23,12 +23,12 @@ export class StealthPageFactory {
     page.on("close", () => {
       this.browserManager.trackPageClosed();
       console.log(
-        `📄 Page closed. Active pages: ${this.browserManager.getBrowserSessionStatus().activePagesCount}`
+        `📄 Page closed. Active pages: ${this.browserManager.getBrowserSessionStatus().activePagesCount}`,
       );
     });
 
     console.log(
-      `📄 Stealth page created. Active pages: ${this.browserManager.getBrowserSessionStatus().activePagesCount}`
+      `📄 Stealth page created. Active pages: ${this.browserManager.getBrowserSessionStatus().activePagesCount}`,
     );
     return page;
   }
@@ -46,7 +46,7 @@ export class StealthPageFactory {
   async navigateWithStealth(
     page: Page,
     url: string,
-    options: PageNavigationOptions = {}
+    options: PageNavigationOptions = {},
   ): Promise<void> {
     const { waitStrategy = "domcontentloaded", timeout = 60000 } = options;
 

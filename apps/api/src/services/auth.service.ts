@@ -1,41 +1,13 @@
-import { PlatformType } from "@prisma/client";
+import {
+  LicenseLoginCredentials,
+  LoginResult,
+  RegisterData,
+  User,
+} from "@/types/auth.types";
 import type { JWTPayload } from "@repo/shared";
 import { FastifyInstance } from "fastify";
 import { env } from "../config/env";
 import { prisma } from "../plugins/prisma";
-
-interface LicenseLoginCredentials {
-  licenseKey: string;
-  deviceId: string;
-  platform?: PlatformType;
-}
-
-interface RegisterData {
-  email: string;
-  name: string;
-}
-
-interface User {
-  id: number;
-  email: string;
-  name: string | null;
-  nickname: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface LicenseInfo {
-  allowedDevices: number;
-  activatedDevices: any[];
-  isActive: boolean;
-}
-
-interface LoginResult {
-  token: string;
-  user: User;
-  licenseInfo: LicenseInfo;
-  purchasedItems?: any[];
-}
 
 export class AuthService {
   constructor(private app: FastifyInstance) {}

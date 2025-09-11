@@ -70,7 +70,7 @@ export abstract class BaseCrawler {
   async crawl(
     searchUrl: string,
     settings?: CrawlSettings,
-    callback?: CrawlProgressCallback
+    callback?: CrawlProgressCallback,
   ): Promise<CrawlResultItem[]> {
     if (this.isRunning) {
       throw new Error("Crawler is already running");
@@ -88,7 +88,7 @@ export abstract class BaseCrawler {
       const results = await this.performCrawl(
         searchUrl,
         mergedOptions,
-        callback
+        callback,
       );
       return results;
     } catch (error) {
@@ -122,7 +122,7 @@ export abstract class BaseCrawler {
   protected abstract performCrawl(
     searchUrl: string,
     options: CrawlOptions & CrawlSettings,
-    callback?: CrawlProgressCallback
+    callback?: CrawlProgressCallback,
   ): Promise<CrawlResultItem[]>;
 
   /**
@@ -140,14 +140,14 @@ export abstract class BaseCrawler {
    */
   protected abstract parsePage(
     html: string,
-    pageNumber: number
+    pageNumber: number,
   ): Promise<CrawlResultItem[]>;
 
   /**
    * 지연 시간 적용
    */
   protected async delay(
-    ms: number = this.options.requestDelay || 1000
+    ms: number = this.options.requestDelay || 1000,
   ): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -158,7 +158,7 @@ export abstract class BaseCrawler {
   protected async fetchWithRetry(
     url: string,
     options: any = {},
-    retries: number = this.options.retries || 3
+    retries: number = this.options.retries || 3,
   ): Promise<{
     ok: boolean;
     status: number;

@@ -101,14 +101,15 @@ export class PlaywrightActionRecorder {
       ],
     });
 
-    this.context = await this.browser?.newContext({
-      recordVideo: {
-        dir: path.join(this.recordingsDir, "videos"),
-        size: { width: 1920, height: 1080 },
-      },
-    }) || null;
+    this.context =
+      (await this.browser?.newContext({
+        recordVideo: {
+          dir: path.join(this.recordingsDir, "videos"),
+          size: { width: 1920, height: 1080 },
+        },
+      })) || null;
 
-    this.page = await this.context?.newPage() || null;
+    this.page = (await this.context?.newPage()) || null;
 
     // 기록 세션 초기화
     const startTime = Date.now();
@@ -125,8 +126,8 @@ export class PlaywrightActionRecorder {
         totalIdleTime: 0,
       },
       browserInfo: {
-        userAgent: await this.page?.evaluate(() => navigator.userAgent) || '',
-        platform: await this.page?.evaluate(() => navigator.platform) || '',
+        userAgent: (await this.page?.evaluate(() => navigator.userAgent)) || "",
+        platform: (await this.page?.evaluate(() => navigator.platform)) || "",
         viewport: this.page?.viewportSize() || { width: 1920, height: 1080 },
       },
     };
@@ -171,7 +172,8 @@ export class PlaywrightActionRecorder {
         // 속성 정보 수집
         for (let i = 0; i < target.attributes.length; i++) {
           const attr = target.attributes[i];
-          (elementInfo.attributes as Record<string, string>)[attr.name] = attr.value;
+          (elementInfo.attributes as Record<string, string>)[attr.name] =
+            attr.value;
         }
 
         (window as any).__detailedActions =
@@ -278,7 +280,7 @@ export class PlaywrightActionRecorder {
           hoverStartTime = Date.now();
           currentHoverTarget = event.target as Element;
         },
-        true
+        true,
       );
 
       document.addEventListener(
@@ -304,7 +306,7 @@ export class PlaywrightActionRecorder {
             });
           }
         },
-        true
+        true,
       );
 
       // 선택자 생성 함수
@@ -329,7 +331,7 @@ export class PlaywrightActionRecorder {
 
         if (parent && parent !== document.body) {
           const siblings = Array.from(parent.children).filter(
-            (child) => child.tagName === element.tagName
+            (child) => child.tagName === element.tagName,
           );
           if (siblings.length > 1) {
             const index = siblings.indexOf(element) + 1;
@@ -360,7 +362,7 @@ export class PlaywrightActionRecorder {
 
   private async recordNavigation(
     url: string,
-    navigationFunction: () => Promise<void>
+    navigationFunction: () => Promise<void>,
   ): Promise<void> {
     const startTime = Date.now();
 
@@ -482,7 +484,7 @@ export class PlaywrightActionRecorder {
     this.lastActionTime = action.endTime;
 
     console.log(
-      `액션 기록: ${action.type} (${action.duration}ms) - ${action.selector || action.url || action.keyCode || "N/A"}`
+      `액션 기록: ${action.type} (${action.duration}ms) - ${action.selector || action.url || action.keyCode || "N/A"}`,
     );
   }
 
@@ -525,7 +527,7 @@ export class PlaywrightActionRecorder {
 
     fs.writeFileSync(
       sessionFilepath,
-      JSON.stringify(this.currentSession, null, 2)
+      JSON.stringify(this.currentSession, null, 2),
     );
     fs.writeFileSync(reportFilepath, JSON.stringify(analysisReport, null, 2));
 
@@ -533,7 +535,7 @@ export class PlaywrightActionRecorder {
     const timelineCsv = this.generateTimelineCSV(this.currentSession);
     const csvFilepath = path.join(
       this.recordingsDir,
-      `${this.currentSession.sessionId}_timeline.csv`
+      `${this.currentSession.sessionId}_timeline.csv`,
     );
     fs.writeFileSync(csvFilepath, timelineCsv);
 
@@ -552,7 +554,7 @@ export class PlaywrightActionRecorder {
   private generateAnalysisReport(session: RecordingSession) {
     const actions = session.actions.filter((action) => action.type !== "wait");
     const waitActions = session.actions.filter(
-      (action) => action.type === "wait"
+      (action) => action.type === "wait",
     );
 
     return {
@@ -592,7 +594,7 @@ export class PlaywrightActionRecorder {
   private findLongestAction(actions: DetailedAction[]) {
     const longest = actions.reduce(
       (max, action) => (action.duration > max.duration ? action : max),
-      actions[0]
+      actions[0],
     );
     return longest
       ? {
@@ -606,7 +608,7 @@ export class PlaywrightActionRecorder {
   private findShortestAction(actions: DetailedAction[]) {
     const shortest = actions.reduce(
       (min, action) => (action.duration < min.duration ? action : min),
-      actions[0]
+      actions[0],
     );
     return shortest
       ? {

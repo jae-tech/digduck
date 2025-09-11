@@ -13,7 +13,7 @@ import {
  */
 export async function autoRegisterControllers(
   app: FastifyInstance,
-  controllersPath: string
+  controllersPath: string,
 ) {
   const controllerFiles = getControllerFiles(controllersPath);
 
@@ -73,7 +73,7 @@ function getControllerFiles(dir: string): string[] {
 async function registerController(
   app: FastifyInstance,
   ControllerClass: any,
-  metadata: any
+  metadata: any,
 ) {
   const routes = getRouteMetadata(ControllerClass);
   const instance = new ControllerClass();
@@ -101,17 +101,17 @@ async function registerController(
                 return (fastify as any).authenticate;
               }
               return handlerName;
-            }
+            },
           );
         }
 
         fastify.route(routeOptions);
 
         app.log.info(
-          `Registered ${route.method} ${metadata.prefix}${route.path}`
+          `Registered ${route.method} ${metadata.prefix}${route.path}`,
         );
       }
     },
-    { prefix: metadata.prefix }
+    { prefix: metadata.prefix },
   );
 }

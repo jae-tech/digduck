@@ -10,7 +10,7 @@ interface AppError extends Error {
 export const errorHandler = (
   error: FastifyError | AppError,
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   let statusCode = 500;
   let message = "Internal Server Error";
@@ -66,7 +66,7 @@ export const errorHandler = (
         body: request.body,
       },
     },
-    `${emoji} ❌ ${message}`
+    `${emoji} ❌ ${message}`,
   );
 
   const response: any = {

@@ -5,32 +5,13 @@ import {
   CrawlProgressCallback,
   CrawlResultItem,
 } from "@/services/crawlers/base-crawler";
-import { CrawlSettings } from "@/types/crawl.types";
+import {
+  CrawlSettings,
+  NaverBlogCategory,
+  NaverBlogPost,
+} from "@/types/crawl.types";
 import { JSDOM } from "jsdom";
 import { Page } from "playwright";
-
-export interface NaverBlogPost {
-  title: string;
-  content?: string;
-  author?: string;
-  publishDate: Date;
-  url: string;
-  viewCount?: number;
-  commentCount?: number;
-  likeCount?: number;
-  tags?: string[];
-  category?: string;
-  thumbnailUrl?: string;
-}
-
-export interface NaverBlogCategory {
-  categoryNo: number;
-  name: string;
-  parentCategoryNo?: number;
-  depth: number;
-  postCount?: number;
-  isOpen?: boolean;
-}
 
 export class NaverBlogCrawler {
   private browserManager: ChromiumBrowserManager | null = null;
@@ -479,7 +460,7 @@ export class NaverBlogCrawler {
 
       if (elements.length > 0) {
         console.log("성공한 셀렉터:", selector);
-        
+
         elements.forEach((element) => {
           const href = element.getAttribute("href") || "";
           const text = element.textContent?.trim() || "";
@@ -499,7 +480,7 @@ export class NaverBlogCrawler {
           const depth =
             parentLi?.className?.includes("depth2") ||
             parentLi?.style?.marginLeft ||
-            element.style?.marginLeft
+            (element as HTMLElement).style?.marginLeft
               ? 2
               : 1;
 
@@ -512,13 +493,13 @@ export class NaverBlogCrawler {
             });
           }
         });
-        
+
         break; // 성공한 셀렉터가 있으면 중단
       }
     }
 
     console.log("최종 파싱된 카테고리 개수:", results.length);
-    
+
     return results;
   }
 
