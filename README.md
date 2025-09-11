@@ -12,7 +12,6 @@ Dig Duck은 네이버 스마트스토어 상품 정보를 자동으로 수집하
   - 네이버 스마트스토어 크롤링 UI
   - 라이센스 관리 시스템
   - 관리자 대시보드
-  
 - **`apps/api`**: Node.js + Fastify 백엔드 API
   - RESTful API 서버
   - 라이센스 검증 시스템
@@ -82,21 +81,25 @@ pnpm build:app    # 프론트엔드 빌드
 ## 📁 주요 기능
 
 ### 🔐 라이센스 시스템
+
 - 16자리 라이센스 키 기반 인증
 - 사용자/관리자 권한 구분
 - 자동 만료 관리 및 알림
 
 ### 🕷️ 크롤링 엔진
+
 - 네이버 스마트스토어 상품 정보 수집
 - 실시간 진행률 표시
 - 크롤링 결과 데이터베이스 저장
 
 ### 👨‍💼 관리자 기능
+
 - 라이센스 발급 및 관리
 - 사용자 통계 조회
 - 크롤링 이력 관리
 
 ### 📧 이메일 시스템
+
 - 라이센스 발급 시 자동 이메일 발송
 - 템플릿 기반 이메일 관리
 - Gmail/Outlook/SMTP 지원
@@ -122,7 +125,7 @@ pnpm build:api    # API 빌드
 pnpm test:api     # API 테스트
 
 # 프론트엔드
-pnpm dev:app      # 프론트엔드 개발 서버  
+pnpm dev:app      # 프론트엔드 개발 서버
 pnpm build:app    # 프론트엔드 빌드
 pnpm tauri:dev    # Tauri 데스크톱 앱 개발
 pnpm tauri:build  # Tauri 데스크톱 앱 빌드
@@ -167,6 +170,7 @@ pnpm tauri:build
 ## 📊 기술 스택
 
 ### Frontend (dig-duck)
+
 - React 18 + TypeScript
 - TanStack Router
 - Tailwind CSS + shadcn/ui
@@ -174,6 +178,7 @@ pnpm tauri:build
 - Tauri (데스크톱)
 
 ### Backend (api)
+
 - Node.js 18 + TypeScript
 - Fastify 프레임워크
 - PostgreSQL + Prisma ORM
@@ -182,6 +187,7 @@ pnpm tauri:build
 - JWT 인증
 
 ### DevOps
+
 - GitHub Actions (CI/CD)
 - Docker (컨테이너화)
 - AWS S3 + CloudFront (정적 호스팅)
