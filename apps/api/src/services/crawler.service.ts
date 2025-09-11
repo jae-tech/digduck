@@ -42,12 +42,12 @@ export class CrawlerService {
   async crawlNaverBlog(
     searchUrl: string,
     options: CrawlOptions & CrawlSettings,
-    callback?: CrawlProgressCallback
+    callback?: CrawlProgressCallback,
   ): Promise<CrawlResultItem[]> {
     return await this.naverBlogCrawler.crawlNaverBlog(
       searchUrl,
       options,
-      callback
+      callback,
     );
   }
 
@@ -64,12 +64,12 @@ export class CrawlerService {
   async crawlSmartStore(
     searchUrl: string,
     options: CrawlOptions & CrawlSettings,
-    callback?: CrawlProgressCallback
+    callback?: CrawlProgressCallback,
   ): Promise<CrawlResultItem[]> {
     return await this.smartStoreCrawler.crawlNaverShoppingReview(
       searchUrl,
       options,
-      callback
+      callback,
     );
   }
 
@@ -359,7 +359,7 @@ export class CrawlerService {
    */
   async getCrawlStatistics(
     userEmail: string,
-    dateRange?: { from?: Date; to?: Date }
+    dateRange?: { from?: Date; to?: Date },
   ) {
     const where: any = { userEmail };
     if (dateRange?.from || dateRange?.to) {

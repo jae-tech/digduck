@@ -8,175 +8,175 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as LicenseRouteImport } from './routes/license'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedCrawlerReviewRouteImport } from './routes/_authenticated/crawler/review'
-import { Route as AuthenticatedCrawlerNaverCafeRouteImport } from './routes/_authenticated/crawler/naver-cafe'
-import { Route as AuthenticatedCrawlerNaverBlogRouteImport } from './routes/_authenticated/crawler/naver-blog'
-import { Route as AuthenticatedAdminLicenseManagerRouteImport } from './routes/_authenticated/admin/license-manager'
-import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as LicenseRouteImport } from "./routes/license";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as AuthenticatedCrawlerReviewRouteImport } from "./routes/_authenticated/crawler/review";
+import { Route as AuthenticatedCrawlerNaverCafeRouteImport } from "./routes/_authenticated/crawler/naver-cafe";
+import { Route as AuthenticatedCrawlerNaverBlogRouteImport } from "./routes/_authenticated/crawler/naver-blog";
+import { Route as AuthenticatedAdminLicenseManagerRouteImport } from "./routes/_authenticated/admin/license-manager";
+import { Route as AuthenticatedAdminDashboardRouteImport } from "./routes/_authenticated/admin/dashboard";
 
 const LicenseRoute = LicenseRouteImport.update({
-  id: '/license',
-  path: '/license',
+  id: "/license",
+  path: "/license",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthenticatedCrawlerReviewRoute =
   AuthenticatedCrawlerReviewRouteImport.update({
-    id: '/_authenticated/crawler/review',
-    path: '/crawler/review',
+    id: "/_authenticated/crawler/review",
+    path: "/crawler/review",
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const AuthenticatedCrawlerNaverCafeRoute =
   AuthenticatedCrawlerNaverCafeRouteImport.update({
-    id: '/_authenticated/crawler/naver-cafe',
-    path: '/crawler/naver-cafe',
+    id: "/_authenticated/crawler/naver-cafe",
+    path: "/crawler/naver-cafe",
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const AuthenticatedCrawlerNaverBlogRoute =
   AuthenticatedCrawlerNaverBlogRouteImport.update({
-    id: '/_authenticated/crawler/naver-blog',
-    path: '/crawler/naver-blog',
+    id: "/_authenticated/crawler/naver-blog",
+    path: "/crawler/naver-blog",
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const AuthenticatedAdminLicenseManagerRoute =
   AuthenticatedAdminLicenseManagerRouteImport.update({
-    id: '/_authenticated/admin/license-manager',
-    path: '/admin/license-manager',
+    id: "/_authenticated/admin/license-manager",
+    path: "/admin/license-manager",
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const AuthenticatedAdminDashboardRoute =
   AuthenticatedAdminDashboardRouteImport.update({
-    id: '/_authenticated/admin/dashboard',
-    path: '/admin/dashboard',
+    id: "/_authenticated/admin/dashboard",
+    path: "/admin/dashboard",
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/license': typeof LicenseRoute
-  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
-  '/crawler/naver-blog': typeof AuthenticatedCrawlerNaverBlogRoute
-  '/crawler/naver-cafe': typeof AuthenticatedCrawlerNaverCafeRoute
-  '/crawler/review': typeof AuthenticatedCrawlerReviewRoute
+  "/": typeof IndexRoute;
+  "/license": typeof LicenseRoute;
+  "/admin/dashboard": typeof AuthenticatedAdminDashboardRoute;
+  "/admin/license-manager": typeof AuthenticatedAdminLicenseManagerRoute;
+  "/crawler/naver-blog": typeof AuthenticatedCrawlerNaverBlogRoute;
+  "/crawler/naver-cafe": typeof AuthenticatedCrawlerNaverCafeRoute;
+  "/crawler/review": typeof AuthenticatedCrawlerReviewRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/license': typeof LicenseRoute
-  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
-  '/crawler/naver-blog': typeof AuthenticatedCrawlerNaverBlogRoute
-  '/crawler/naver-cafe': typeof AuthenticatedCrawlerNaverCafeRoute
-  '/crawler/review': typeof AuthenticatedCrawlerReviewRoute
+  "/": typeof IndexRoute;
+  "/license": typeof LicenseRoute;
+  "/admin/dashboard": typeof AuthenticatedAdminDashboardRoute;
+  "/admin/license-manager": typeof AuthenticatedAdminLicenseManagerRoute;
+  "/crawler/naver-blog": typeof AuthenticatedCrawlerNaverBlogRoute;
+  "/crawler/naver-cafe": typeof AuthenticatedCrawlerNaverCafeRoute;
+  "/crawler/review": typeof AuthenticatedCrawlerReviewRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/license': typeof LicenseRoute
-  '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/_authenticated/admin/license-manager': typeof AuthenticatedAdminLicenseManagerRoute
-  '/_authenticated/crawler/naver-blog': typeof AuthenticatedCrawlerNaverBlogRoute
-  '/_authenticated/crawler/naver-cafe': typeof AuthenticatedCrawlerNaverCafeRoute
-  '/_authenticated/crawler/review': typeof AuthenticatedCrawlerReviewRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/license": typeof LicenseRoute;
+  "/_authenticated/admin/dashboard": typeof AuthenticatedAdminDashboardRoute;
+  "/_authenticated/admin/license-manager": typeof AuthenticatedAdminLicenseManagerRoute;
+  "/_authenticated/crawler/naver-blog": typeof AuthenticatedCrawlerNaverBlogRoute;
+  "/_authenticated/crawler/naver-cafe": typeof AuthenticatedCrawlerNaverCafeRoute;
+  "/_authenticated/crawler/review": typeof AuthenticatedCrawlerReviewRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | '/'
-    | '/license'
-    | '/admin/dashboard'
-    | '/admin/license-manager'
-    | '/crawler/naver-blog'
-    | '/crawler/naver-cafe'
-    | '/crawler/review'
-  fileRoutesByTo: FileRoutesByTo
+    | "/"
+    | "/license"
+    | "/admin/dashboard"
+    | "/admin/license-manager"
+    | "/crawler/naver-blog"
+    | "/crawler/naver-cafe"
+    | "/crawler/review";
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    | '/'
-    | '/license'
-    | '/admin/dashboard'
-    | '/admin/license-manager'
-    | '/crawler/naver-blog'
-    | '/crawler/naver-cafe'
-    | '/crawler/review'
+    | "/"
+    | "/license"
+    | "/admin/dashboard"
+    | "/admin/license-manager"
+    | "/crawler/naver-blog"
+    | "/crawler/naver-cafe"
+    | "/crawler/review";
   id:
-    | '__root__'
-    | '/'
-    | '/license'
-    | '/_authenticated/admin/dashboard'
-    | '/_authenticated/admin/license-manager'
-    | '/_authenticated/crawler/naver-blog'
-    | '/_authenticated/crawler/naver-cafe'
-    | '/_authenticated/crawler/review'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/"
+    | "/license"
+    | "/_authenticated/admin/dashboard"
+    | "/_authenticated/admin/license-manager"
+    | "/_authenticated/crawler/naver-blog"
+    | "/_authenticated/crawler/naver-cafe"
+    | "/_authenticated/crawler/review";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LicenseRoute: typeof LicenseRoute
-  AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
-  AuthenticatedAdminLicenseManagerRoute: typeof AuthenticatedAdminLicenseManagerRoute
-  AuthenticatedCrawlerNaverBlogRoute: typeof AuthenticatedCrawlerNaverBlogRoute
-  AuthenticatedCrawlerNaverCafeRoute: typeof AuthenticatedCrawlerNaverCafeRoute
-  AuthenticatedCrawlerReviewRoute: typeof AuthenticatedCrawlerReviewRoute
+  IndexRoute: typeof IndexRoute;
+  LicenseRoute: typeof LicenseRoute;
+  AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute;
+  AuthenticatedAdminLicenseManagerRoute: typeof AuthenticatedAdminLicenseManagerRoute;
+  AuthenticatedCrawlerNaverBlogRoute: typeof AuthenticatedCrawlerNaverBlogRoute;
+  AuthenticatedCrawlerNaverCafeRoute: typeof AuthenticatedCrawlerNaverCafeRoute;
+  AuthenticatedCrawlerReviewRoute: typeof AuthenticatedCrawlerReviewRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/license': {
-      id: '/license'
-      path: '/license'
-      fullPath: '/license'
-      preLoaderRoute: typeof LicenseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/crawler/review': {
-      id: '/_authenticated/crawler/review'
-      path: '/crawler/review'
-      fullPath: '/crawler/review'
-      preLoaderRoute: typeof AuthenticatedCrawlerReviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/crawler/naver-cafe': {
-      id: '/_authenticated/crawler/naver-cafe'
-      path: '/crawler/naver-cafe'
-      fullPath: '/crawler/naver-cafe'
-      preLoaderRoute: typeof AuthenticatedCrawlerNaverCafeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/crawler/naver-blog': {
-      id: '/_authenticated/crawler/naver-blog'
-      path: '/crawler/naver-blog'
-      fullPath: '/crawler/naver-blog'
-      preLoaderRoute: typeof AuthenticatedCrawlerNaverBlogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/admin/license-manager': {
-      id: '/_authenticated/admin/license-manager'
-      path: '/admin/license-manager'
-      fullPath: '/admin/license-manager'
-      preLoaderRoute: typeof AuthenticatedAdminLicenseManagerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/admin/dashboard': {
-      id: '/_authenticated/admin/dashboard'
-      path: '/admin/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+    "/license": {
+      id: "/license";
+      path: "/license";
+      fullPath: "/license";
+      preLoaderRoute: typeof LicenseRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_authenticated/crawler/review": {
+      id: "/_authenticated/crawler/review";
+      path: "/crawler/review";
+      fullPath: "/crawler/review";
+      preLoaderRoute: typeof AuthenticatedCrawlerReviewRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_authenticated/crawler/naver-cafe": {
+      id: "/_authenticated/crawler/naver-cafe";
+      path: "/crawler/naver-cafe";
+      fullPath: "/crawler/naver-cafe";
+      preLoaderRoute: typeof AuthenticatedCrawlerNaverCafeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_authenticated/crawler/naver-blog": {
+      id: "/_authenticated/crawler/naver-blog";
+      path: "/crawler/naver-blog";
+      fullPath: "/crawler/naver-blog";
+      preLoaderRoute: typeof AuthenticatedCrawlerNaverBlogRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_authenticated/admin/license-manager": {
+      id: "/_authenticated/admin/license-manager";
+      path: "/admin/license-manager";
+      fullPath: "/admin/license-manager";
+      preLoaderRoute: typeof AuthenticatedAdminLicenseManagerRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_authenticated/admin/dashboard": {
+      id: "/_authenticated/admin/dashboard";
+      path: "/admin/dashboard";
+      fullPath: "/admin/dashboard";
+      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -188,7 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedCrawlerNaverBlogRoute: AuthenticatedCrawlerNaverBlogRoute,
   AuthenticatedCrawlerNaverCafeRoute: AuthenticatedCrawlerNaverCafeRoute,
   AuthenticatedCrawlerReviewRoute: AuthenticatedCrawlerReviewRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

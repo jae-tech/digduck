@@ -400,7 +400,7 @@ export default function AdminLayout({
                   {(() => {
                     // 직접 매치되는 메뉴 찾기
                     let found = menuItems.find(
-                      (item) => item.to === location.pathname
+                      (item) => item.to === location.pathname,
                     );
                     if (found) return found.label;
 
@@ -408,7 +408,7 @@ export default function AdminLayout({
                     for (const item of menuItems) {
                       if (item.submenu) {
                         const subItem = item.submenu.find(
-                          (sub) => sub.to === location.pathname
+                          (sub) => sub.to === location.pathname,
                         );
                         if (subItem) return subItem.label;
                       }

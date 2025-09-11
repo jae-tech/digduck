@@ -10,7 +10,7 @@ export class ComparisonService {
       await this.naverShoppingAPI.searchProducts(productKeyword);
     // 2. 최저가 찾기
     const lowestPrice = Math.min(
-      ...searchResults.map((item: NaverShoppingItem) => item.lprice)
+      ...searchResults.map((item: NaverShoppingItem) => item.lprice),
     );
     // 3. 최저가 - 10원으로 새 가격 계산
     const _newPrice = lowestPrice - 10;

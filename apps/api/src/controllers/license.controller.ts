@@ -14,7 +14,7 @@ export class LicenseController {
   @Get("/admin/users")
   async getAdminUsers(
     request: FastifyRequest<{ Querystring: AdminUsersQuery }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { page = "1", limit = "20", search } = request.query;
@@ -43,7 +43,7 @@ export class LicenseController {
   @Post("/users")
   async createLicenseUser(
     request: FastifyRequest<{ Body: CreateLicenseUserBody }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const {
@@ -82,7 +82,7 @@ export class LicenseController {
             {
               from: env.MAIL_FROM || "noreply@digduck.com",
               to: email,
-            }
+            },
           );
           console.log(`라이센스 발급 메일 발송 완료: ${email}`);
         } catch (error) {
@@ -143,7 +143,7 @@ export class LicenseController {
   @Get("/validate/:licenseKey")
   async validateLicense(
     request: FastifyRequest<{ Params: { licenseKey: string } }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { licenseKey } = request.params;
@@ -183,7 +183,7 @@ export class LicenseController {
   @Delete("/users/:email")
   async deleteLicenseUser(
     request: FastifyRequest<{ Params: { email: string } }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { email } = request.params;

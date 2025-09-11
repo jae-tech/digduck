@@ -13,7 +13,7 @@ export class AuthService {
   constructor(private app: FastifyInstance) {}
 
   async loginWithLicense(
-    credentials: LicenseLoginCredentials
+    credentials: LicenseLoginCredentials,
   ): Promise<LoginResult> {
     const { licenseKey, deviceId, platform } = credentials;
 
@@ -114,7 +114,7 @@ export class AuthService {
         licenseKey: licenseKey,
         deviceId: deviceId,
       },
-      { expiresIn: env.JWT_EXPIRES_IN }
+      { expiresIn: env.JWT_EXPIRES_IN },
     );
 
     const user = {
@@ -211,7 +211,7 @@ export class AuthService {
 
   async updateUserProfile(
     userId: number,
-    updateData: Partial<User>
+    updateData: Partial<User>,
   ): Promise<User> {
     const updatedUser = await prisma.users.update({
       where: { id: userId },

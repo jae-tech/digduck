@@ -14,7 +14,7 @@ export class AdminController {
   @Get("/licenses/stats")
   async getLicenseStats(
     request: FastifyRequest<{ Querystring: AdminStatsQuery }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const filter = request.query;
@@ -36,7 +36,7 @@ export class AdminController {
   @Get("/licenses")
   async getLicenses(
     request: FastifyRequest<{ Querystring: LicenseQuery }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const {
@@ -73,7 +73,7 @@ export class AdminController {
   @Delete("/licenses/:licenseKey")
   async deleteLicense(
     request: FastifyRequest<{ Params: { licenseKey: string } }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { licenseKey } = request.params;
@@ -99,7 +99,7 @@ export class AdminController {
       Params: { licenseKey: string };
       Body: { action: "activate" | "suspend" | "revoke" };
     }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { licenseKey } = request.params;
@@ -128,7 +128,7 @@ export class AdminController {
         licenseIds: string[];
       };
     }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { action, licenseIds } = request.body;

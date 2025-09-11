@@ -73,7 +73,7 @@ export class AuthController {
     request: FastifyRequest<{
       Body: { licenseKey: string; deviceId: string; platform?: string };
     }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { licenseKey, deviceId, platform = "WEB" } = request.body;
@@ -122,7 +122,7 @@ export class AuthController {
   })
   async register(
     request: FastifyRequest<{ Body: { email: string; name: string } }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) {
     try {
       const { email, name } = request.body;
@@ -175,7 +175,7 @@ export class AuthController {
       }
 
       const userData = await this.authService.getUserProfile(
-        parseInt(user.userId)
+        parseInt(user.userId),
       );
 
       return reply.send({

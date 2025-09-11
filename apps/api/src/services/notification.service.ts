@@ -93,7 +93,7 @@ export class NotificationService {
 
       if (!mailUser || !mailPass) {
         console.log(
-          "⚠️ 메일 서비스 환경변수가 설정되지 않았습니다 (MAIL_USER, MAIL_PASS)"
+          "⚠️ 메일 서비스 환경변수가 설정되지 않았습니다 (MAIL_USER, MAIL_PASS)",
         );
         return false;
       }
@@ -143,11 +143,11 @@ export class NotificationService {
   // ========== 메일 발송 ==========
 
   async sendMail(
-    options: MailOptions & { userEmail?: string }
+    options: MailOptions & { userEmail?: string },
   ): Promise<MailSendResult> {
     if (!this.transporter) {
       throw new Error(
-        "메일 서비스가 설정되지 않았습니다. configure()를 먼저 호출해주세요."
+        "메일 서비스가 설정되지 않았습니다. configure()를 먼저 호출해주세요.",
       );
     }
 
@@ -185,7 +185,7 @@ export class NotificationService {
     variables: Record<string, any>,
     options: Omit<MailOptions, "subject" | "html" | "text"> & {
       userEmail?: string;
-    }
+    },
   ): Promise<MailSendResult> {
     const rendered = this.renderTemplate(templateId, variables);
 
@@ -220,7 +220,7 @@ export class NotificationService {
           {
             from: options.from,
             to: recipient.email,
-          }
+          },
         );
 
         results.push({
@@ -311,7 +311,7 @@ export class NotificationService {
         {
           from: env.MAIL_FROM || env.MAIL_USER || "test@example.com",
           to: toEmail || env.MAIL_USER || "test@example.com",
-        }
+        },
       );
 
       if (result.success) {
@@ -606,14 +606,14 @@ export class NotificationService {
 
   renderTemplate(
     templateId: string,
-    variables: Record<string, any>
+    variables: Record<string, any>,
   ): { subject: string; html: string; text?: string } | null {
     const template = this.getTemplate(templateId);
     if (!template) return null;
 
     const replaceVariables = (
       content: string,
-      vars: Record<string, any>
+      vars: Record<string, any>,
     ): string => {
       return content.replace(/\{\{(\w+)\}\}/g, (match, key) => {
         return vars[key] !== undefined ? String(vars[key]) : match;

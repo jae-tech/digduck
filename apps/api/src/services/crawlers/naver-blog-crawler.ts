@@ -26,7 +26,7 @@ export class NaverBlogCrawler {
   async crawlNaverBlog(
     searchUrl: string,
     options: CrawlOptions & CrawlSettings,
-    callback?: CrawlProgressCallback
+    callback?: CrawlProgressCallback,
   ): Promise<CrawlResultItem[]> {
     const urlInfo = this.parseNaverBlogUrl(searchUrl);
 
@@ -127,7 +127,7 @@ export class NaverBlogCrawler {
   private async crawlNaverCategory(
     url: string,
     options: CrawlOptions & CrawlSettings,
-    callback?: CrawlProgressCallback
+    callback?: CrawlProgressCallback,
   ): Promise<CrawlResultItem[]> {
     if (!this.stealthPageFactory) throw new Error("Browser not initialized");
 
@@ -165,7 +165,7 @@ export class NaverBlogCrawler {
             const item = this.convertNaverPostToItem(
               posts[i],
               results.length + 1,
-              currentPage
+              currentPage,
             );
             results.push(item);
             callback?.onItem?.(item);
@@ -197,7 +197,7 @@ export class NaverBlogCrawler {
   private async crawlNaverBlogMain(
     url: string,
     options: CrawlOptions & CrawlSettings,
-    callback?: CrawlProgressCallback
+    callback?: CrawlProgressCallback,
   ): Promise<CrawlResultItem[]> {
     const urlInfo = this.parseNaverBlogUrl(url);
     if (!urlInfo.blogId) throw new Error("Blog ID not found");
@@ -234,7 +234,7 @@ export class NaverBlogCrawler {
               console.log(
                 "네트워크 데이터 캐치 성공:",
                 jsonData.postList.length,
-                "개"
+                "개",
               );
             }
           } catch (error) {
@@ -252,7 +252,7 @@ export class NaverBlogCrawler {
       const postCount = await this.getTotalPostCount(page);
       const maxPages = Math.min(
         Math.ceil(postCount / 5),
-        options.maxPages || 50
+        options.maxPages || 50,
       );
 
       callback?.onProgress?.({
@@ -298,12 +298,12 @@ export class NaverBlogCrawler {
             console.log(
               "네트워크 데이터 처리:",
               latestData.length,
-              "개 포스트"
+              "개 포스트",
             );
 
             const posts = this.parsePostsFromNetworkData(
               latestData,
-              currentPage
+              currentPage,
             );
 
             for (
@@ -334,7 +334,7 @@ export class NaverBlogCrawler {
               const item = this.convertNaverPostToItem(
                 posts[i],
                 results.length + 1,
-                currentPage
+                currentPage,
               );
               results.push(item);
               callback?.onItem?.(item);
@@ -406,7 +406,7 @@ export class NaverBlogCrawler {
   }
 
   public async getNaverBlogCategories(
-    blogId: string
+    blogId: string,
   ): Promise<NaverBlogCategory[]> {
     try {
       await this.initializeBrowser();
@@ -509,7 +509,7 @@ export class NaverBlogCrawler {
    * @returns 네이버 블로그 포스트 배열
    */
   private async parseNaverPostListFromPage(
-    page: Page
+    page: Page,
   ): Promise<NaverBlogPost[]> {
     return await page.evaluate(() => {
       const results: NaverBlogPost[] = [];
@@ -536,7 +536,7 @@ export class NaverBlogCrawler {
         const commentCount = parseInt(
           link
             .querySelector(".meta_data .num.pcol3")
-            ?.textContent.replace(/[()]/g, "") || "0"
+            ?.textContent.replace(/[()]/g, "") || "0",
         );
 
         // 유효한 포스트인지 확인 (href, title 존재하고 실제 포스트 링크인지)
@@ -566,7 +566,7 @@ export class NaverBlogCrawler {
   private convertNaverPostToItem(
     post: NaverBlogPost,
     itemOrder: number,
-    pageNumber: number
+    pageNumber: number,
   ): CrawlResultItem {
     return {
       title: post.title,
@@ -588,7 +588,7 @@ export class NaverBlogCrawler {
 
   private buildNaverCategoryPageUrl(
     baseUrl: string,
-    pageNumber: number
+    pageNumber: number,
   ): string {
     const url = new URL(baseUrl);
     const startIndex = (pageNumber - 1) * 5 + 1;
@@ -637,7 +637,7 @@ export class NaverBlogCrawler {
    */
   private parsePostsFromNetworkData(
     networkData: any[],
-    pageNumber: number
+    pageNumber: number,
   ): CrawlResultItem[] {
     const results: CrawlResultItem[] = [];
 

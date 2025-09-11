@@ -38,7 +38,7 @@ export class LicenseNotificationController {
         userEmail: string;
         daysLeft: number;
       };
-    }>
+    }>,
   ) {
     const { userEmail, daysLeft } = request.body;
 
@@ -70,7 +70,7 @@ export class LicenseNotificationController {
       Body: {
         userEmail: string;
       };
-    }>
+    }>,
   ) {
     const { userEmail } = request.body;
 

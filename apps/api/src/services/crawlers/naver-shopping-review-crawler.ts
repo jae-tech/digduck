@@ -16,7 +16,7 @@ export class SmartStoreCrawler {
   async crawlNaverShoppingReview(
     searchUrl: string,
     options: CrawlOptions & CrawlSettings,
-    callback?: CrawlProgressCallback
+    callback?: CrawlProgressCallback,
   ): Promise<CrawlResultItem[]> {
     const urlInfo = this.parseNaverShoppingUrl(searchUrl);
 
@@ -69,7 +69,7 @@ export class SmartStoreCrawler {
         // 필터 적용
         const filteredItems = this.applySmartStoreFilters(
           pageItems,
-          options.filters
+          options.filters,
         );
         results.push(...filteredItems);
 
@@ -134,7 +134,7 @@ export class SmartStoreCrawler {
 
   private async parseSmartStorePage(
     html: string,
-    pageNumber: number
+    pageNumber: number,
   ): Promise<CrawlResultItem[]> {
     const dom = new JSDOM(html);
     const document = dom.window.document;
@@ -149,7 +149,7 @@ export class SmartStoreCrawler {
 
   private parseSmartStoreReviewPage(
     document: Document,
-    pageNumber: number
+    pageNumber: number,
   ): CrawlResultItem[] {
     const results: CrawlResultItem[] = [];
 
@@ -176,7 +176,7 @@ export class SmartStoreCrawler {
         const reviewItem = this.parseSmartStoreReviewElement(
           element,
           pageNumber,
-          index + 1
+          index + 1,
         );
         if (reviewItem) {
           results.push(reviewItem);
@@ -191,7 +191,7 @@ export class SmartStoreCrawler {
 
   private parseSmartStoreProductPage(
     document: Document,
-    pageNumber: number
+    pageNumber: number,
   ): CrawlResultItem[] {
     const results: CrawlResultItem[] = [];
 
@@ -218,7 +218,7 @@ export class SmartStoreCrawler {
         const productItem = this.parseSmartStoreProductElement(
           element,
           pageNumber,
-          index + 1
+          index + 1,
         );
         if (productItem) {
           results.push(productItem);
@@ -234,18 +234,18 @@ export class SmartStoreCrawler {
   private parseSmartStoreReviewElement(
     element: Element,
     pageNumber: number,
-    itemOrder: number
+    itemOrder: number,
   ): CrawlResultItem | null {
     try {
       const contentElement = element.querySelector(
-        ".review_content, .review-text, .content"
+        ".review_content, .review-text, .content",
       );
       const content = contentElement?.textContent
         ? this.cleanText(contentElement.textContent)
         : undefined;
 
       const ratingElement = element.querySelector(
-        ".rating, .star-rating, .review-rating"
+        ".rating, .star-rating, .review-rating",
       );
       const ratingText =
         ratingElement?.textContent ||
@@ -254,20 +254,20 @@ export class SmartStoreCrawler {
       const rating = this.extractRatingFromText(ratingText);
 
       const reviewerElement = element.querySelector(
-        ".reviewer, .review-author, .user-name"
+        ".reviewer, .review-author, .user-name",
       );
       const reviewerName = reviewerElement?.textContent
         ? this.cleanText(reviewerElement.textContent)
         : undefined;
 
       const dateElement = element.querySelector(
-        ".review-date, .date, .created-at"
+        ".review-date, .date, .created-at",
       );
       const dateText = dateElement?.textContent || "";
       const reviewDate = this.parseDate(dateText);
 
       const verifiedElement = element.querySelector(
-        ".verified, .confirmed, .purchased"
+        ".verified, .confirmed, .purchased",
       );
       const isVerified = verifiedElement !== null;
 
@@ -318,24 +318,24 @@ export class SmartStoreCrawler {
   private parseSmartStoreProductElement(
     element: Element,
     pageNumber: number,
-    itemOrder: number
+    itemOrder: number,
   ): CrawlResultItem | null {
     try {
       const titleElement = element.querySelector(
-        ".product-title, .title, .name, h3, h4"
+        ".product-title, .title, .name, h3, h4",
       );
       const title = titleElement?.textContent
         ? this.cleanText(titleElement.textContent)
         : undefined;
 
       const priceElement = element.querySelector(
-        ".price, .current-price, .sale-price"
+        ".price, .current-price, .sale-price",
       );
       const priceText = priceElement?.textContent || "";
       const price = this.extractNumber(priceText);
 
       const originalPriceElement = element.querySelector(
-        ".original-price, .before-price, .regular-price"
+        ".original-price, .before-price, .regular-price",
       );
       const originalPriceText = originalPriceElement?.textContent || "";
       const originalPrice = this.extractNumber(originalPriceText);
@@ -360,7 +360,7 @@ export class SmartStoreCrawler {
       const url = linkElement?.getAttribute("href")
         ? this.resolveUrl(
             "https://smartstore.naver.com",
-            linkElement.getAttribute("href")!
+            linkElement.getAttribute("href")!,
           )
         : undefined;
 
@@ -421,7 +421,7 @@ export class SmartStoreCrawler {
 
   private applySmartStoreFilters(
     items: CrawlResultItem[],
-    filters?: any
+    filters?: any,
   ): CrawlResultItem[] {
     if (!filters) return items;
 
@@ -451,7 +451,7 @@ export class SmartStoreCrawler {
       if (filters.keywords && filters.keywords.length > 0) {
         const text = `${item.title || ""} ${item.content || ""}`.toLowerCase();
         const hasKeyword = filters.keywords.some((keyword: string) =>
-          text.includes(keyword.toLowerCase())
+          text.includes(keyword.toLowerCase()),
         );
         if (!hasKeyword) return false;
       }
@@ -459,7 +459,7 @@ export class SmartStoreCrawler {
       if (filters.excludeKeywords && filters.excludeKeywords.length > 0) {
         const text = `${item.title || ""} ${item.content || ""}`.toLowerCase();
         const hasExcludeKeyword = filters.excludeKeywords.some(
-          (keyword: string) => text.includes(keyword.toLowerCase())
+          (keyword: string) => text.includes(keyword.toLowerCase()),
         );
         if (hasExcludeKeyword) return false;
       }
@@ -470,7 +470,7 @@ export class SmartStoreCrawler {
 
   private async fetchWithRetry(
     url: string,
-    retries: number = 3
+    retries: number = 3,
   ): Promise<{ text: () => Promise<string> }> {
     let lastError: Error;
 
@@ -545,7 +545,7 @@ export class SmartStoreCrawler {
 
   private async randomDelay(
     minMs: number = 1000,
-    maxMs: number = 3000
+    maxMs: number = 3000,
   ): Promise<void> {
     const delayTime = Math.floor(Math.random() * (maxMs - minMs)) + minMs;
     await new Promise((resolve) => setTimeout(resolve, delayTime));

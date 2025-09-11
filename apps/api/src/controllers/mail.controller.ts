@@ -41,7 +41,7 @@ export class MailController {
         user: string;
         pass: string;
       };
-    }>
+    }>,
   ) {
     const { provider, host, port, secure, user, pass } = request.body;
 
@@ -126,7 +126,7 @@ export class MailController {
         text?: string;
         html?: string;
       };
-    }>
+    }>,
   ) {
     if (!notificationService.isConfigured()) {
       throw new Error("메일 서비스가 설정되지 않았습니다");
@@ -179,7 +179,7 @@ export class MailController {
         cc?: string | string[];
         bcc?: string | string[];
       };
-    }>
+    }>,
   ) {
     if (!notificationService.isConfigured()) {
       throw new Error("메일 서비스가 설정되지 않았습니다");
@@ -189,7 +189,7 @@ export class MailController {
     const result = await notificationService.sendTemplatedMail(
       templateId,
       variables,
-      mailOptions
+      mailOptions,
     );
     return result;
   }
@@ -229,7 +229,7 @@ export class MailController {
           variables?: Record<string, any>;
         }>;
       };
-    }>
+    }>,
   ) {
     if (!notificationService.isConfigured()) {
       throw new Error("메일 서비스가 설정되지 않았습니다");
@@ -304,7 +304,7 @@ export class MailController {
         textTemplate?: string;
         variables: string[];
       };
-    }>
+    }>,
   ) {
     const validation = notificationService.validateTemplate(request.body);
 
@@ -363,7 +363,7 @@ export class MailController {
       Body: {
         toEmail?: string;
       };
-    }>
+    }>,
   ) {
     const { toEmail } = request.body || {};
     const success = await notificationService.sendTestMail(toEmail);
@@ -391,7 +391,7 @@ export class MailController {
       Body: {
         testEmail?: string;
       };
-    }>
+    }>,
   ) {
     const { testEmail } = request.body || {};
 

@@ -62,7 +62,7 @@ export const build = async (): Promise<FastifyInstance> => {
         userAgent: request.headers["user-agent"],
         ip: request.ip,
       },
-      `${emoji} ${request.method} ${request.url} - Request started`
+      `${emoji} ${request.method} ${request.url} - Request started`,
     );
   });
 
@@ -99,7 +99,7 @@ export const build = async (): Promise<FastifyInstance> => {
         duration: `${duration}ms`,
         success: reply.statusCode < 400,
       },
-      `${statusEmoji} ${speedEmoji} ${request.method} ${request.url} - ${reply.statusCode} (${duration}ms)`
+      `${statusEmoji} ${speedEmoji} ${request.method} ${request.url} - ${reply.statusCode} (${duration}ms)`,
     );
   });
 
@@ -118,7 +118,7 @@ export const build = async (): Promise<FastifyInstance> => {
         },
         duration: `${duration}ms`,
       },
-      `🔥 💣 ${request.method} ${request.url} - ERROR: ${error.message}`
+      `🔥 💣 ${request.method} ${request.url} - ERROR: ${error.message}`,
     );
   });
 
