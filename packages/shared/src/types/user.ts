@@ -15,7 +15,7 @@ export const LoginSchema = z.object({
   password: z.string().min(6),
 });
 
-// 이름 수정: RegisterDataSchema → RegisterSchema  
+// 이름 수정: RegisterDataSchema → RegisterSchema
 export const RegisterSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
