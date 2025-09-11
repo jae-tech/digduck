@@ -30,7 +30,7 @@ export const GeneratedLicensesList: React.FC = () => {
         .includes(searchTerm.toLowerCase()) ||
       license.config.productName
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+        .includes(searchTerm.toLowerCase()),
   );
 
   const copyToClipboard = async (text: string, licenseKey: string) => {

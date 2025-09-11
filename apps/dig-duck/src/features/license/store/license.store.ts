@@ -66,6 +66,6 @@ export const useLicenseStore = create<LicenseStore>()(
         licenseInfo: state.licenseInfo,
         expiryDate: state.expiryDate,
       }),
-    }
-  )
+    },
+  ),
 );

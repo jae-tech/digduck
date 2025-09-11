@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { CrawlSort, SortOption } from "../types/crawler.types";
+import type { CrawlSort, SortOption } from "../types";
 
 const VALID_URL = ["smartstore.naver.com", "brand.naver.com"];
 

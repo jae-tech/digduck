@@ -60,13 +60,13 @@ export const useLicenseGenerator = () => {
         setIsGenerating(false);
       }
     },
-    []
+    [],
   );
 
   const generateBulkLicenses = useCallback(
     async (
       count: number,
-      config: LicenseConfig
+      config: LicenseConfig,
     ): Promise<LicenseGenerationResult[]> => {
       setIsGenerating(true);
       setError("");
@@ -108,7 +108,7 @@ export const useLicenseGenerator = () => {
         setIsGenerating(false);
       }
     },
-    []
+    [],
   );
 
   const clearError = useCallback(() => {
@@ -121,7 +121,7 @@ export const useLicenseGenerator = () => {
 
   const removeLicense = useCallback((licenseKey: string) => {
     setGeneratedLicenses((prev) =>
-      prev.filter((license) => license.licenseKey !== licenseKey)
+      prev.filter((license) => license.licenseKey !== licenseKey),
     );
   }, []);
 

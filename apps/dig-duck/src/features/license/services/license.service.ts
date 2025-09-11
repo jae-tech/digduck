@@ -5,7 +5,7 @@ export class LicenseService {
   static async verifyLicense(
     licenseKey: string,
     platform: "desktop" | "web",
-    deviceId?: string
+    deviceId?: string,
   ): Promise<LicenseVerificationResult> {
     try {
       const requestData = {
@@ -16,7 +16,7 @@ export class LicenseService {
 
       const { data, success } = await apiHelpers.post(
         "/auth/login",
-        requestData
+        requestData,
       );
 
       if (success) {

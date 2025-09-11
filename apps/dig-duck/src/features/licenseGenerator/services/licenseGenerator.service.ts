@@ -11,7 +11,7 @@ export class LicenseGeneratorService {
   // 라이센스 키 생성 함수
   static generateLicenseKey(
     type: "user" | "admin",
-    phoneNumber?: string
+    phoneNumber?: string,
   ): string {
     if (type === "admin" && phoneNumber) {
       return `ADMIN${phoneNumber}`;
@@ -28,61 +28,66 @@ export class LicenseGeneratorService {
 
   // 사용자 등록 후 라이센스 생성
   static async registerUserAndGenerateLicense(
-    config: LicenseConfig
+    config: LicenseConfig,
   ): Promise<LicenseGenerationResult> {
     try {
       // 1. 먼저 사용자 등록
       try {
-        const userRegistration = await apiHelpers.post('/auth/register', {
+        const userRegistration = await apiHelpers.post("/auth/register", {
           email: config.userEmail,
-          name: config.userName || 'User'
+          name: config.userName || "User",
         });
-        
+
         if (!userRegistration.success) {
           // 이미 존재하는 사용자라면 계속 진행
-          if (!userRegistration.error?.includes('already exists')) {
-            throw new Error(userRegistration.error || 'User registration failed');
+          if (!userRegistration.error?.includes("already exists")) {
+            throw new Error(
+              userRegistration.error || "User registration failed",
+            );
           }
         }
       } catch (userError: any) {
         // 이미 사용자가 존재하는 경우가 아니면 에러 처리
-        if (!userError.details?.error?.includes('already exists')) {
+        if (!userError.details?.error?.includes("already exists")) {
           return {
             success: false,
             message: `사용자 등록 실패: ${userError.message}`,
-            error: "USER_REGISTRATION_FAILED"
+            error: "USER_REGISTRATION_FAILED",
           };
         }
       }
 
       // 2. 라이센스 사용자 생성
-      const licenseUserResponse = await apiHelpers.post('/api/license/users', {
+      const licenseUserResponse = await apiHelpers.post("/api/license/users", {
         email: config.userEmail,
         allowedDevices: config.maxActivations || 3,
-        maxTransfers: 5
+        maxTransfers: 5,
       });
 
       if (!licenseUserResponse.success) {
         return {
           success: false,
           message: `라이센스 생성 실패: ${licenseUserResponse.error}`,
-          error: "LICENSE_CREATION_FAILED"
+          error: "LICENSE_CREATION_FAILED",
         };
       }
 
       // 3. 구독 생성
       const subscriptionType = this.getSubscriptionType(config.expiryDate);
-      const subscriptionResponse = await apiHelpers.post('/api/license/subscriptions', {
-        userEmail: config.userEmail,
-        subscriptionType,
-        paymentId: `admin_generated_${Date.now()}`
-      });
+      const subscriptionResponse = await apiHelpers.post(
+        "/api/license/subscriptions",
+        {
+          userEmail: config.userEmail,
+          subscriptionType,
+          paymentId: `admin_generated_${Date.now()}`,
+        },
+      );
 
       if (!subscriptionResponse.success) {
         return {
           success: false,
           message: `구독 생성 실패: ${subscriptionResponse.error}`,
-          error: "SUBSCRIPTION_CREATION_FAILED"
+          error: "SUBSCRIPTION_CREATION_FAILED",
         };
       }
 
@@ -91,39 +96,42 @@ export class LicenseGeneratorService {
         licenseKey: licenseUserResponse.data.licenseKey,
         message: "라이센스가 성공적으로 생성되었습니다.",
       };
-
     } catch (error: any) {
-      console.error('License generation error:', error);
+      console.error("License generation error:", error);
       return {
         success: false,
         message: `라이센스 생성 중 오류가 발생했습니다: ${error.message}`,
-        error: "GENERATION_FAILED"
+        error: "GENERATION_FAILED",
       };
     }
   }
 
   // 만료일을 기준으로 구독 타입 결정
-  private static getSubscriptionType(expiryDate: string): 'ONE_MONTH' | 'THREE_MONTHS' | 'SIX_MONTHS' | 'TWELVE_MONTHS' {
+  private static getSubscriptionType(
+    expiryDate: string,
+  ): "ONE_MONTH" | "THREE_MONTHS" | "SIX_MONTHS" | "TWELVE_MONTHS" {
     const expiry = new Date(expiryDate);
     const now = new Date();
-    const diffMonths = (expiry.getFullYear() - now.getFullYear()) * 12 + (expiry.getMonth() - now.getMonth());
-    
-    if (diffMonths <= 1) return 'ONE_MONTH';
-    if (diffMonths <= 3) return 'THREE_MONTHS';
-    if (diffMonths <= 6) return 'SIX_MONTHS';
-    return 'TWELVE_MONTHS';
+    const diffMonths =
+      (expiry.getFullYear() - now.getFullYear()) * 12 +
+      (expiry.getMonth() - now.getMonth());
+
+    if (diffMonths <= 1) return "ONE_MONTH";
+    if (diffMonths <= 3) return "THREE_MONTHS";
+    if (diffMonths <= 6) return "SIX_MONTHS";
+    return "TWELVE_MONTHS";
   }
 
   // 단일 라이센스 생성 (기존 메서드를 새로운 로직으로 대체)
   static async generateLicense(
-    config: LicenseConfig
+    config: LicenseConfig,
   ): Promise<LicenseGenerationResult> {
     return this.registerUserAndGenerateLicense(config);
   }
 
   // 대량 라이센스 생성
   static async generateBulkLicenses(
-    bulkConfig: BulkLicenseConfig
+    bulkConfig: BulkLicenseConfig,
   ): Promise<LicenseGenerationResult[]> {
     const results: LicenseGenerationResult[] = [];
 
@@ -146,7 +154,7 @@ export class LicenseGeneratorService {
   // 개발용 시뮬레이션
   // @ts-ignore
   private static async simulateGeneration(
-    config: LicenseConfig
+    config: LicenseConfig,
   ): Promise<LicenseGenerationResult> {
     // API 호출 시뮬레이션
     await new Promise((resolve) => setTimeout(resolve, 800));
@@ -187,7 +195,7 @@ export class LicenseGeneratorService {
       // 라이센스 키 생성
       const licenseKey = this.generateLicenseKey(
         config.licenseType,
-        config.phoneNumber
+        config.phoneNumber,
       );
 
       return {

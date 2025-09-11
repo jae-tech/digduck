@@ -14,7 +14,7 @@ export class LicenseManagerService {
   static async getLicenses(
     filter?: LicenseFilter,
     page = 1,
-    limit = 20
+    limit = 20,
   ): Promise<{
     licenses: LicenseRecord[];
     total: number;
@@ -31,37 +31,50 @@ export class LicenseManagerService {
       params.append("limit", limit.toString());
 
       // 실제 서버가 켜져있으면 실제 API 사용
-      const result = await apiHelpers.get(`/license/admin/users`, Object.fromEntries(params));
-      
+      const result = await apiHelpers.get(
+        `/license/admin/users`,
+        Object.fromEntries(params),
+      );
+
       if (result.success) {
         // API 응답을 프론트엔드 형식으로 변환
-        const licenses: LicenseRecord[] = result.data.users.map((user: any) => ({
-          id: user.licenseKey,
-          licenseKey: user.licenseKey,
-          userEmail: user.email,
-          productName: "Naver Crawler License",
-          licenseType: user.licenseKey.startsWith('ADMIN') ? "admin" : "user",
-          status: user.license_subscriptions?.[0]?.isActive ? "active" : "expired",
-          issueDate: new Date(user.createdAt).toISOString().split('T')[0],
-          expiryDate: user.license_subscriptions?.[0]?.endDate ? 
-            new Date(user.license_subscriptions[0].endDate).toISOString().split('T')[0] : "N/A",
-          lastUsed: undefined,
-          activationCount: user.activatedDevices?.length || 0,
-          maxActivations: user.allowedDevices,
-          deviceInfo: user.activatedDevices?.map((d: any) => `${d.platform || 'Unknown'} - ${d.device_id}`).join(', ') || 'No devices',
-        }));
+        const licenses: LicenseRecord[] = result.data.users.map(
+          (user: any) => ({
+            id: user.licenseKey,
+            licenseKey: user.licenseKey,
+            userEmail: user.email,
+            productName: "Naver Crawler License",
+            licenseType: user.licenseKey.startsWith("ADMIN") ? "admin" : "user",
+            status: user.license_subscriptions?.[0]?.isActive
+              ? "active"
+              : "expired",
+            issueDate: new Date(user.createdAt).toISOString().split("T")[0],
+            expiryDate: user.license_subscriptions?.[0]?.endDate
+              ? new Date(user.license_subscriptions[0].endDate)
+                  .toISOString()
+                  .split("T")[0]
+              : "N/A",
+            lastUsed: undefined,
+            activationCount: user.activatedDevices?.length || 0,
+            maxActivations: user.allowedDevices,
+            deviceInfo:
+              user.activatedDevices
+                ?.map((d: any) => `${d.platform || "Unknown"} - ${d.device_id}`)
+                .join(", ") || "No devices",
+          }),
+        );
 
         return {
           licenses,
           total: result.data.pagination.total,
           page: result.data.pagination.page,
-          totalPages: result.data.pagination.totalPages
+          totalPages: result.data.pagination.totalPages,
         };
       }
-      
-      throw new Error('Failed to fetch licenses');
+
+      throw new Error("Failed to fetch licenses");
     } catch (error) {
-      console.error('Failed to get licenses:', error);
+      console.error("Failed to get licenses:", error);
       // 개발용 시뮬레이션
       return this.simulateGetLicenses(filter, page, limit);
     }
@@ -69,7 +82,7 @@ export class LicenseManagerService {
 
   // 라이센스 상세 조회
   static async getLicenseDetail(
-    licenseId: string
+    licenseId: string,
   ): Promise<LicenseRecord | null> {
     try {
       return await apiHelpers.get(`/api/admin/licenses/${licenseId}`);
@@ -82,12 +95,20 @@ export class LicenseManagerService {
   // 라이센스 상태 업데이트
   static async updateLicense(
     licenseKey: string,
-    data: LicenseUpdateData
+    data: LicenseUpdateData,
   ): Promise<boolean> {
     try {
-      const response = await apiHelpers.put(`/admin/licenses/${licenseKey}/status`, {
-        action: data.status === 'active' ? 'activate' : data.status === 'suspended' ? 'suspend' : 'revoke'
-      });
+      const response = await apiHelpers.put(
+        `/admin/licenses/${licenseKey}/status`,
+        {
+          action:
+            data.status === "active"
+              ? "activate"
+              : data.status === "suspended"
+                ? "suspend"
+                : "revoke",
+        },
+      );
 
       return response.success;
     } catch (error) {
@@ -110,7 +131,7 @@ export class LicenseManagerService {
   // 대량 작업
   static async bulkAction(action: BulkAction): Promise<boolean> {
     try {
-      const response = await apiHelpers.post('/admin/licenses/bulk', action);
+      const response = await apiHelpers.post("/admin/licenses/bulk", action);
       return response.success;
     } catch (error) {
       console.error("Failed to perform bulk action:", error);
@@ -125,7 +146,7 @@ export class LicenseManagerService {
       const result = await apiHelpers.get(`/admin/licenses/stats`);
       return result.data;
     } catch (error) {
-      console.error('Failed to get license stats:', error);
+      console.error("Failed to get license stats:", error);
       // 개발용 시뮬레이션
       return this.simulateGetStats();
     }
@@ -135,7 +156,7 @@ export class LicenseManagerService {
   private static simulateGetLicenses(
     filter?: LicenseFilter,
     page = 1,
-    limit = 20
+    limit = 20,
   ) {
     // 시뮬레이션 데이터 생성
     const mockLicenses: LicenseRecord[] = [
@@ -216,17 +237,17 @@ export class LicenseManagerService {
     if (filter) {
       if (filter.status) {
         filteredLicenses = filteredLicenses.filter(
-          (l) => l.status === filter.status
+          (l) => l.status === filter.status,
         );
       }
       if (filter.licenseType) {
         filteredLicenses = filteredLicenses.filter(
-          (l) => l.licenseType === filter.licenseType
+          (l) => l.licenseType === filter.licenseType,
         );
       }
       if (filter.productName) {
         filteredLicenses = filteredLicenses.filter(
-          (l) => l.productName === filter.productName
+          (l) => l.productName === filter.productName,
         );
       }
       if (filter.search) {
@@ -235,7 +256,7 @@ export class LicenseManagerService {
           (l) =>
             l.licenseKey.toLowerCase().includes(searchLower) ||
             l.userEmail.toLowerCase().includes(searchLower) ||
-            l.productName.toLowerCase().includes(searchLower)
+            l.productName.toLowerCase().includes(searchLower),
         );
       }
     }

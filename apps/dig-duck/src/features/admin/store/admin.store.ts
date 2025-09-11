@@ -56,6 +56,6 @@ export const useAdminStore = create<AdminStore>()(
         loginTime: state.loginTime,
         lastActivity: state.lastActivity,
       }),
-    }
-  )
+    },
+  ),
 );

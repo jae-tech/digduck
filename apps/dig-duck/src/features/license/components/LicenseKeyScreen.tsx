@@ -37,7 +37,9 @@ export const LicenseKeyScreen: React.FC<LicenseVerificationProps> = ({
 
     if (result) {
       if (result.success) {
-        console.log("✅ License verification successful, calling onLicenseVerified...");
+        console.log(
+          "✅ License verification successful, calling onLicenseVerified...",
+        );
         setTimeout(() => {
           console.log("🔄 Calling onLicenseVerified callback");
           onLicenseVerified?.(licenseKey, result);

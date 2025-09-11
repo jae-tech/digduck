@@ -117,7 +117,7 @@ export const LicenseGeneratorForm: React.FC = () => {
 
   const handleInputChange = (
     field: keyof LicenseConfig,
-    value: string | number
+    value: string | number,
   ) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
     clearError();
@@ -250,7 +250,7 @@ export const LicenseGeneratorForm: React.FC = () => {
                     onChange={(e) =>
                       handleInputChange(
                         "maxActivations",
-                        parseInt(e.target.value) || 1
+                        parseInt(e.target.value) || 1,
                       )
                     }
                   />
@@ -315,7 +315,7 @@ export const LicenseGeneratorForm: React.FC = () => {
                       onChange={(e) =>
                         handleInputChange(
                           "phoneNumber",
-                          e.target.value.replace(/[^0-9]/g, "").slice(0, 11)
+                          e.target.value.replace(/[^0-9]/g, "").slice(0, 11),
                         )
                       }
                       placeholder="01012345678"
@@ -449,7 +449,7 @@ export const LicenseGeneratorForm: React.FC = () => {
                     onChange={(e) =>
                       handleInputChange(
                         "maxActivations",
-                        parseInt(e.target.value) || 1
+                        parseInt(e.target.value) || 1,
                       )
                     }
                   />

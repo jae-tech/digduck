@@ -27,7 +27,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
 }) => {
   const [focused, setFocused] = React.useState(false);
   const [hasValue, setHasValue] = React.useState(
-    !!props.value || !!props.defaultValue
+    !!props.value || !!props.defaultValue,
   );
 
   const handleFocus = () => setFocused(true);
@@ -57,7 +57,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
             "focus:border-primary/50 focus:bg-background/80",
             error && "border-destructive focus:border-destructive",
             success && "border-green-500 focus:border-green-500",
-            className
+            className,
           )}
           {...props}
         />
@@ -70,7 +70,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
             (focused || hasValue || props.value) &&
               "top-1.5 text-xs text-primary",
             error && "text-destructive",
-            success && "text-green-600"
+            success && "text-green-600",
           )}
         >
           {label}
@@ -131,7 +131,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
               success &&
                 "border-green-500/50 focus:border-green-500 focus:shadow-glow-green",
               showValidation && (error || success) && "pr-10",
-              className
+              className,
             )}
             {...props}
           />
@@ -192,7 +192,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
             success &&
               "border-green-500 focus:border-green-500 focus:ring-green-500/20",
             showValidation && (error || success) && "pr-10",
-            className
+            className,
           )}
           {...props}
         />

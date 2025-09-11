@@ -154,9 +154,9 @@ export function NaverBlogCrawlerPage() {
           .map((field) =>
             typeof field === "string" && field.includes(",")
               ? `"${field.replace(/"/g, '""')}"`
-              : field
+              : field,
           )
-          .join(",")
+          .join(","),
       ),
     ].join("\n");
 
@@ -250,17 +250,17 @@ export function NaverBlogCrawlerPage() {
           // 1뎁스 카테고리 해제 - 해당 1뎁스와 그 하위 2뎁스들도 모두 해제
           const childCategories = categories
             .filter(
-              (cat) => cat.depth === 2 && cat.parentCategoryNo === categoryNo
+              (cat) => cat.depth === 2 && cat.parentCategoryNo === categoryNo,
             )
             .map((cat) => cat.categoryNo);
           return prev.filter(
-            (no) => no !== categoryNo && !childCategories.includes(no)
+            (no) => no !== categoryNo && !childCategories.includes(no),
           );
         } else {
           // 1뎁스 카테고리 선택 - 해당 1뎁스와 그 하위 2뎁스들도 모두 선택
           const childCategories = categories
             .filter(
-              (cat) => cat.depth === 2 && cat.parentCategoryNo === categoryNo
+              (cat) => cat.depth === 2 && cat.parentCategoryNo === categoryNo,
             )
             .map((cat) => cat.categoryNo);
           return [
@@ -341,7 +341,7 @@ export function NaverBlogCrawlerPage() {
               selectedCategories,
             }),
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -396,7 +396,7 @@ export function NaverBlogCrawlerPage() {
                 "Failed to parse SSE data:",
                 parseError,
                 "Line:",
-                line
+                line,
               );
             }
           }
@@ -532,7 +532,7 @@ export function NaverBlogCrawlerPage() {
                       <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
                         {categories.map((category) => {
                           const isSelected = selectedCategories.includes(
-                            category.categoryNo
+                            category.categoryNo,
                           );
                           const isParentCategory = category.depth === 1;
 

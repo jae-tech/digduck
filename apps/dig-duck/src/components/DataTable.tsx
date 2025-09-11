@@ -1,41 +1,41 @@
-import React, { useState } from "react";
 import {
-  useReactTable,
+  flexRender,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  flexRender,
+  getSortedRowModel,
+  useReactTable,
   type ColumnDef,
-  type SortingState,
   type ColumnFiltersState,
   type PaginationState,
   type RowSelectionState,
+  type SortingState,
 } from "@tanstack/react-table";
+import React, { useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
-  ChevronUp,
+  AlertTriangle,
+  ArrowUpDown,
+  CheckCircle,
   ChevronDown,
-  Search,
-  RefreshCw,
-  Download,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  ArrowUpDown,
-  MoreHorizontal,
-  Loader2,
-  Edit,
-  Trash2,
-  Eye,
-  CheckCircle,
-  XCircle,
+  ChevronUp,
   Clock,
-  AlertTriangle,
+  Download,
+  Edit,
+  Eye,
+  Loader2,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 
 // 🎯 타입 정의
@@ -137,7 +137,7 @@ export function DataTable<TData>({
   const selectedRowCount = Object.keys(rowSelection).length;
 
   return (
-    <div className={`h-full flex flex-col space-y-4 ${className}`}>
+    <div className={`h-full flex flex-col space-y-4 w-full ${className}`}>
       {/* 📋 헤더 & 툴바 */}
       <div className="flex items-center justify-between">
         <div>
@@ -210,7 +210,10 @@ export function DataTable<TData>({
 
       {/* 🗂️ 메인 테이블 */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1" style={{ maxHeight: maxHeight === '100%' ? undefined : maxHeight }}>
+        <div
+          className="overflow-x-auto flex-1"
+          style={{ maxHeight: maxHeight === "100%" ? undefined : maxHeight }}
+        >
           <table className="w-full h-full">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -236,7 +239,7 @@ export function DataTable<TData>({
                               <span>
                                 {flexRender(
                                   header.column.columnDef.header,
-                                  header.getContext()
+                                  header.getContext(),
                                 )}
                               </span>
                               {{
@@ -249,7 +252,7 @@ export function DataTable<TData>({
                           ) : (
                             flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )
                           )}
                         </div>
@@ -289,14 +292,19 @@ export function DataTable<TData>({
                   <tr
                     key={row.id}
                     className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                      row.getIsSelected() ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                      row.getIsSelected()
+                        ? "bg-blue-50 dark:bg-blue-900/20"
+                        : ""
                     }`}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3 text-sm dark:text-gray-300">
+                      <td
+                        key={cell.id}
+                        className="px-4 py-3 text-sm dark:text-gray-300"
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </td>
                     ))}
@@ -324,7 +332,7 @@ export function DataTable<TData>({
                         {Math.min(
                           (table.getState().pagination.pageIndex + 1) *
                             table.getState().pagination.pageSize,
-                          table.getFilteredRowModel().rows.length
+                          table.getFilteredRowModel().rows.length,
                         )}{" "}
                         / {table.getFilteredRowModel().rows.length}개
                       </>

@@ -17,7 +17,7 @@ export const Route = createFileRoute("/license")({
     if (isAuthenticated) {
       const targetRoute = getRedirectPath(
         isAdmin,
-        state.licenseInfo?.serviceCode
+        state.licenseInfo?.serviceCode,
       );
 
       console.log("License beforeLoad redirect:", {
@@ -45,7 +45,7 @@ function LicenseRoute() {
 
   const handleLicenseVerified = (
     licenseKey: string,
-    result: LicenseVerificationResult
+    result: LicenseVerificationResult,
   ) => {
     setLicenseData(licenseKey, result);
   };

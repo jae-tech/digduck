@@ -3,7 +3,7 @@ import UserLayout from "@/components/layouts/UserLayout";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { useReviewsCrawlWithProgress } from "../hooks/useCrawler";
 import { useLicenseStore } from "@/features/license/store/license.store";
-import type { CrawlSort } from "../types/crawler.types";
+import type { CrawlSort } from "../types";
 import { CrawlerSettings } from "./CrawlerSettings";
 import { CrawlerProgress } from "./CrawlerProgress";
 import { CrawlerStats } from "./CrawlerStats";
@@ -52,7 +52,7 @@ export function CrawlerPage() {
     crawledPages: progress.currentPage || finalResult?.processedPages || 0,
     estimatedPages: progress.estimatedTotalPages || maxPages,
     duration: Math.floor(
-      (progress.elapsedTime || finalResult?.executionTime || 0) / 1000
+      (progress.elapsedTime || finalResult?.executionTime || 0) / 1000,
     ),
     progressPercentage:
       progress.totalReviews > 0

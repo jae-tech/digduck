@@ -8,15 +8,12 @@ export interface AuthGuardOptions {
 }
 
 export function createAuthGuard(options: AuthGuardOptions = {}) {
-  const {
-    requireAuth = true,
-    requireAdmin = false,
-    redirectTo,
-  } = options;
+  const { requireAuth = true, requireAdmin = false, redirectTo } = options;
 
   return () => {
     const state = useLicenseStore.getState();
-    const isAuthenticated = state.isLicenseValid && !!state.licenseKey && !state.isLicenseExpired();
+    const isAuthenticated =
+      state.isLicenseValid && !!state.licenseKey && !state.isLicenseExpired();
     const isAdmin = state.isAdminUser();
 
     // 인증이 필요한 경우 체크

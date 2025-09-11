@@ -64,7 +64,7 @@ export const useLicenseVerification = () => {
       try {
         const result = await LicenseService.verifyLicense(
           state.licenseKey,
-          platform
+          platform,
         );
 
         setState((prev) => ({

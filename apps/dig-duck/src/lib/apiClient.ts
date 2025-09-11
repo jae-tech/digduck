@@ -63,7 +63,6 @@ apiClient.interceptors.request.use(
       });
     }
 
-
     // 인증 토큰 추가
     const token = getAuthToken();
     if (token) {
@@ -80,7 +79,7 @@ apiClient.interceptors.request.use(
       console.error("❌ 요청 인터셉터 오류:", error);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // 응답 인터셉터
@@ -130,7 +129,7 @@ apiClient.interceptors.response.use(
     handleErrorByEnvironment(error);
 
     return Promise.reject(apiError);
-  }
+  },
 );
 
 // 인증 토큰 가져오기
@@ -260,7 +259,7 @@ export const apiHelpers = {
   upload: async <T = any>(
     url: string,
     file: File,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
   ): Promise<T> => {
     const formData = new FormData();
     formData.append("file", file);
@@ -272,7 +271,7 @@ export const apiHelpers = {
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const progress = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
+            (progressEvent.loaded * 100) / progressEvent.total,
           );
           onProgress(progress);
         }

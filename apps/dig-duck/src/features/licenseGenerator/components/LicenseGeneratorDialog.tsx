@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -16,13 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Key,
-  User,
-  Calendar,
-  AlertCircle,
-  CheckCircle,
-} from "lucide-react";
+import { Key, User, Calendar, AlertCircle, CheckCircle } from "lucide-react";
 import { apiHelpers } from "@/lib/apiClient";
 
 interface LicenseGeneratorDialogProps {
@@ -36,7 +30,11 @@ interface GenerateLicenseRequest {
   name: string;
   allowedDevices?: number;
   maxTransfers?: number;
-  subscriptionType: "ONE_MONTH" | "THREE_MONTHS" | "SIX_MONTHS" | "TWELVE_MONTHS";
+  subscriptionType:
+    | "ONE_MONTH"
+    | "THREE_MONTHS"
+    | "SIX_MONTHS"
+    | "TWELVE_MONTHS";
 }
 
 export const LicenseGeneratorDialog: React.FC<LicenseGeneratorDialogProps> = ({
@@ -63,47 +61,49 @@ export const LicenseGeneratorDialog: React.FC<LicenseGeneratorDialogProps> = ({
 
     try {
       // 1. 사용자 등록 또는 확인
-      let userResponse = await apiHelpers.post('/auth/register', {
+      let userResponse = await apiHelpers.post("/auth/register", {
         email: formData.email,
         name: formData.name,
       });
 
       // 이미 존재하는 사용자인 경우는 무시
-      if (!userResponse.success && !userResponse.error?.includes('이미 존재')) {
-        throw new Error(userResponse.error || '사용자 생성 실패');
+      if (!userResponse.success && !userResponse.error?.includes("이미 존재")) {
+        throw new Error(userResponse.error || "사용자 생성 실패");
       }
 
       // 2. 라이센스 사용자 생성
-      const licenseResponse = await apiHelpers.post('/license/users', {
+      const licenseResponse = await apiHelpers.post("/license/users", {
         email: formData.email,
         allowedDevices: formData.allowedDevices,
         maxTransfers: formData.maxTransfers,
       });
 
       if (!licenseResponse.success) {
-        throw new Error(licenseResponse.error || '라이센스 사용자 생성 실패');
+        throw new Error(licenseResponse.error || "라이센스 사용자 생성 실패");
       }
 
       // 3. 구독 생성
-      const subscriptionResponse = await apiHelpers.post('/license/subscriptions', {
-        userEmail: formData.email,
-        subscriptionType: formData.subscriptionType,
-        paymentId: `admin-generated-${Date.now()}`,
-      });
+      const subscriptionResponse = await apiHelpers.post(
+        "/license/subscriptions",
+        {
+          userEmail: formData.email,
+          subscriptionType: formData.subscriptionType,
+          paymentId: `admin-generated-${Date.now()}`,
+        },
+      );
 
       if (!subscriptionResponse.success) {
-        throw new Error(subscriptionResponse.error || '구독 생성 실패');
+        throw new Error(subscriptionResponse.error || "구독 생성 실패");
       }
 
-      setSuccess('라이센스가 성공적으로 생성되었습니다!');
-      
+      setSuccess("라이센스가 성공적으로 생성되었습니다!");
+
       // 2초 후 성공 콜백 호출
       setTimeout(() => {
         onSuccess();
       }, 2000);
-
     } catch (error: any) {
-      setError(error.message || '라이센스 생성에 실패했습니다.');
+      setError(error.message || "라이센스 생성에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -148,7 +148,9 @@ export const LicenseGeneratorDialog: React.FC<LicenseGeneratorDialogProps> = ({
               type="email"
               placeholder="user@example.com"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
             />
           </div>
@@ -163,7 +165,9 @@ export const LicenseGeneratorDialog: React.FC<LicenseGeneratorDialogProps> = ({
               type="text"
               placeholder="홍길동"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
             />
           </div>
@@ -179,7 +183,12 @@ export const LicenseGeneratorDialog: React.FC<LicenseGeneratorDialogProps> = ({
               min="1"
               max="10"
               value={formData.allowedDevices}
-              onChange={(e) => setFormData({ ...formData, allowedDevices: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  allowedDevices: parseInt(e.target.value),
+                })
+              }
             />
           </div>
 
@@ -194,7 +203,12 @@ export const LicenseGeneratorDialog: React.FC<LicenseGeneratorDialogProps> = ({
               min="1"
               max="20"
               value={formData.maxTransfers}
-              onChange={(e) => setFormData({ ...formData, maxTransfers: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  maxTransfers: parseInt(e.target.value),
+                })
+              }
             />
           </div>
 
@@ -206,7 +220,9 @@ export const LicenseGeneratorDialog: React.FC<LicenseGeneratorDialogProps> = ({
             </Label>
             <Select
               value={formData.subscriptionType}
-              onValueChange={(value: any) => setFormData({ ...formData, subscriptionType: value })}
+              onValueChange={(value: any) =>
+                setFormData({ ...formData, subscriptionType: value })
+              }
             >
               <SelectTrigger>
                 <SelectValue />

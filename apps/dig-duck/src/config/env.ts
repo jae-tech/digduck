@@ -38,7 +38,7 @@ export const env = getViteEnv();
 const validateEnv = () => {
   const requiredVars = ["VITE_API_URL"];
   const missing = requiredVars.filter(
-    (key) => !import.meta.env[key as keyof ImportMetaEnv]
+    (key) => !import.meta.env[key as keyof ImportMetaEnv],
   );
 
   if (missing.length > 0) {
@@ -58,7 +58,7 @@ export const getApiUrl = (): string => {
   const url = env.API_URL;
   if (!url) {
     throw new Error(
-      "VITE_API_URL이 설정되지 않았습니다. .env 파일을 확인해주세요."
+      "VITE_API_URL이 설정되지 않았습니다. .env 파일을 확인해주세요.",
     );
   }
   return url.endsWith("/") ? url.slice(0, -1) : url;

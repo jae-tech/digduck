@@ -32,7 +32,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 interface InsightsChartProps {
@@ -46,17 +46,17 @@ interface InsightsChartProps {
 // 2025 트렌디 컬러 팔레트 (Glassmorphism 스타일)
 const COLORS = [
   "rgba(59, 130, 246, 0.8)", // Blue
-  "rgba(239, 68, 68, 0.8)",  // Red  
+  "rgba(239, 68, 68, 0.8)", // Red
   "rgba(16, 185, 129, 0.8)", // Green
   "rgba(245, 158, 11, 0.8)", // Orange
   "rgba(139, 92, 246, 0.8)", // Purple
-  "rgba(6, 182, 212, 0.8)",  // Cyan
+  "rgba(6, 182, 212, 0.8)", // Cyan
   "rgba(236, 72, 153, 0.8)", // Pink
   "rgba(132, 204, 22, 0.8)", // Lime
 ];
 
 const BORDER_COLORS = [
-  "rgb(59, 130, 246)", 
+  "rgb(59, 130, 246)",
   "rgb(239, 68, 68)",
   "rgb(16, 185, 129)",
   "rgb(245, 158, 11)",
@@ -78,18 +78,19 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
   // 트렌드 계산
   const trendData = useMemo(() => {
     if (!data.length || !showTrend) return null;
-    
+
     const recent = data.slice(-7);
     const older = data.slice(-14, -7);
-    
+
     if (!recent.length || !older.length) return null;
-    
-    const recentAvg = recent.reduce((sum, d) => sum + d.ratio, 0) / recent.length;
+
+    const recentAvg =
+      recent.reduce((sum, d) => sum + d.ratio, 0) / recent.length;
     const olderAvg = older.reduce((sum, d) => sum + d.ratio, 0) / older.length;
-    
+
     const change = ((recentAvg - olderAvg) / olderAvg) * 100;
     const isPositive = change > 0;
-    
+
     return {
       change: Math.abs(change).toFixed(1),
       isPositive,
@@ -99,70 +100,82 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
 
   // Chart.js 데이터 및 옵션 설정
   const chartData: ChartData<any> = useMemo(() => {
-    const labels = data.map(d => d.period);
-    const values = data.map(d => d.ratio);
-    
+    const labels = data.map((d) => d.period);
+    const values = data.map((d) => d.ratio);
+
     switch (type) {
       case "line":
         return {
           labels,
-          datasets: [{
-            label: "검색 비율",
-            data: values,
-            borderColor: BORDER_COLORS[0],
-            backgroundColor: COLORS[0],
-            borderWidth: 3,
-            pointRadius: 6,
-            pointHoverRadius: 8,
-            pointBackgroundColor: BORDER_COLORS[0],
-            pointBorderColor: "#ffffff",
-            pointBorderWidth: 2,
-            tension: 0.4,
-          }]
+          datasets: [
+            {
+              label: "검색 비율",
+              data: values,
+              borderColor: BORDER_COLORS[0],
+              backgroundColor: COLORS[0],
+              borderWidth: 3,
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              pointBackgroundColor: BORDER_COLORS[0],
+              pointBorderColor: "#ffffff",
+              pointBorderWidth: 2,
+              tension: 0.4,
+            },
+          ],
         };
-      
+
       case "area":
         return {
           labels,
-          datasets: [{
-            label: "검색 비율",
-            data: values,
-            borderColor: BORDER_COLORS[0],
-            backgroundColor: COLORS[0],
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-          }]
+          datasets: [
+            {
+              label: "검색 비율",
+              data: values,
+              borderColor: BORDER_COLORS[0],
+              backgroundColor: COLORS[0],
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+            },
+          ],
         };
-      
+
       case "bar":
         return {
           labels,
-          datasets: [{
-            label: "검색 비율",
-            data: values,
-            backgroundColor: values.map((_, index) => COLORS[index % COLORS.length]),
-            borderColor: values.map((_, index) => BORDER_COLORS[index % BORDER_COLORS.length]),
-            borderWidth: 2,
-            borderRadius: 8,
-            borderSkipped: false,
-          }]
+          datasets: [
+            {
+              label: "검색 비율",
+              data: values,
+              backgroundColor: values.map(
+                (_, index) => COLORS[index % COLORS.length],
+              ),
+              borderColor: values.map(
+                (_, index) => BORDER_COLORS[index % BORDER_COLORS.length],
+              ),
+              borderWidth: 2,
+              borderRadius: 8,
+              borderSkipped: false,
+            },
+          ],
         };
-      
+
       case "doughnut":
         return {
           labels: labels.slice(0, 8), // 최대 8개만 표시
-          datasets: [{
-            data: values.slice(0, 8),
-            backgroundColor: COLORS,
-            borderColor: BORDER_COLORS,
-            borderWidth: 3,
-            hoverBorderWidth: 4,
-          }]
+          datasets: [
+            {
+              data: values.slice(0, 8),
+              backgroundColor: COLORS,
+              borderColor: BORDER_COLORS,
+              borderWidth: 3,
+              hoverBorderWidth: 4,
+            },
+          ],
         };
-      
+
       default:
         return { labels: [], datasets: [] };
     }
@@ -176,7 +189,7 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
       plugins: {
         legend: {
           display: type === "doughnut",
-          position: 'bottom' as const,
+          position: "bottom" as const,
           labels: {
             usePointStyle: true,
             padding: 20,
@@ -187,17 +200,17 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
           },
         },
         tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleColor: '#ffffff',
-          bodyColor: '#ffffff',
-          borderColor: 'rgba(255, 255, 255, 0.2)',
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          titleColor: "#ffffff",
+          bodyColor: "#ffffff",
+          borderColor: "rgba(255, 255, 255, 0.2)",
           borderWidth: 1,
           cornerRadius: 12,
           displayColors: true,
           padding: 12,
           titleFont: {
             size: 14,
-            weight: 'bold' as const,
+            weight: "bold" as const,
           },
           bodyFont: {
             size: 13,
@@ -206,18 +219,18 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
       },
       animation: {
         duration: 1200,
-        easing: 'easeInOutQuart' as const,
+        easing: "easeInOutQuart" as const,
       },
       interaction: {
         intersect: false,
-        mode: 'index' as const,
+        mode: "index" as const,
       },
     };
 
     if (type === "doughnut") {
       return {
         ...baseOptions,
-        cutout: '70%',
+        cutout: "70%",
         plugins: {
           ...baseOptions.plugins,
           legend: {
@@ -233,11 +246,11 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
       scales: {
         x: {
           grid: {
-            color: 'rgba(156, 163, 175, 0.2)',
+            color: "rgba(156, 163, 175, 0.2)",
             lineWidth: 1,
           },
           ticks: {
-            color: '#6B7280',
+            color: "#6B7280",
             font: {
               size: 11,
               family: "Inter, system-ui, sans-serif",
@@ -247,11 +260,11 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
         y: {
           beginAtZero: true,
           grid: {
-            color: 'rgba(156, 163, 175, 0.2)',
+            color: "rgba(156, 163, 175, 0.2)",
             lineWidth: 1,
           },
           ticks: {
-            color: '#6B7280',
+            color: "#6B7280",
             font: {
               size: 11,
               family: "Inter, system-ui, sans-serif",
@@ -267,40 +280,28 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
     switch (type) {
       case "line":
         return (
-          <Line 
-            ref={chartRef as any}
-            data={chartData} 
-            options={chartOptions} 
-          />
+          <Line ref={chartRef as any} data={chartData} options={chartOptions} />
         );
-      
+
       case "area":
         return (
-          <Line 
-            ref={chartRef as any}
-            data={chartData} 
-            options={chartOptions} 
-          />
+          <Line ref={chartRef as any} data={chartData} options={chartOptions} />
         );
-      
+
       case "bar":
         return (
-          <Bar 
-            ref={chartRef as any}
-            data={chartData} 
-            options={chartOptions} 
-          />
+          <Bar ref={chartRef as any} data={chartData} options={chartOptions} />
         );
-      
+
       case "doughnut":
         return (
-          <Doughnut 
+          <Doughnut
             ref={chartRef as any}
-            data={chartData} 
-            options={chartOptions} 
+            data={chartData}
+            options={chartOptions}
           />
         );
-      
+
       default:
         return null;
     }
@@ -332,11 +333,11 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
                 transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
                 className="flex items-center space-x-2"
               >
-                <Badge 
+                <Badge
                   variant={trendData.isPositive ? "default" : "destructive"}
                   className={`flex items-center space-x-1 ${
-                    trendData.isPositive 
-                      ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0" 
+                    trendData.isPositive
+                      ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0"
                       : "bg-gradient-to-r from-red-500 to-pink-600 text-white border-0"
                   }`}
                 >
@@ -365,7 +366,7 @@ export const InsightsChart: React.FC<InsightsChartProps> = ({
             </div>
             <div className="flex items-center space-x-1">
               <Users className="w-3 h-3" />
-              <span>최대값: {Math.max(...data.map(d => d.ratio))}</span>
+              <span>최대값: {Math.max(...data.map((d) => d.ratio))}</span>
             </div>
           </motion.div>
         </CardHeader>

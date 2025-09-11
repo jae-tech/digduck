@@ -49,7 +49,7 @@ export const useLicenseManager = () => {
       try {
         const success = await LicenseManagerService.updateLicense(
           licenseId,
-          data
+          data,
         );
         if (success) {
           // 목록 새로고침
@@ -66,7 +66,7 @@ export const useLicenseManager = () => {
         return false;
       }
     },
-    [loadLicenses, loadStats]
+    [loadLicenses, loadStats],
   );
 
   const deleteLicense = useCallback(
@@ -88,7 +88,7 @@ export const useLicenseManager = () => {
         return false;
       }
     },
-    [loadLicenses, loadStats]
+    [loadLicenses, loadStats],
   );
 
   const performBulkAction = useCallback(
@@ -111,7 +111,7 @@ export const useLicenseManager = () => {
         return false;
       }
     },
-    [loadLicenses, loadStats]
+    [loadLicenses, loadStats],
   );
 
   const toggleLicenseSelection = useCallback((licenseId: string) => {

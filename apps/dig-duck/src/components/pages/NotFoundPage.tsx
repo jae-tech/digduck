@@ -1,14 +1,14 @@
-import React from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
-import { DigDuckIcon } from '@/components/icons/DigDuckIcon';
-import { Home, ArrowLeft, Search } from 'lucide-react';
+import React from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
+import { Home, ArrowLeft, Search } from "lucide-react";
 
 export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleGoHome = () => {
-    navigate({ to: '/' });
+    navigate({ to: "/" });
   };
 
   const handleGoBack = () => {
@@ -39,7 +39,7 @@ export const NotFoundPage: React.FC = () => {
 
         {/* Actions */}
         <div className="space-y-3">
-          <Button 
+          <Button
             onClick={handleGoHome}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             size="lg"
@@ -47,8 +47,8 @@ export const NotFoundPage: React.FC = () => {
             <Home className="w-4 h-4 mr-2" />
             홈으로 이동
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={handleGoBack}
             variant="outline"
             className="w-full"
@@ -66,17 +66,17 @@ export const NotFoundPage: React.FC = () => {
             자주 찾는 페이지
           </h3>
           <div className="grid grid-cols-1 gap-2 text-sm">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              onClick={() => navigate({ to: '/license' })}
+              onClick={() => navigate({ to: "/license" })}
             >
               라이센스 활성화
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              onClick={() => navigate({ to: '/admin/dashboard' })}
+              onClick={() => navigate({ to: "/admin/dashboard" })}
             >
               관리자 패널
             </Button>

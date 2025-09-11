@@ -16,9 +16,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { InsightsChart } from "./InsightsChart";
-import type {
-  ShoppingInsightsResult,
-} from "@/features/crawler/types/crawler.types";
+import type { ShoppingInsightsResult } from "@/features/crawler/types/crawler.types";
 
 interface InsightsDashboardProps {
   data: ShoppingInsightsResult;

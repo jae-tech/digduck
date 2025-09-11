@@ -255,7 +255,7 @@ const ExpiryDateCell = ({ expiryDate }: { expiryDate: string }) => {
   const now = new Date();
   const isExpired = expiry <= now;
   const daysUntilExpiry = Math.ceil(
-    (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
   );
   const isExpiringSoon = !isExpired && daysUntilExpiry <= 30;
 
@@ -406,10 +406,10 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
 
   // 편집/삭제 다이얼로그 상태
   const [editingLicense, setEditingLicense] = useState<LicenseRecord | null>(
-    null
+    null,
   );
   const [deletingLicense, setDeletingLicense] = useState<LicenseRecord | null>(
-    null
+    null,
   );
   const [editForm, setEditForm] = useState<EditForm>({});
 
@@ -528,7 +528,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
         size: 80,
       },
     ],
-    [onUpdate]
+    [onUpdate],
   );
 
   // 🏗️ TanStack Table 인스턴스
@@ -584,7 +584,6 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
       }
     }
   };
-
 
   const selectedRowCount = Object.keys(rowSelection).length;
 
@@ -689,7 +688,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                                 <span>
                                   {flexRender(
                                     header.column.columnDef.header,
-                                    header.getContext()
+                                    header.getContext(),
                                   )}
                                 </span>
                                 {{
@@ -702,7 +701,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                             ) : (
                               flexRender(
                                 header.column.columnDef.header,
-                                header.getContext()
+                                header.getContext(),
                               )
                             )}
                           </div>
@@ -749,7 +748,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                         <td key={cell.id} className="px-4 py-3 text-sm">
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </td>
                       ))}
@@ -775,7 +774,7 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                         {Math.min(
                           (table.getState().pagination.pageIndex + 1) *
                             table.getState().pagination.pageSize,
-                          table.getFilteredRowModel().rows.length
+                          table.getFilteredRowModel().rows.length,
                         )}{" "}
                         / {table.getFilteredRowModel().rows.length}개
                       </>
@@ -943,7 +942,14 @@ export const LicenseTable: React.FC<LicenseTableProps> = ({
                 id="edit-status"
                 value={editForm.status || ""}
                 onChange={(e) =>
-                  setEditForm((prev: EditForm) => ({ ...prev, status: e.target.value as "active" | "expired" | "revoked" | "suspended" }))
+                  setEditForm((prev: EditForm) => ({
+                    ...prev,
+                    status: e.target.value as
+                      | "active"
+                      | "expired"
+                      | "revoked"
+                      | "suspended",
+                  }))
                 }
                 className="col-span-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >

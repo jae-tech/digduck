@@ -39,7 +39,7 @@ export interface LicenseState {
 export interface LicenseVerificationProps {
   onLicenseVerified?: (
     licenseKey: string,
-    result: LicenseVerificationResult
+    result: LicenseVerificationResult,
   ) => void;
   onError?: (error: string) => void;
 }

@@ -28,7 +28,7 @@ export interface CrawlingProgress {
   currentCategory: string;
   processedPosts: number;
   totalPosts: number;
-  status: 'idle' | 'running' | 'completed' | 'error';
+  status: "idle" | "running" | "completed" | "error";
   errorMessage?: string;
 }
 

@@ -58,9 +58,9 @@ export default function UserLayout({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="fixed inset-0 bg-gray-50 flex flex-col">
       {/* 상단 헤더 - 라이센스 정보 */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-4">
+      <header className="flex-shrink-0 bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <DigDuckIcon className="text-blue-600" size={32} />
@@ -227,7 +227,9 @@ export default function UserLayout({
       </header>
 
       {/* 메인 컨텐츠 - 풀 너비 */}
-      <main className="px-4 lg:px-6 py-6">{children}</main>
+      <main className="flex-1 overflow-hidden">
+        <div className="h-full overflow-auto px-4 lg:px-6 py-6">{children}</div>
+      </main>
     </div>
   );
 }

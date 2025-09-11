@@ -251,7 +251,7 @@ export const LicenseKeyInput: React.FC<LicenseKeyInputProps> = ({
           />
         </div>
       </div>
-      
+
       {showKoreanWarning && (
         <Alert variant="destructive" className="mt-3">
           <AlertTriangle className="h-4 w-4" />

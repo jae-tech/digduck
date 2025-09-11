@@ -1,30 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  LayoutDashboard,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Key,
-  Search,
-  ExternalLink,
-  ChevronDown,
-  ChevronRight,
-  Globe,
-  TrendingUp,
-  User,
-  Calendar,
-  MessageSquare,
-  Coffee,
-  Eye,
-  EyeOff,
-} from "lucide-react";
 import { DigDuckIcon } from "@/components/icons/DigDuckIcon";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useLicenseStore } from "@/features/license/store/license.store";
 import { formatDate } from "@/lib/utils";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Coffee,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Globe,
+  Key,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+  Search,
+  Settings,
+  User,
+  X,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
 
 interface MenuItemProps {
   to: string;
@@ -148,11 +147,6 @@ export default function AdminLayout({
           label: "리뷰 크롤링",
         },
         {
-          to: "/crawler/insights",
-          icon: <TrendingUp className="w-4 h-4" />,
-          label: "쇼핑 인사이트",
-        },
-        {
           to: "/crawler/naver-blog",
           icon: <Coffee className="w-4 h-4" />,
           label: "네이버 블로그",
@@ -167,7 +161,9 @@ export default function AdminLayout({
   ];
 
   // 현재 보기 모드에 따른 메뉴 결정
-  const menuItems = isUserViewMode ? serviceMenuItems : [...adminMenuItems, ...serviceMenuItems];
+  const menuItems = isUserViewMode
+    ? serviceMenuItems
+    : [...adminMenuItems, ...serviceMenuItems];
 
   const handleLogout = () => {
     clearLicense();
@@ -183,7 +179,7 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="fixed inset-0 bg-gray-50 flex">
       {/* 사이드바 - 데스크톱 */}
       <aside
         className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 transition-all duration-300 ${isSidebarCollapsed ? "lg:w-16" : "lg:w-64"}`}
@@ -288,16 +284,15 @@ export default function AdminLayout({
               );
             })}
           </nav>
-
         </div>
       </aside>
 
       {/* 메인 컨텐츠 영역 */}
       <div
-        className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? "lg:ml-16" : "lg:ml-64"}`}
+        className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "lg:ml-16" : "lg:ml-64"}`}
       >
         {/* 모바일 헤더 */}
-        <header className="lg:hidden bg-white shadow-sm border-b border-gray-200">
+        <header className="lg:hidden flex-shrink-0 bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center space-x-3">
               <Button
@@ -384,13 +379,12 @@ export default function AdminLayout({
                     />
                   ))}
               </nav>
-
             </div>
           </>
         )}
 
         {/* 데스크톱 헤더 (페이지 제목) */}
-        <header className="hidden lg:block bg-white shadow-sm border-b border-gray-200">
+        <header className="hidden lg:block flex-shrink-0 bg-white shadow-sm border-b border-gray-200">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -509,7 +503,9 @@ export default function AdminLayout({
                               <p className="text-sm font-medium text-gray-900 truncate">
                                 {licenseInfo?.userName || "관리자"}
                               </p>
-                              <p className="text-xs text-gray-500">시스템 관리자</p>
+                              <p className="text-xs text-gray-500">
+                                시스템 관리자
+                              </p>
                             </div>
                           </div>
 
@@ -591,7 +587,11 @@ export default function AdminLayout({
         </header>
 
         {/* 메인 컨텐츠 */}
-        <main className="px-4 py-6 lg:px-6">{children}</main>
+        <main className="flex-1 overflow-hidden">
+          <div className="h-full overflow-auto px-4 py-6 lg:px-6">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

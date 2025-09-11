@@ -211,7 +211,7 @@ function RouteComponent() {
                 {Math.round(
                   (crawlingStats.successfulRequests /
                     crawlingStats.totalRequests) *
-                    100
+                    100,
                 )}
                 %
               </p>
@@ -394,7 +394,7 @@ function RouteComponent() {
                   {Math.round(
                     (crawlingStats.successfulRequests /
                       crawlingStats.totalRequests) *
-                      100
+                      100,
                   )}
                   %
                 </span>

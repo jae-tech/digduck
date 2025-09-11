@@ -37,7 +37,7 @@ export const LicenseManagerPage: React.FC = () => {
     user: 0,
     expired: 0,
     suspended: 0,
-    expiringSoon: 0
+    expiringSoon: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -49,24 +49,29 @@ export const LicenseManagerPage: React.FC = () => {
 
   const loadLicenseData = async () => {
     try {
-      const result = await apiHelpers.get('/license/admin/users');
-      
+      const result = await apiHelpers.get("/license/admin/users");
+
       if (result.success) {
         const licenses: LicenseData[] = result.data.users.map((user: any) => ({
           id: user.licenseKey,
           licenseKey: user.licenseKey,
           userEmail: user.email,
-          type: user.licenseKey.startsWith('ADMIN') ? "admin" : "user",
-          status: user.license_subscriptions?.[0]?.isActive ? "active" : "expired",
+          type: user.licenseKey.startsWith("ADMIN") ? "admin" : "user",
+          status: user.license_subscriptions?.[0]?.isActive
+            ? "active"
+            : "expired",
           deviceCount: `${user.activatedDevices?.length || 0}/${user.allowedDevices}`,
-          expiryDate: user.license_subscriptions?.[0]?.endDate ? 
-            new Date(user.license_subscriptions[0].endDate).toLocaleDateString() : "N/A"
+          expiryDate: user.license_subscriptions?.[0]?.endDate
+            ? new Date(
+                user.license_subscriptions[0].endDate,
+              ).toLocaleDateString()
+            : "N/A",
         }));
-        
-        setLicenseData(licenses.filter(l => l.type !== "admin"));
+
+        setLicenseData(licenses.filter((l) => l.type !== "admin"));
       }
     } catch (error) {
-      console.error('Failed to load license data:', error);
+      console.error("Failed to load license data:", error);
     } finally {
       setLoading(false);
     }
@@ -74,19 +79,19 @@ export const LicenseManagerPage: React.FC = () => {
 
   const loadStats = async () => {
     try {
-      const result = await apiHelpers.get('/admin/licenses/stats');
-      
+      const result = await apiHelpers.get("/admin/licenses/stats");
+
       if (result.success) {
         setStats({
           active: result.data.active,
           user: result.data.total - result.data.admin,
           expired: result.data.expired,
           suspended: result.data.suspended,
-          expiringSoon: result.data.expiringSoon
+          expiringSoon: result.data.expiringSoon,
         });
       }
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error("Failed to load stats:", error);
     }
   };
 
@@ -192,23 +197,33 @@ export const LicenseManagerPage: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {stats.active}
+              </div>
               <div className="text-sm text-gray-600">활성 라이센스</div>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{stats.user}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats.user}
+              </div>
               <div className="text-sm text-gray-600">일반 라이센스</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-600">{stats.expired}</div>
+              <div className="text-2xl font-bold text-gray-600">
+                {stats.expired}
+              </div>
               <div className="text-sm text-gray-600">만료된 라이센스</div>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">{stats.suspended}</div>
+              <div className="text-2xl font-bold text-orange-600">
+                {stats.suspended}
+              </div>
               <div className="text-sm text-gray-600">일시정지</div>
             </div>
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{stats.expiringSoon}</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {stats.expiringSoon}
+              </div>
               <div className="text-sm text-gray-600">만료 예정</div>
             </div>
           </div>
@@ -287,7 +302,9 @@ export const LicenseManagerPage: React.FC = () => {
 
           {loading ? (
             <div className="text-center py-8">
-              <div className="text-gray-500">라이센스 데이터를 불러오는 중...</div>
+              <div className="text-gray-500">
+                라이센스 데이터를 불러오는 중...
+              </div>
             </div>
           ) : (
             <DataTable

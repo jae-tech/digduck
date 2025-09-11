@@ -59,7 +59,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
             option.disabled &&
               "opacity-50 cursor-not-allowed hover:border-border hover:bg-transparent",
             error && !isSelected && "border-destructive/30",
-            success && isSelected && "border-green-500 bg-green-500/5"
+            success && isSelected && "border-green-500 bg-green-500/5",
           )}
           onClick={() => !option.disabled && onValueChange?.(option.value)}
         >
@@ -76,7 +76,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
                   <div
                     className={cn(
                       "flex-shrink-0",
-                      isSelected ? "text-primary" : "text-muted-foreground"
+                      isSelected ? "text-primary" : "text-muted-foreground",
                     )}
                   >
                     {option.icon}
@@ -87,7 +87,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
                   className={cn(
                     "font-medium cursor-pointer",
                     isSelected && "text-primary",
-                    option.disabled && "cursor-not-allowed"
+                    option.disabled && "cursor-not-allowed",
                   )}
                 >
                   {option.label}
@@ -118,7 +118,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
             "relative glass-card p-3 cursor-pointer transition-all duration-200",
             "hover:bg-background/40 hover:border-primary/30",
             isSelected && "border-primary/50 bg-primary/5 shadow-glow-blue",
-            option.disabled && "opacity-50 cursor-not-allowed"
+            option.disabled && "opacity-50 cursor-not-allowed",
           )}
           onClick={() => !option.disabled && onValueChange?.(option.value)}
         >
@@ -133,7 +133,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
                 <div
                   className={cn(
                     "flex-shrink-0",
-                    isSelected ? "text-primary" : "text-muted-foreground"
+                    isSelected ? "text-primary" : "text-muted-foreground",
                   )}
                 >
                   {option.icon}
@@ -145,7 +145,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
                   className={cn(
                     "font-medium cursor-pointer text-foreground/90",
                     isSelected && "text-primary",
-                    option.disabled && "cursor-not-allowed"
+                    option.disabled && "cursor-not-allowed",
                   )}
                 >
                   {option.label}
@@ -170,7 +170,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
             "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200",
             "hover:bg-accent/50",
             isSelected && "bg-primary/5",
-            option.disabled && "opacity-50 cursor-not-allowed"
+            option.disabled && "opacity-50 cursor-not-allowed",
           )}
           onClick={() => !option.disabled && onValueChange?.(option.value)}
         >
@@ -184,7 +184,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
               <div
                 className={cn(
                   "flex-shrink-0 w-4 h-4",
-                  isSelected ? "text-primary" : "text-muted-foreground"
+                  isSelected ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 {option.icon}
@@ -195,7 +195,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
               className={cn(
                 "cursor-pointer font-normal",
                 isSelected && "font-medium text-primary",
-                option.disabled && "cursor-not-allowed"
+                option.disabled && "cursor-not-allowed",
               )}
             >
               {option.label}
@@ -220,7 +220,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
                 "flex-shrink-0",
                 value === option.value
                   ? "text-primary"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground",
               )}
             >
               {option.icon}
@@ -230,7 +230,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
             htmlFor={`${name}-${option.value}`}
             className={cn(
               "cursor-pointer font-medium",
-              option.disabled && "cursor-not-allowed opacity-50"
+              option.disabled && "cursor-not-allowed opacity-50",
             )}
           >
             {option.label}
@@ -271,7 +271,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
           orientation === "grid" && `grid gap-3 ${gridCols} space-y-0`,
           variant === "card" && "space-y-3",
           variant === "glass" && "space-y-2",
-          error && variant === "default" && "space-y-2"
+          error && variant === "default" && "space-y-2",
         )}
       >
         {options.map(renderOption)}
@@ -286,7 +286,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
                 variant === "card" &&
                   "bg-destructive/10 px-3 py-2 rounded-lg border border-destructive/20",
                 variant === "glass" &&
-                  "glass-card border-destructive/30 px-3 py-2"
+                  "glass-card border-destructive/30 px-3 py-2",
               )}
             >
               <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
@@ -300,7 +300,7 @@ const LabelRadio: React.FC<LabelRadioProps> = ({
                 variant === "card" &&
                   "bg-green-500/10 px-3 py-2 rounded-lg border border-green-500/20",
                 variant === "glass" &&
-                  "glass-card border-green-500/30 px-3 py-2"
+                  "glass-card border-green-500/30 px-3 py-2",
               )}
             >
               <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />

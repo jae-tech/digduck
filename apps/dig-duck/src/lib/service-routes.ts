@@ -3,7 +3,7 @@
  */
 export const getServiceRoute = (serviceCode: string): string => {
   const serviceRoutes: Record<string, string> = {
-    "NAVER_BLOG_CRAWLING": "/crawler/naver-blog",
+    NAVER_BLOG_CRAWLING: "/crawler/naver-blog",
     // 추가 구현된 서비스들은 여기에 추가
   };
   return serviceRoutes[serviceCode] || "/dashboard";
@@ -14,11 +14,11 @@ export const getServiceRoute = (serviceCode: string): string => {
  */
 export const getRedirectPath = (
   isAdmin: boolean,
-  serviceCode?: string
+  serviceCode?: string,
 ): string => {
   if (isAdmin) {
     return "/admin/dashboard";
   }
-  
+
   return serviceCode ? getServiceRoute(serviceCode) : "/dashboard";
 };
