@@ -33,7 +33,7 @@ export function useShoppingInsights(): UseShoppingInsightsReturn {
     } catch (err: any) {
       const errorMessage = err.message || "인사이트 조회에 실패했습니다.";
       setError(errorMessage);
-      console.error("Shopping insights fetch error:", err);
+      console.error("쇼핑 인사이트 조회 오류:", err);
     } finally {
       setIsLoading(false);
     }

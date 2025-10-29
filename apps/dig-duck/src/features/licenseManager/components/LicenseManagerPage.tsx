@@ -66,7 +66,7 @@ export const LicenseManagerPage: React.FC = () => {
         setLicenseData(licenses.filter(l => l.type !== "admin"));
       }
     } catch (error) {
-      console.error('Failed to load license data:', error);
+      console.error('라이센스 데이터 로드 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export const LicenseManagerPage: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error('통계 로드 실패:', error);
     }
   };
 

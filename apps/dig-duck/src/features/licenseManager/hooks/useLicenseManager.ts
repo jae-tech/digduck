@@ -29,7 +29,7 @@ export const useLicenseManager = () => {
       setTotalCount(result.total);
     } catch (error) {
       setError("라이센스 목록을 불러오는데 실패했습니다.");
-      console.error("Failed to load licenses:", error);
+      console.error("라이센스 목록 로드 실패:", error);
     } finally {
       setIsLoading(false);
     }
@@ -40,7 +40,7 @@ export const useLicenseManager = () => {
       const statsData = await LicenseManagerService.getLicenseStats();
       setStats(statsData);
     } catch (error) {
-      console.error("Failed to load stats:", error);
+      console.error("통계 로드 실패:", error);
     }
   }, []);
 
@@ -62,7 +62,7 @@ export const useLicenseManager = () => {
         }
       } catch (error) {
         setError("라이센스 업데이트 중 오류가 발생했습니다.");
-        console.error("Failed to update license:", error);
+        console.error("라이센스 업데이트 실패:", error);
         return false;
       }
     },
@@ -84,7 +84,7 @@ export const useLicenseManager = () => {
         }
       } catch (error) {
         setError("라이센스 삭제 중 오류가 발생했습니다.");
-        console.error("Failed to delete license:", error);
+        console.error("라이센스 삭제 실패:", error);
         return false;
       }
     },
@@ -107,7 +107,7 @@ export const useLicenseManager = () => {
         }
       } catch (error) {
         setError("대량 작업 중 오류가 발생했습니다.");
-        console.error("Failed to perform bulk action:", error);
+        console.error("대량 작업 실패:", error);
         return false;
       }
     },

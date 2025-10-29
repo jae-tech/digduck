@@ -93,7 +93,7 @@ export class LicenseGeneratorService {
       };
 
     } catch (error: any) {
-      console.error('License generation error:', error);
+      console.error('라이센스 생성 오류:', error);
       return {
         success: false,
         message: `라이센스 생성 중 오류가 발생했습니다: ${error.message}`,
@@ -237,7 +237,7 @@ export class LicenseGeneratorService {
       await apiHelpers.delete(`/api/admin/license/${licenseKey}`);
       return true;
     } catch (error) {
-      console.error("Failed to delete license:", error);
+      console.error("라이센스 삭제 실패:", error);
       return false;
     }
   }

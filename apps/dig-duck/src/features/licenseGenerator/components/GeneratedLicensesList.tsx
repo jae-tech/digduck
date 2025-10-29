@@ -39,7 +39,7 @@ export const GeneratedLicensesList: React.FC = () => {
       setCopiedKey(licenseKey);
       setTimeout(() => setCopiedKey(""), 2000);
     } catch (error) {
-      console.error("Failed to copy to clipboard:", error);
+      console.error("클립보드에 복사 실패:", error);
     }
   };
 

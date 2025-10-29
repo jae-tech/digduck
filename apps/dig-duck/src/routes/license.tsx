@@ -52,7 +52,7 @@ function LicenseRoute() {
   };
 
   const handleLicenseError = (error: string) => {
-    console.error("License verification error:", error);
+    console.error("라이센스 검증 오류:", error);
     // 에러 토스트 메시지 등을 표시할 수 있습니다
   };
 

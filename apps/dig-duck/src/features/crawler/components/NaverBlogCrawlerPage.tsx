@@ -383,7 +383,7 @@ export function NaverBlogCrawlerPage() {
               if (jsonData) {
                 const data = JSON.parse(jsonData);
 
-                console.log("SSE data received:", data);
+                console.log("SSE 데이터 수신됨:", data);
 
                 if (data.type === "progress") {
                   setProgress(data.progress);
@@ -400,9 +400,9 @@ export function NaverBlogCrawlerPage() {
               }
             } catch (parseError) {
               console.error(
-                "Failed to parse SSE data:",
+                "SSE 데이터 파싱 실패:",
                 parseError,
-                "Line:",
+                "라인:",
                 line
               );
             }

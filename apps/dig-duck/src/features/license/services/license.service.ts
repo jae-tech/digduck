@@ -73,7 +73,7 @@ export class LicenseService {
         message: "유효하지 않은 라이센스 키입니다."
       };
     } catch (error: any) {
-      console.error('License verification error:', error);
+      console.error('라이센스 검증 오류:', error);
       
       // API 응답에서 에러 메시지 추출
       const errorMessage = error.details?.error || error.message || "라이센스 검증 중 오류가 발생했습니다.";
@@ -181,7 +181,7 @@ export class LicenseService {
       await apiHelpers.post('/api/license/revoke', { licenseKey });
       return true;
     } catch (error) {
-      console.error("Failed to revoke license:", error);
+      console.error("라이센스 해지 실패:", error);
       return false;
     }
   }

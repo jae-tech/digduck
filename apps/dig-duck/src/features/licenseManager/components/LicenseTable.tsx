@@ -1105,13 +1105,13 @@ export default function LicenseTableDemo() {
   const [loading, setLoading] = useState(false);
 
   const handleUpdate = async (licenseId: string, data: any) => {
-    console.log("Updating license:", licenseId, data);
+    console.log("라이센스 업데이트 중:", licenseId, data);
     // 실제로는 API 호출
     return true;
   };
 
   const handleDelete = async (licenseId: string) => {
-    console.log("Deleting license:", licenseId);
+    console.log("라이센스 삭제 중:", licenseId);
     // 실제로는 API 호출
     return true;
   };

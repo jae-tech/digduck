@@ -61,7 +61,7 @@ export class LicenseManagerService {
       
       throw new Error('Failed to fetch licenses');
     } catch (error) {
-      console.error('Failed to get licenses:', error);
+      console.error('라이센스 목록 조회 실패:', error);
       // 개발용 시뮬레이션
       return this.simulateGetLicenses(filter, page, limit);
     }
@@ -74,7 +74,7 @@ export class LicenseManagerService {
     try {
       return await apiHelpers.get(`/api/admin/licenses/${licenseId}`);
     } catch (error) {
-      console.error("Failed to get license detail:", error);
+      console.error("라이센스 상세 조회 실패:", error);
       return null;
     }
   }
@@ -91,7 +91,7 @@ export class LicenseManagerService {
 
       return response.success;
     } catch (error) {
-      console.error("Failed to update license:", error);
+      console.error("라이센스 업데이트 실패:", error);
       return false;
     }
   }
@@ -102,7 +102,7 @@ export class LicenseManagerService {
       const response = await apiHelpers.delete(`/admin/licenses/${licenseKey}`);
       return response.success;
     } catch (error) {
-      console.error("Failed to delete license:", error);
+      console.error("라이센스 삭제 실패:", error);
       return false;
     }
   }
@@ -113,7 +113,7 @@ export class LicenseManagerService {
       const response = await apiHelpers.post('/admin/licenses/bulk', action);
       return response.success;
     } catch (error) {
-      console.error("Failed to perform bulk action:", error);
+      console.error("대량 작업 실패:", error);
       return false;
     }
   }
@@ -125,7 +125,7 @@ export class LicenseManagerService {
       const result = await apiHelpers.get(`/admin/licenses/stats`);
       return result.data;
     } catch (error) {
-      console.error('Failed to get license stats:', error);
+      console.error('라이센스 통계 조회 실패:', error);
       // 개발용 시뮬레이션
       return this.simulateGetStats();
     }

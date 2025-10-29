@@ -85,7 +85,7 @@ export const useReviewsCrawlWithProgress = () => {
               if (jsonData) {
                 const data = JSON.parse(jsonData);
                 
-                console.log('SSE data received:', data); // 디버깅용
+                console.log('SSE 데이터 수신됨:', data); // 디버깅용
                 
                 if (data.error) {
                   setError(data.error);
@@ -104,13 +104,13 @@ export const useReviewsCrawlWithProgress = () => {
                 }
               }
             } catch (parseError) {
-              console.error('Failed to parse SSE data:', parseError, 'Line:', line);
+              console.error('SSE 데이터 파싱 실패:', parseError, '라인:', line);
             }
           }
         }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다';
       setError(errorMessage);
       setIsLoading(false);
     }
