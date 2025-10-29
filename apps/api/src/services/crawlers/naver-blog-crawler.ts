@@ -192,7 +192,7 @@ export class NaverBlogCrawler {
 
           currentPage++;
         } catch (error) {
-          console.error(`Error crawling page ${currentPage}:`, error);
+          console.error(`페이지 ${currentPage} 크롤링 중 오류 발생:`, error);
           callback?.onError?.(error as Error);
           currentPage++;
           continue;
@@ -368,7 +368,7 @@ export class NaverBlogCrawler {
 
           currentPage++;
         } catch (error) {
-          console.error(`Error crawling page ${currentPage}:`, error);
+          console.error(`페이지 ${currentPage} 크롤링 중 오류 발생:`, error);
           callback?.onError?.(error as Error);
           currentPage++;
           continue;
@@ -419,7 +419,7 @@ export class NaverBlogCrawler {
 
       return 0;
     } catch (error) {
-      console.error(`Error fetching total post count for blogId : ${error}`);
+      console.error(`블로그 총 포스트 수 조회 중 오류 발생: ${error}`);
       return 0;
     }
   }
@@ -455,7 +455,7 @@ export class NaverBlogCrawler {
         await page.close();
       }
     } catch (error) {
-      console.error(`Error fetching categories for blogId ${blogId}:`, error);
+      console.error(`블로그 ${blogId}의 카테고리 조회 중 오류 발생:`, error);
       return [];
     } finally {
       await this.cleanup();

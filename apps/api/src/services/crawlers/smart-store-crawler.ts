@@ -71,7 +71,7 @@ export class SmartStoreCrawler {
         const pageItems = await this.parseSmartStorePage(html, currentPage);
 
         if (pageItems.length === 0) {
-          console.log(`Page ${currentPage} has no items, stopping crawl`);
+          console.log(`페이지 ${currentPage}에 아이템이 없습니다. 크롤링을 중지합니다`);
           break;
         }
 
@@ -92,7 +92,7 @@ export class SmartStoreCrawler {
 
         currentPage++;
       } catch (error) {
-        console.error(`Error crawling page ${currentPage}:`, error);
+        console.error(`페이지 ${currentPage} 크롤링 중 오류 발생:`, error);
         callback?.onError?.(error as Error);
         currentPage++;
         continue;
@@ -193,7 +193,7 @@ export class SmartStoreCrawler {
           results.push(reviewItem);
         }
       } catch (error) {
-        console.error("Error parsing review element:", error);
+        console.error("리뷰 요소 파싱 중 오류 발생:", error);
       }
     });
 
@@ -235,7 +235,7 @@ export class SmartStoreCrawler {
           results.push(productItem);
         }
       } catch (error) {
-        console.error("Error parsing product element:", error);
+        console.error("상품 요소 파싱 중 오류 발생:", error);
       }
     });
 
@@ -321,7 +321,7 @@ export class SmartStoreCrawler {
         pageNumber,
       };
     } catch (error) {
-      console.error("Error parsing review element:", error);
+      console.error("리뷰 요소 파싱 중 오류 발생:", error);
       return null;
     }
   }
@@ -404,7 +404,7 @@ export class SmartStoreCrawler {
         pageNumber,
       };
     } catch (error) {
-      console.error("Error parsing product element:", error);
+      console.error("상품 요소 파싱 중 오류 발생:", error);
       return null;
     }
   }

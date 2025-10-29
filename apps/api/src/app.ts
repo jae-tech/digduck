@@ -63,7 +63,7 @@ export const build = async (): Promise<FastifyInstance> => {
         userAgent: request.headers["user-agent"],
         ip: request.ip,
       },
-      `${emoji} ${request.method} ${request.url} - Request started`
+      `${emoji} ${request.method} ${request.url} - 요청 시작`
     );
   });
 
@@ -119,7 +119,7 @@ export const build = async (): Promise<FastifyInstance> => {
         },
         duration: `${duration}ms`,
       },
-      `🔥 💣 ${request.method} ${request.url} - ERROR: ${error.message}`
+      `🔥 💣 ${request.method} ${request.url} - 오류: ${error.message}`
     );
   });
 

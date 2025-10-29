@@ -10,25 +10,25 @@ const start = async () => {
       host: env.HOST,
     });
 
-    app.log.info(`API Server ready at http://${env.HOST}:${env.PORT}`);
+    app.log.info(`API 서버가 http://${env.HOST}:${env.PORT} 에서 실행 중입니다`);
 
     // Graceful shutdown
     const signals = ["SIGINT", "SIGTERM"];
     signals.forEach((signal) => {
       process.on(signal, async () => {
-        app.log.info(`Received ${signal}, closing server...`);
+        app.log.info(`${signal} 신호를 받았습니다. 서버를 종료합니다...`);
         try {
           await app.close();
-          app.log.info("Server closed");
+          app.log.info("서버가 정상적으로 종료되었습니다");
           process.exit(0);
         } catch (err) {
-          app.log.error("Error closing server:", err);
+          app.log.error("서버 종료 중 오류 발생:", err);
           process.exit(1);
         }
       });
     });
   } catch (err) {
-    console.error("❌ Error starting server:", err);
+    console.error("❌ 서버 시작 중 오류 발생:", err);
     process.exit(1);
   }
 };
